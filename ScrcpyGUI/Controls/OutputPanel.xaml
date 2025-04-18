@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="ScrcpyGUI.Controls.OutputPanel">
+    
+    <!-- Settings Panel -->
+    <Grid x:Name="CommandPanel"
+        Padding="20"
+        MinimumWidthRequest="300"
+        HorizontalOptions="FillAndExpand">
+        
+        <Label Text="Commands Preview and Output"
+               TextColor="MintCream"
+            FontSize="24"
+            FontAttributes="Bold"
+            Padding="10,0"
+            HorizontalOptions="Center"
+            VerticalOptions="Start"
+            TranslationY="-18"
+            BackgroundColor="#1f1f1f"
+            ZIndex="1"/>
+        <!--Stroke="{StaticResource Purple4}"-->
+        <Border Padding="20" StrokeThickness="3" Stroke="{StaticResource Purple4}">
+            <Grid RowDefinitions="Auto,Auto, Auto, Auto"
+                ColumnDefinitions="*,Auto,Auto"
+                Padding="10"
+                ColumnSpacing="15"   
+                RowSpacing="10">
+
+
+                <controls:ChecksPanel x:Name="ChecksPanel" 
+                                               Grid.Row="0"
+                                               Grid.ColumnSpan="3"
+                                               HorizontalOptions="Fill" 
+                                               Margin="0,20, 0, 0"/>
+
+                <HorizontalStackLayout Spacing="5" Grid.Row="1" Grid.ColumnSpan="3" ToolTipProperties.Text="Use Virtual Display" HorizontalOptions="Center" VerticalOptions="Center">
+                    <Label Text="Allow multiple windows!" FontAttributes="Bold" FontSize="20" VerticalTextAlignment="Center" TextColor="WhiteSmoke"/>
+                    <CheckBox x:Name="MultiCastCheck" CheckedChanged="OnAllowMultipleCastsChanged"  Margin="5" Color="WhiteSmoke"/>
+                </HorizontalStackLayout>
+
+
+
+                <Border Stroke="{StaticResource Purple2}" Grid.Row="2" Grid.Column="0" StrokeThickness="2">
+                    <Editor x:Name="FinalCommandPreview"
+                            Text="Default command: scrcpy.exe --pause-on-exit=if-error"                       
+                            HeightRequest="80"
+                            AutoSize="TextChanges"
+                            FontSize="16"
+                            VerticalTextAlignment="Start"
+                            HorizontalOptions="FillAndExpand"
+                            Margin="0,0,0,0"
+                            IsReadOnly="True"/>
+                </Border>
+
+                <ImageButton Grid.Row="2" Grid.Column="1" ToolTipProperties.Text="Run Command"
+                    x:Name="RunCommand"
+                    Clicked="OnRunGeneratedCommand"
+                    HeightRequest="50"
+                    WidthRequest="50"
+                    BackgroundColor="Transparent"
+                    Margin="5">
+                                        
+                    <ImageButton.Source>
+                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource Purple2}" Size="50"/>
+                    </ImageButton.Source>
+                </ImageButton>
+
+                <ImageButton Grid.Row="2" Grid.Column="2" ToolTipProperties.Text="Save Command in Favorites Tab"
+                    x:Name="SaveCommand"
+                    Clicked="OnSaveGeneratedCommand"
+                    HeightRequest="50"
+                    WidthRequest="50"
+                    BackgroundColor="Transparent"
+                    Margin="5">
+                    <ImageButton.Source>
+                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf004;" Color="{StaticResource Purple2}" Size="50"/>
+                    </ImageButton.Source>
+                </ImageButton>
+
+                <Border Grid.Row="3" Grid.ColumnSpan="3"
+                    Padding="10"
+                    StrokeThickness="3"
+                    Stroke="{StaticResource Purple2}"
+                    BackgroundColor="White"
+                    MinimumHeightRequest="100"
+                    Margin="0,10,0,0">
+
+                    <Label x:Name="AdbOutputLabel"
+                        Text="Command Output"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        TextColor="Black"
+                        FontSize="16"
+                        FontAttributes="Bold"/>
+                </Border>
+
+            </Grid>
+        </Border>
+    </Grid>
+</ContentView>

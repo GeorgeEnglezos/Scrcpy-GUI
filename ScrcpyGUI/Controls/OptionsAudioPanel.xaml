@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScrcpyGUI.Controls.OptionsAudioPanel">
+
+        <!-- Main Grid -->
+    <Grid RowDefinitions="Auto, *">
+            <!-- Border -->
+        <Border Grid.Row="1" Padding="20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
+            <FlexLayout x:Name="OptionsContainer" Padding="0, 5" Margin="0, 5"
+                Wrap="Wrap" 
+                Direction="Row" 
+                JustifyContent="Center"
+                AlignItems="Center">
+
+                    <!-- Audio Bit Rate -->
+                <HorizontalStackLayout Spacing="5">
+                    <Label FontSize="15" Text="Audio Bit Rate" VerticalOptions="Center" />
+                    <Entry x:Name="AudioBitRateEntry" Placeholder="e.g., 64000 or 64K" TextChanged="OnAudioBitRateChanged" Margin="5"/>
+                </HorizontalStackLayout>
+
+                    <!-- Audio Buffer -->
+                <HorizontalStackLayout Spacing="5">
+                    <Label FontSize="15" Text="Audio Buffer" VerticalOptions="Center" />
+                    <Entry x:Name="AudioBufferEntry" Placeholder="e.g., 512" TextChanged="OnAudioBufferChanged" Margin="5"/>
+                </HorizontalStackLayout>
+
+                    <!-- Audio Dup -->
+                <HorizontalStackLayout Spacing="5">
+                    <Label FontSize="15" Text="Enable Audio Duplication" VerticalOptions="Center" />
+                    <CheckBox x:Name="AudioDupCheckBox" CheckedChanged="OnAudioDupChanged" Margin="5" />
+                </HorizontalStackLayout>
+                
+                    <!-- No Audio -->
+                <HorizontalStackLayout Spacing="5">
+                    <Label FontSize="15" Text="No Audio" VerticalOptions="Center" />
+                    <CheckBox x:Name="NoAudioCheckBox" CheckedChanged="OnNoAudioChanged" Margin="5" />
+                </HorizontalStackLayout>
+
+                    <!-- Audio Codec -->
+                <HorizontalStackLayout Spacing="5">
+                    <Label FontSize="15" Text="Audio Codec" VerticalOptions="Center" />
+                    <Picker x:Name="AudioCodecPicker" SelectedIndexChanged="OnAudioCodecChanged" Margin="5">
+                        <Picker.ItemsSource>
+                            <x:Array Type="{x:Type x:String}">
+                                <x:String>opus</x:String>
+                                <x:String>aac</x:String>
+                                <x:String>flac</x:String>
+                                <x:String>raw</x:String>
+                            </x:Array>
+                        </Picker.ItemsSource>
+                    </Picker>
+                </HorizontalStackLayout>
+
+                    <!-- Audio Codec Options -->
+                <HorizontalStackLayout Spacing="5">
+                        <Label FontSize="15" Text="Audio Codec Options" VerticalOptions="Center" />
+                    <Entry x:Name="AudioCodecOptionsEntry" Placeholder="e.g., bitrate=128k" TextChanged="OnAudioCodecOptionsChanged" Margin="5"/>
+                </HorizontalStackLayout>
+             </FlexLayout>
+        </Border>
+
+        <!-- Label and Checkbox -->
+        <FlexLayout Grid.RowSpan="2" 
+            BackgroundColor="#1f1f1f"
+            VerticalOptions="Start"
+            HorizontalOptions="Center"
+            ZIndex="1"
+            TranslationY="-15">
+            <Label Text="Audio"
+                   TextColor="{StaticResource Purple2}"
+                FontSize="22"
+                FontAttributes="Bold"
+                Padding="10,0"
+                VerticalOptions="Center"
+                HorizontalOptions="Center"/>
+        </FlexLayout>
+    </Grid>
+</ContentView>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScrcpyGUI.Controls.OptionsPackageSelectionPanel">
+    <VerticalStackLayout>
+        <Entry x:Name="PackageSearchEntry" Placeholder="Search Package..." TextChanged="PackageSearchEntry_TextChanged" TextColor="{StaticResource Purple2}" PlaceholderColor="{StaticResource Purple2}"/>
+        <CollectionView x:Name="PackageSuggestionsCollectionView" IsVisible="False" SelectionMode="Single" SelectionChanged="PackageSuggestionsCollectionView_SelectionChanged" BackgroundColor="DarkSlateGray">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                    <Label Text="{Binding .}" Padding="10"/>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentView>

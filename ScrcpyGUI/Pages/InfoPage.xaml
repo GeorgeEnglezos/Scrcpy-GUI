@@ -1,0 +1,27 @@
+﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScrcpyGUI.InfoPage">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="30,0" Spacing="25">
+            <Label Text="ADB and Scrcpy Status" FontSize="20" FontAttributes="Bold" />
+            
+            <HorizontalStackLayout Spacing="10">
+                <Label Text="ADB Installed:" VerticalTextAlignment="Center" />
+                <Label x:Name="AdbStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding AdbStatusColor}" />
+            </HorizontalStackLayout>
+
+            <HorizontalStackLayout Spacing="10">
+                <Label Text="Scrcpy Installed:" VerticalTextAlignment="Center" />
+                <Label x:Name="ScrcpyStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding ScrcpyStatusColor}" />
+            </HorizontalStackLayout>
+
+            <HorizontalStackLayout Spacing="10">
+                <Label Text="Device Connected:" VerticalTextAlignment="Center" />
+                <Label x:Name="DeviceStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding DeviceStatusColor}" />
+            </HorizontalStackLayout>
+
+            <Button Text="Refresh Status" Clicked="OnRefreshStatusClicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
