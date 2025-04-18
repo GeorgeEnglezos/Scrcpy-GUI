@@ -1,0 +1,18 @@
+﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:ScrcpyGUI"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             xmlns:models="clr-namespace:ScrcpyGUI.Models"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="ScrcpyGUI.MainPage"
+             x:DataType="local:MainPage"
+             SizeChanged="OnSizeChanged">
+
+    <ScrollView>
+        <Grid x:Name="MainGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,*">
+            <controls:SettingsParentPanel x:Name="SettingsParentPanel" Margin="0, 0, 30, 0" Grid.Column="0" Grid.Row="0"/>
+            <controls:OutputPanel x:Name="OutputPanel" Grid.Column="1" Grid.Row="0"/>
+        </Grid>
+    </ScrollView>
+
+</ContentPage>

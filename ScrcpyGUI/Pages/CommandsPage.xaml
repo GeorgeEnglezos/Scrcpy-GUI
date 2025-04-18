@@ -1,0 +1,111 @@
+﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScrcpyGUI.CommandsPage">
+    
+    <ScrollView>
+        <VerticalStackLayout Padding="30,0" Spacing="25">
+
+            <!--Most Recent Command-->
+
+            <Grid Margin="0, 50, 0, 20" ColumnDefinitions="*, Auto">
+                <Label Text="Last Command"                       
+                   FontSize="30"
+                   FontAttributes="Bold"
+                   Padding="10,0"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Start"
+                   TranslationY="-17"
+                   BackgroundColor="#1f1f1f"
+                   TextColor="{StaticResource Purple2}"
+                   ZIndex="1"
+                   Grid.Column="0" />
+
+                <Border Padding="20"  Grid.Column="0" Stroke="{StaticResource Purple2}" StrokeThickness="2" > 
+                        <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnRecentCommandTapped" />
+                        </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="*, Auto">
+                        <Label x:Name="MostRecentCommand" 
+                                           Padding="10"
+                                           Text="Your last command will appear here!"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center"
+                                           TextColor="White"
+                                           FontSize="20"
+                                           FontAttributes="Bold"
+                                           Grid.Column="0" />
+                        <ImageButton Margin="10, 0, 10, 0"
+                                            BackgroundColor="Transparent"
+                                x:Name="CopyMostRecentCommand"
+                                Clicked="OnCopyMostRecentCommand"
+                                HeightRequest="40"
+                                WidthRequest="40"
+                                Grid.Column="1">
+                            <ImageButton.Source>
+                                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource Purple2}" Size="30"/>
+                            </ImageButton.Source>
+                        </ImageButton>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!--Saved Commands-->
+
+            <Grid Margin="0, 10, 0, 0">
+                <Label x:Name="SavedCommandsTitleCount"
+                           FontSize="30"
+                           FontAttributes="Bold"
+                           Padding="10,0"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Start"
+                           TranslationY="-17"
+                           BackgroundColor="#1f1f1f"
+                           TextColor="{StaticResource Purple2}"
+                           ZIndex="1"/>
+                <Border Padding="30" StrokeThickness="2" Stroke="{StaticResource Purple2}">
+
+                    <ListView ItemsSource="{Binding SavedCommandsList}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <ViewCell>
+                                    <Border Stroke="Gray" StrokeThickness="1" Margin="5">
+                                        <Grid Padding="10" ColumnDefinitions="*, Auto, Auto">
+                                            <Grid.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnCommandTapped" />
+                                            </Grid.GestureRecognizers>
+                                            <Label Text="{Binding .}" VerticalOptions="Center" Grid.Column="0" FontSize="20"/>
+                                            <ImageButton Margin="10, 0, 10, 0"
+                                                    x:Name="CopyCommand"
+                                                    Clicked="OnCopyCommand"
+                                                    BackgroundColor="Transparent"
+                                                    HeightRequest="25"
+                                                    WidthRequest="25"
+                                                    Grid.Column="1"
+                                                    BindingContext="{Binding .}">
+                                                <ImageButton.Source>
+                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource Purple2}" Size="25"/>
+                                                </ImageButton.Source>
+                                            </ImageButton>
+                                            <ImageButton Margin="10, 0, 10, 0"
+                                                    x:Name="DeleteCommand"
+                                                    BackgroundColor="Transparent"
+                                                    Clicked="OnDeleteCommand"
+                                                    HeightRequest="25"
+                                                    WidthRequest="25"
+                                                    Grid.Column="2"
+                                                    BindingContext="{Binding .}">
+                                                <ImageButton.Source>
+                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf2ed;" Color="{StaticResource Purple2}" Size="25"/>
+                                                </ImageButton.Source>
+                                            </ImageButton>
+                                        </Grid>
+                                    </Border>
+                                </ViewCell>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Border>
+            </Grid>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

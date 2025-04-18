@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             x:Class="ScrcpyGUI.Controls.SettingsParentPanel">
+
+    <!-- Settings Panel -->
+    <Grid Padding="20" x:Name="SettingsPanel">
+        <Label Text="Scrcpy Settings"
+               TextColor="White"
+               FontSize="24"
+               FontAttributes="Bold"
+               Padding="10,0"
+               HorizontalOptions="Center"
+               VerticalOptions="Start"
+               TranslationY="-18"
+               BackgroundColor="#1f1f1f"
+               ZIndex="1" />
+
+        <Border Padding="20" StrokeThickness="2" Stroke="{StaticResource Purple4}">
+            <Grid Padding="10" ColumnSpacing="15" RowSpacing="10">
+                <!-- Define rows for vertical stacking -->
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Settings Panel -->
+                <controls:OptionsPackageSelectionPanel x:Name="OptionsPackageSelectionPanel" 
+                                                        Grid.Row="0" 
+                                                        HorizontalOptions="Fill" />
+
+                <!-- Generic Options -->
+                <controls:OptionsGeneralPanel x:Name="OptionsGeneralPanel" 
+                                               Grid.Row="1" 
+                                               HorizontalOptions="Fill" />
+                
+                <!-- Audio Options -->
+                <controls:OptionsAudioPanel x:Name="OptionsAudioPanel" 
+                                               Grid.Row="2" 
+                                               HorizontalOptions="Fill" />
+
+                <!-- Virtual Display Options -->
+                <controls:OptionsVirtualDisplayPanel x:Name="OptionsVirtualDisplayPanel" 
+                                                      Grid.Row="3" 
+                                                      HorizontalOptions="Fill" />
+
+                <!-- Screen Recording Panel -->
+                <controls:OptionsScreenRecordingPanel x:Name="OptionsScreenRecordingPanel" 
+                                                       Grid.Row="4" 
+                                                       HorizontalOptions="Fill" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentView>

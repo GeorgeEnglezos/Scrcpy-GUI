@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScrcpyGUI.Controls.OptionsVirtualDisplayPanel">
+
+        <!-- Main Grid -->
+    <Grid RowDefinitions="Auto, *" Padding="0, 30">
+            <!-- Border -->
+        <Border Grid.Row="1" Padding="20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
+                <FlexLayout x:Name="OptionsContainer" 
+                        Wrap="Wrap" 
+                        Direction="Row" 
+                        JustifyContent="Center"
+                        AlignItems="Center">
+
+                    <HorizontalStackLayout Spacing="5">
+                        <Label FontSize="15" Text="NewDisplay" VerticalTextAlignment="Center"/>
+                        <CheckBox x:Name="NewDisplay" CheckedChanged="OnNewDisplayCheckedChanged" Margin="5"/>
+                    </HorizontalStackLayout>
+
+                    <!-- Resolution Dropdown -->
+                    <HorizontalStackLayout x:Name="ResolutionContainer" Spacing="5" IsVisible="False">
+                        <Label FontSize="15" Text="Resolution" VerticalTextAlignment="Center"/>
+                    <Picker x:Name="ResolutionPicker" SelectedIndexChanged="OnResolutionSelected" Margin="5">
+                            <Picker.ItemsSource>
+                                <x:Array Type="{x:Type x:String}">
+                                    <x:String>1920x1080</x:String>
+                                    <x:String>1280x720</x:String>
+                                    <x:String>1366x768</x:String>
+                                    <x:String>1600x900</x:String>
+                                    <x:String>2560x1440</x:String>
+                                    <x:String>3840x2160</x:String>
+                                </x:Array>
+                            </Picker.ItemsSource>
+                        </Picker>
+                    </HorizontalStackLayout>
+
+                <HorizontalStackLayout Spacing="5" ToolTipProperties.Text="Move to main display after closing the window" >
+                        <Label FontSize="15" Text="Don't destroy content" VerticalTextAlignment="Center"/>
+                        <CheckBox x:Name="NoVdDestroyContent" CheckedChanged="OnNoVdDestroyContentCheckedChanged" Margin="5"/>
+                    </HorizontalStackLayout>
+
+                    <HorizontalStackLayout Spacing="5">
+                        <Label FontSize="15" Text="No display decorations" VerticalTextAlignment="Center"/>
+                    <CheckBox x:Name="NoVdSystemDecorations" CheckedChanged="OnNoVdSystemDecorationsCheckedChanged" Margin="5"/>
+                    </HorizontalStackLayout>
+
+                    <!-- DPI Input -->
+                    <HorizontalStackLayout Spacing="5">
+                        <Label FontSize="15" Text="DPI" VerticalTextAlignment="Center" />
+                    <Entry x:Name="DpiEntry" TextChanged="OnDpiTextChanged" Keyboard="Numeric" Margin="5"/>
+                    </HorizontalStackLayout>
+                </FlexLayout>
+            </Border>
+
+            <!-- Label FontSize="15"and Checkbox -->
+            <FlexLayout Grid.RowSpan="2" 
+                BackgroundColor="#1f1f1f"
+                VerticalOptions="Start"
+                HorizontalOptions="Center"
+                ZIndex="1"
+                TranslationY="-15">
+                <Label 
+                   FontSize="22" Text="Virtual Display"
+                    TextColor="{StaticResource Purple2}"
+                   FontAttributes="Bold"
+                   Padding="10,0"
+                   VerticalOptions="Center"
+                   HorizontalOptions="Center"/>
+            </FlexLayout>
+        </Grid>
+</ContentView>
