@@ -11,7 +11,10 @@ With Scrcpy-GUI, you can:
     Choose a package from the installed application in your Android device
 
     Launch apps directly in Virtual Displays
-
+    
+<img src="https://github.com/user-attachments/assets/0f4cda01-737a-4c45-b961-559624cbd918" alt="Scrcpy Gui Daij VD 1920x1080" width="500"/>
+<img src="https://github.com/user-attachments/assets/3aca4438-7021-47e9-8733-cdddab9cb2b6" alt="Favorites page"  width="500"/>
+<img src="https://github.com/user-attachments/assets/3dc7fb90-97c7-4db8-a4c9-90a0bcea4e74" alt="Daij window open"/>
 
 <h2>🛠️ Installation Steps (for windows):</h2>
 
