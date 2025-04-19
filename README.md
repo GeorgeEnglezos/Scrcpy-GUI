@@ -8,7 +8,7 @@ With Scrcpy-GUI, you can:
 
     Easily generate scrcpy command-line arguments
     
-    Choose a package from the installed application in your Android device
+    Choose a package to launch in a virtual display from the installed applications in your Android device
 
     Launch apps directly in Virtual Displays
     
