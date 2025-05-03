@@ -9,7 +9,6 @@ public partial class OutputPanel : ContentView
 {
     private string command = "";
     public event EventHandler<string>? PageRefreshed;
-    private bool multiCastCheck = false;
     const string baseScrcpyCommand = "scrcpy.exe --pause-on-exit=if-error";
 
     // Add a public parameterless constructor
@@ -22,6 +21,12 @@ public partial class OutputPanel : ContentView
         command = baseScrcpyCommand;
     }
 
+    // Existing constructor with SettingsParentPanel parameter
+    public OutputPanel(OptionsPanel settingsParentPanel) : this()
+    {
+        SetOptionsPanelReferenceFromMainPage(settingsParentPanel);
+    }
+
     private void OnRefreshPage(object? sender, string e)
     {
         PageRefreshed?.Invoke(this, e);
@@ -32,18 +37,11 @@ public partial class OutputPanel : ContentView
         base.OnBindingContextChanged();
     }
 
-    // Existing constructor with SettingsParentPanel parameter
-    public OutputPanel(SettingsParentPanel settingsParentPanel) : this()
-    {
-        SetSettingsParentPanel(settingsParentPanel);
-    }
 
     // Method to set the SettingsParentPanel instance and subscribe to its event
-    public void SetSettingsParentPanel(SettingsParentPanel settingsParentPanel)
+    public void SetOptionsPanelReferenceFromMainPage(OptionsPanel optionsPanel)
     {
-        Debug.WriteLine($"subscribed");
-
-        settingsParentPanel.ScrcpyCommandChanged += OnScrcpyCommandChanged;
+        optionsPanel.ScrcpyCommandChanged += OnScrcpyCommandChanged;
     }
 
     private void OnScrcpyCommandChanged(object? sender, string e)
@@ -58,12 +56,28 @@ public partial class OutputPanel : ContentView
         }
     }
 
-    private void OnRunGeneratedCommand(object sender, EventArgs e)
+    private async void OnRunGeneratedCommand(object sender, EventArgs e)
     {
-        if (multiCastCheck) AdbCmdService.RunAdbCommandAsync(null, AdbCmdService.CommandEnum.RunScrcpy, command);
-        else AdbOutputLabel.Text = AdbCmdService.RunAdbCommand(null, AdbCmdService.CommandEnum.RunScrcpy, command).Output;
-        DataStorage.SaveMostRecentCommand(command);
+        try
+        {
+            // Await the async method to get the result
+            var result = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.RunScrcpy, command);
+
+            // Access the response values
+            AdbOutputLabel.Text = string.IsNullOrEmpty(result.RawError)
+                ? $"Output:\n{result.Output}"
+                : $"Error:\n{result.RawError}";
+
+            // Save the most recent command
+            DataStorage.SaveMostRecentCommand(command);
+        }
+        catch (Exception ex)
+        {
+            // Handle any exception that occurred during the command execution
+            AdbOutputLabel.Text = $"Exception:\n{ex.Message}";
+        }
     }
+
 
     private async void OnLabelTapped(object sender, TappedEventArgs e)
     {
@@ -96,14 +110,7 @@ public partial class OutputPanel : ContentView
     {
         // Append the new command to the existing data
         DataStorage.AppendCommand(command);
-        Application.Current.MainPage.DisplayAlert("Command saved", "View the saved commands in the 'Commands Page'!", "OK");
-    }
-
-    private void OnAllowMultipleCastsChanged(object sender, CheckedChangedEventArgs e)
-    {
-        multiCastCheck = e.Value;
-        if (multiCastCheck) AdbOutputLabel.Text = "When using multiple windows, you can't see the command output here!";
-        else AdbOutputLabel.Text = "Command Output";
+        Application.Current.MainPage.DisplayAlert("Command saved", "View the saved commands in the 'Favorites Page'!", "OK");
     }
 
 }

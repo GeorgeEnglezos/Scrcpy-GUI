@@ -3,9 +3,10 @@ using System.Diagnostics;
 
 namespace ScrcpyGUI.Controls;
 
-public partial class SettingsParentPanel : ContentView
+public partial class OptionsPanel : ContentView
 {
     public event EventHandler<string> ScrcpyCommandChanged;
+    public event EventHandler PageRefreshed;
 
     const string baseScrcpyCommand = "scrcpy.exe --pause-on-exit=if-error";
     private string settingSelectedPackage = "";
@@ -14,7 +15,7 @@ public partial class SettingsParentPanel : ContentView
     private string virtualDisplayCommandPart;
     private string audioCommandPart;
 
-    public SettingsParentPanel()
+    public OptionsPanel()
     {
         InitializeComponent();
 
@@ -24,9 +25,17 @@ public partial class SettingsParentPanel : ContentView
         OptionsGeneralPanel.GeneralOptionsChanged += OnGeneralOptionsChanged;
         OptionsVirtualDisplayPanel.VirtualDisplaySettingsChanged += OnVirtualDisplaySettingsChanged;
         OptionsAudioPanel.AudioSettingsChanged += OnAudioSettingsChanged;
+    }
 
+    public void SetOutputPanelReferenceFromMainPage(OutputPanel outputpanel)
+    {
+        outputpanel.PageRefreshed += OnRefreshPage;
+    }
 
-
+    private void OnRefreshPage(object? sender, string e)
+    {
+        PageRefreshed?.Invoke(this, EventArgs.Empty);
+        OptionsPackageSelectionPanel.LoadPackages();
     }
 
     private void OnAudioSettingsChanged(object? sender, string e)

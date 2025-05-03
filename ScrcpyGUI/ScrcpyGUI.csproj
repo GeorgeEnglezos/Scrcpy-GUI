@@ -83,20 +83,29 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Controls\ChecksPanel.xaml.cs">
+	  <Compile Update="Controls\OutputChildren\ChecksPanel.xaml.cs">
 	    <DependentUpon>ChecksPanel.xaml</DependentUpon>
 	  </Compile>
-	  <Compile Update="Controls\OptionsAudioPanel.xaml.cs">
-	    <DependentUpon>OptionsAudioPanel.xaml</DependentUpon>
+	  <Compile Update="Controls\SettingsPanelChildren\AudioPanel.xaml.cs">
+	    <DependentUpon>AudioPanel.xaml</DependentUpon>
 	  </Compile>
 	  <Compile Update="Controls\OutputPanel.xaml.cs">
 	    <DependentUpon>OutputPanel.xaml</DependentUpon>
 	  </Compile>
-	  <Compile Update="Controls\SettingsParentPanel.xaml.cs">
-	    <DependentUpon>SettingsParentPanel.xaml</DependentUpon>
+	  <Compile Update="Controls\SettingsPanelChildren\GeneralPanel.xaml.cs">
+	    <DependentUpon>GeneralPanel.xaml</DependentUpon>
 	  </Compile>
-	  <Compile Update="Controls\OptionsVirtualDisplayPanel.xaml.cs">
-	    <DependentUpon>OptionsVirtualDisplayPanel.xaml</DependentUpon>
+	  <Compile Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml.cs">
+	    <DependentUpon>ScreenRecordingPanel.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Controls\SettingsPanelChildren\PackageSelectionPanel.xaml.cs">
+	    <DependentUpon>PackageSelectionPanel.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Controls\OptionsPanel.xaml.cs">
+	    <DependentUpon>OptionsPanel.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml.cs">
+	    <DependentUpon>VirtualDisplayPanel.xaml</DependentUpon>
 	  </Compile>
 	  <Compile Update="Pages\InfoPage.xaml.cs">
 	    <DependentUpon>InfoPage.xaml</DependentUpon>
@@ -104,28 +113,28 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiXaml Update="Controls\ChecksPanel.xaml">
+	  <MauiXaml Update="Controls\OutputChildren\ChecksPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Controls\OptionsAudioPanel.xaml">
+	  <MauiXaml Update="Controls\SettingsPanelChildren\AudioPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Controls\OutputPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Controls\SettingsParentPanel.xaml">
+	  <MauiXaml Update="Controls\OptionsPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Controls\OptionsVirtualDisplayPanel.xaml">
+	  <MauiXaml Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Controls\OptionsGeneralPanel.xaml">
+	  <MauiXaml Update="Controls\SettingsPanelChildren\GeneralPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Controls\OptionsPackageSelectionPanel.xaml">
+	  <MauiXaml Update="Controls\SettingsPanelChildren\PackageSelectionPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Controls\OptionsScreenRecordingPanel.xaml">
+	  <MauiXaml Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Pages\InfoPage.xaml">

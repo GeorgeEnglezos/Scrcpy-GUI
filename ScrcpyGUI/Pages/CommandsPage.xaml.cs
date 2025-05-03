@@ -57,13 +57,13 @@ namespace ScrcpyGUI
         {
             if (sender is VisualElement element && element.BindingContext is string text)
             {
-                await Task.Run(() => AdbCmdService.RunAdbCommandAsync(null, AdbCmdService.CommandEnum.RunScrcpy, text));
+                await Task.Run(() => AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.RunScrcpy, text));
             }
         }
 
         private async void OnRecentCommandTapped(object sender, EventArgs e)
         {
-            await AdbCmdService.RunAdbCommandAsync(null, AdbCmdService.CommandEnum.RunScrcpy, MostRecentCommand.Text);
+            await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.RunScrcpy, MostRecentCommand.Text);
         }
 
 

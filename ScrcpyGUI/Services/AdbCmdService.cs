@@ -1,4 +1,5 @@
-﻿using ScrcpyGUI.Models;
+﻿using Microsoft.Maui.Controls.Internals;
+using ScrcpyGUI.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,152 +23,125 @@ public static class AdbCmdService
     }
 
 
-    public static CmdCommandResponse RunAdbCommand(string? scrcpyPath, CommandEnum commandType, string? command)
+    public static List<string> OutputHistory = new();  // Global list to track all outputs
+    public static List<string> ErrorHistory = new();   // Global list to track all error outputs
+
+    public static async Task<CmdCommandResponse> RunAdbCommandAsync(CommandEnum commandType, string? command)
     {
         var response = new CmdCommandResponse();
 
         try
         {
-            Process process = new Process();
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.WindowStyle = ProcessWindowStyle.Normal;
-            startInfo.FileName = "cmd.exe";
-
-            // Specify the path to the folder containing adb.exe
-            //string adbFilePath = Path.Combine(string.IsNullOrEmpty(scrcpyPath) ? "" : scrcpyPathTemp, command);  // Full path to scrcpy.exe
-            if(commandType == CommandEnum.RunScrcpy) Preferences.Set("lastCommand", command);
-
-            //startInfo.WorkingDirectory = string.IsNullOrEmpty(scrcpyPath) ? scrcpyPathTemp : scrcpyPathTemp; // Set the working directory
-            //startInfo.Arguments = $"/c \"{adbFilePath}\""; // Use full path in arguments
-            startInfo.Arguments = $"/c \"{command}\""; // Use full path in arguments
-            startInfo.UseShellExecute = false;
-            startInfo.RedirectStandardOutput = true;
-            startInfo.RedirectStandardError = true;
-            startInfo.CreateNoWindow = true;
-
-            process.StartInfo = startInfo;
-            process.Start();
-
-            Debug.WriteLine($"Process started with ID: {process.Id}");
-
-            string output = process.StandardOutput.ReadToEnd();
-            string errorOutput = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            Debug.WriteLine($"Exit Code: {process.ExitCode}");
-
-            if (!string.IsNullOrEmpty(errorOutput))
-            {
-                Debug.WriteLine($"Error Output: {errorOutput}");
-                response.Output = errorOutput;
-                return response;
-
-            }
-            //Debug.WriteLine($"Standard Output: {output}");
-            response.Output = output;
-            return response;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Exception: {ex.Message}");
-            response.Output = $"Error: {ex.Message}";
-            return response;
-        }
-    }
-
-    public static async Task<CmdCommandResponse> RunAdbCommandAsync(string? scrcpyPath, CommandEnum commandType, string? command)
-    {
-        var response = new CmdCommandResponse();
-
-        try
-        {
-            Process process = new Process();
+            // Set up the process information for cmd.exe
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                WindowStyle = ProcessWindowStyle.Normal,
                 FileName = "cmd.exe",
-                Arguments = $"/c \"{command}\"",
+                Arguments = $"/c \"{command}\"",  // Command to run
+                WindowStyle = ProcessWindowStyle.Normal,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = true
+                CreateNoWindow = true  // Hide the command window
             };
 
+            // Store the last command if it's of the RunScrcpy type
             if (commandType == CommandEnum.RunScrcpy)
+            {
                 Preferences.Set("lastCommand", command);
+            }
 
-            process.StartInfo = startInfo;
-
+            // Prepare to capture output and error streams asynchronously
             var outputBuilder = new StringBuilder();
             var errorBuilder = new StringBuilder();
+
+            // Process event handlers for async reading output and error streams
+            Process process = new Process { StartInfo = startInfo };
 
             process.OutputDataReceived += (sender, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
+                {
                     outputBuilder.AppendLine(e.Data);
+                }
             };
 
             process.ErrorDataReceived += (sender, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
+                {
                     errorBuilder.AppendLine(e.Data);
+                }
             };
 
+            // Run the process in the background (non-blocking)
             await Task.Run(() =>
             {
                 process.Start();
                 Debug.WriteLine($"Process started with ID: {process.Id}");
 
+                // Begin asynchronous read of the output and error streams
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
+                // Wait for the process to exit
                 process.WaitForExit();
             });
 
+            // Log the process exit code
             Debug.WriteLine($"Exit Code: {process.ExitCode}");
 
+            // Capture the output and error from the StringBuilder objects
             var output = outputBuilder.ToString();
             var errorOutput = errorBuilder.ToString();
 
-            if (!string.IsNullOrEmpty(errorOutput))
+            // Store all outputs in the global lists for history tracking
+            if (!string.IsNullOrEmpty(output))
             {
-                Debug.WriteLine($"Error Output: {errorOutput}");
-                response.Output = errorOutput;
-                return response;
+                OutputHistory.Add(output);  // Keep all outputs
             }
 
-            response.Output = output;
+            if (!string.IsNullOrEmpty(errorOutput))
+            {
+                ErrorHistory.Add(errorOutput);  // Keep all error outputs
+            }
+
+            // Determine what to set as the response output
+            response.RawOutput = output;
+            response.RawError = errorOutput;
+            response.Output = string.IsNullOrEmpty(errorOutput) ? output : errorOutput;
+
+            // Return the response containing the output or error
             return response;
         }
         catch (Exception ex)
         {
+            // Catch any exceptions and log them
             Debug.WriteLine($"Exception: {ex.Message}");
             response.Output = $"Error: {ex.Message}";
             return response;
         }
     }
 
-
-
-
-    public static bool CheckIfAdbIsInstalled()
+    public static async Task<bool> CheckIfAdbIsInstalled()
     {
-        var result = RunAdbCommand(null, CommandEnum.RunScrcpy, "adb version");
+        var result = await RunAdbCommandAsync(CommandEnum.RunScrcpy, "adb version");
         return result.Output.Contains("Android Debug Bridge");
     }
 
-    public static bool CheckIfScrcpyIsInstalled()
+
+    public async static Task<bool> CheckIfScrcpyIsInstalled()
     {
-        var result = RunAdbCommand(null, CommandEnum.RunScrcpy, "scrcpy --version");
+        var result = await RunAdbCommandAsync( CommandEnum.RunScrcpy, "scrcpy --version");
         return result.Output.Contains("scrcpy");
     }
 
-    public static bool CheckIfDeviceIsConnected()
+    public static async Task<bool> CheckIfDeviceIsConnected()
     {
-        var result = RunAdbCommand(null, CommandEnum.RunScrcpy, "adb devices");
+        var result = await RunAdbCommandAsync(CommandEnum.RunScrcpy, "adb devices");
         var lines = result.Output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
         // Skip the first line ("List of devices attached") and check if any subsequent line contains "device"
         return lines.Skip(1).Any(line => line.Contains("\tdevice"));
     }
+
 }

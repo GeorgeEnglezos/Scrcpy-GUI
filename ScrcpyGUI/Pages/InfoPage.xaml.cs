@@ -47,27 +47,27 @@ namespace ScrcpyGUI
             CheckScrcpyInstallation();
             CheckDeviceConnection();
         }
-
-        private void CheckAdbInstallation()
+        private async Task CheckAdbInstallation()
         {
-            bool isAdbInstalled = AdbCmdService.CheckIfAdbIsInstalled();
+            bool isAdbInstalled = await AdbCmdService.CheckIfAdbIsInstalled();
             AdbStatusLabel.Text = isAdbInstalled ? "Yes" : "No";
             AdbStatusColor = isAdbInstalled ? "Green" : "Red";
         }
 
-        private void CheckScrcpyInstallation()
+        private async Task CheckScrcpyInstallation()
         {
-            bool isScrcpyInstalled = AdbCmdService.CheckIfScrcpyIsInstalled();
+            bool isScrcpyInstalled = await AdbCmdService.CheckIfScrcpyIsInstalled();
             ScrcpyStatusLabel.Text = isScrcpyInstalled ? "Yes" : "No";
             ScrcpyStatusColor = isScrcpyInstalled ? "Green" : "Red";
         }
 
-        private void CheckDeviceConnection()
+        private async Task CheckDeviceConnection()
         {
-            bool isDeviceConnected = AdbCmdService.CheckIfDeviceIsConnected();
+            bool isDeviceConnected = await AdbCmdService.CheckIfDeviceIsConnected();
             DeviceStatusLabel.Text = isDeviceConnected ? "Yes" : "No";
             DeviceStatusColor = isDeviceConnected ? "Green" : "Red";
         }
+
 
         public event PropertyChangedEventHandler PropertyChanged;
 

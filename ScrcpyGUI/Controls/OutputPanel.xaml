@@ -36,10 +36,10 @@
                                                HorizontalOptions="Fill" 
                                                Margin="0,20, 0, 0"/>
 
-                <HorizontalStackLayout Spacing="5" Grid.Row="1" Grid.ColumnSpan="3" ToolTipProperties.Text="Use Virtual Display" HorizontalOptions="Center" VerticalOptions="Center">
+                <!--<HorizontalStackLayout Spacing="5" Grid.Row="1" Grid.ColumnSpan="3" ToolTipProperties.Text="Use Virtual Display" HorizontalOptions="Center" VerticalOptions="Center">
                     <Label Text="Allow multiple windows!" FontAttributes="Bold" FontSize="20" VerticalTextAlignment="Center" TextColor="WhiteSmoke"/>
                     <CheckBox x:Name="MultiCastCheck" CheckedChanged="OnAllowMultipleCastsChanged"  Margin="5" Color="WhiteSmoke"/>
-                </HorizontalStackLayout>
+                </HorizontalStackLayout>-->
 
 
 

@@ -1,14 +1,22 @@
 using System.Data;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace ScrcpyGUI.Controls
 {
     public partial class OptionsPackageSelectionPanel : ContentView
     {
         public event EventHandler<string> PackageSelected;
-        private string settingSelectedPackage = "";
         public List<string> packageList { get; set; } = new List<string>(); // Initialize packageList
 
+        private string _packageTextColor = "Black";
+        public string PackageTextColor
+        {
+            get => _packageTextColor;
+            set { _packageTextColor = value; OnPropertyChanged(); }
+        }
+
+        private string settingSelectedPackage = "";
         public string SettingSelectedPackage
         {
             get => settingSelectedPackage;
@@ -18,7 +26,6 @@ namespace ScrcpyGUI.Controls
                 {
                     settingSelectedPackage = value;
                     PackageSearchEntry.Text = value;
-                    //Debug.WriteLine($"Invoking SettingSelectedPackageChanged with value: {value}");
                 }
             }
         }
@@ -33,17 +40,25 @@ namespace ScrcpyGUI.Controls
         {
             InitializeComponent();
             LoadPackages();
+            BindingContext = this;
         }
 
-        private void LoadPackages()
+        public async Task LoadPackages()
         {
-            string packageListOutput = AdbCmdService.RunAdbCommand(null, AdbCmdService.CommandEnum.GetPackages, AdbCmdService.installedPackagesCommand).Output;
-            if (string.IsNullOrEmpty(packageListOutput))
+            var result = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.GetPackages, AdbCmdService.installedPackagesCommand);
+            string packageListOutput = result.Output;
+            if (string.IsNullOrEmpty(packageListOutput) || packageListOutput.Contains("no devices/emulators found"))
             {
+                PackageSearchEntry.IsEnabled = false;
+                PackageTextColor = "Grey";
                 return;
             }
-
-            packageList = FormatPackageList(packageListOutput) ?? new List<string>(); // Ensure packageList is not null
+            else
+            {
+                PackageSearchEntry.IsEnabled = true;
+                PackageTextColor = "#7b63b2";
+            }
+            packageList = FormatPackageList(packageListOutput) ?? new List<string>();
         }
 
         private List<string> FormatPackageList(string packageResponse)
@@ -67,10 +82,11 @@ namespace ScrcpyGUI.Controls
             string searchText = e.NewTextValue?.ToLower();
 
             if (string.IsNullOrEmpty(searchText) || settingSelectedPackage == searchText)
-            {
-                PackageSuggestionsCollectionView.IsVisible = false;
-                return;
-            }
+                for (int i = 0; i < 5; i++)
+                {
+                    PackageSuggestionsCollectionView.IsVisible = false;
+                    return;
+                }
 
             var suggestions = packageList.Where(p => p.ToLower().Contains(searchText)).ToList();
 
@@ -81,6 +97,7 @@ namespace ScrcpyGUI.Controls
             }
             else
             {
+                PackageSuggestionsCollectionView.ItemsSource = null;
                 PackageSuggestionsCollectionView.IsVisible = false;
             }
         }
@@ -95,6 +112,21 @@ namespace ScrcpyGUI.Controls
                 // Trigger the event
                 PackageSelected?.Invoke(this, selectedPackage);
             }
+        }
+
+        public void CleanPackageSelection(object sender, EventArgs e)
+        {
+            // Reset the Entry
+            PackageSearchEntry.Text = string.Empty;
+
+            // Reset the CollectionView
+            PackageSuggestionsCollectionView.ItemsSource = null;
+            PackageSuggestionsCollectionView.SelectedItem = null; // Clear the selected item
+            PackageSuggestionsCollectionView.IsVisible = false;
+            PackageSelected?.Invoke(this, "");
+        }
+        public void RefreshPackages(object sender, EventArgs e) {
+            LoadPackages();
         }
     }
 }

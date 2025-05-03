@@ -13,15 +13,16 @@ namespace ScrcpyGUI
             InitializeComponent();
 
             // Explicitly set the SettingsParentPanel for the OutputPanel
-            OutputPanel.SetSettingsParentPanel(SettingsParentPanel);
-
+            OutputPanel.SetOptionsPanelReferenceFromMainPage(OptionsPanel);
+            OptionsPanel.SetOutputPanelReferenceFromMainPage(OutputPanel);
             OutputPanel.PageRefreshed += OnRefreshPage;
         }
 
+        public event EventHandler AppRefreshed;
+
         private async void OnRefreshPage(object? sender, string e)
         {
-            //await DisplayAlert("Error", e, "OK");
-            ReloadPage();
+            AppRefreshed?.Invoke(this, EventArgs.Empty);
         }
 
         private void OnSizeChanged(object sender, EventArgs e)
@@ -34,8 +35,8 @@ namespace ScrcpyGUI
                 MainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                 MainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Star });
 
-                Grid.SetColumn(SettingsParentPanel, 0);
-                Grid.SetRow(SettingsParentPanel, 0);
+                Grid.SetColumn(OptionsPanel, 0);
+                Grid.SetRow(OptionsPanel, 0);
 
                 Grid.SetColumn(OutputPanel, 0);
                 Grid.SetRow(OutputPanel, 1); // Assign OutputPanel to the second row
@@ -48,8 +49,8 @@ namespace ScrcpyGUI
                 MainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
                 MainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
 
-                Grid.SetColumn(SettingsParentPanel, 0);
-                Grid.SetRow(SettingsParentPanel, 0);
+                Grid.SetColumn(OptionsPanel, 0);
+                Grid.SetRow(OptionsPanel, 0);
 
                 Grid.SetColumn(OutputPanel, 1);
                 Grid.SetRow(OutputPanel, 0); // Assign OutputPanel to the first row
@@ -57,8 +58,8 @@ namespace ScrcpyGUI
         }
 
         public async void ReloadPage() {
-            await Navigation.PushAsync(new MainPage());
-            Navigation.RemovePage(this);
+            //await Navigation.PushAsync(new MainPage());
+            //Navigation.RemovePage(this);
         }
     }
 }
