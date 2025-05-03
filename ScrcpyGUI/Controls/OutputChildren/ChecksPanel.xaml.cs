@@ -55,9 +55,9 @@ namespace ScrcpyGUI.Controls
 
         private async void PerformInitialChecks()
         {
-            bool isAdbInstalled = CheckAdbInstallation();
-            bool isScrcpyInstalled = CheckScrcpyInstallation();
-            bool isDeviceConnected = CheckDeviceConnection();
+            bool isAdbInstalled = await CheckAdbInstallation();
+            bool isScrcpyInstalled = await CheckScrcpyInstallation();
+            bool isDeviceConnected = await CheckDeviceConnection();
             var finalMessage = "";
 
             if (!isAdbInstalled)
@@ -78,25 +78,26 @@ namespace ScrcpyGUI.Controls
 
         }
 
-        private bool CheckAdbInstallation()
+        private async Task<bool> CheckAdbInstallation()
         {
-            bool isAdbInstalled = AdbCmdService.CheckIfAdbIsInstalled();
+            bool isAdbInstalled = await AdbCmdService.CheckIfAdbIsInstalled();
             AdbStatusLabel.Text = isAdbInstalled ? "Yes" : "No";
             AdbStatusColor = isAdbInstalled ? "Green" : "Red";
             return isAdbInstalled;
         }
 
-        private bool CheckScrcpyInstallation()
+
+        private async Task<bool> CheckScrcpyInstallation()
         {
-            bool isScrcpyInstalled = AdbCmdService.CheckIfScrcpyIsInstalled();
+            bool isScrcpyInstalled = await AdbCmdService.CheckIfScrcpyIsInstalled();
             ScrcpyStatusLabel.Text = isScrcpyInstalled ? "Yes" : "No";
             ScrcpyStatusColor = isScrcpyInstalled ? "Green" : "Red";
             return isScrcpyInstalled;
         }
 
-        private bool CheckDeviceConnection()
+        private async Task<bool> CheckDeviceConnection()
         {
-            bool isDeviceConnected = AdbCmdService.CheckIfDeviceIsConnected();
+            bool isDeviceConnected = await AdbCmdService.CheckIfDeviceIsConnected();
             DeviceStatusLabel.Text = isDeviceConnected ? "Yes" : "No";
             DeviceStatusColor = isDeviceConnected ? "Green" : "Red";
             return isDeviceConnected;

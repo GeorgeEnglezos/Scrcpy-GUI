@@ -32,7 +32,7 @@
             </FlexLayout>
 
                 
-                <Button Text="Refresh APP" Clicked="OnRefreshStatusClicked" MaximumWidthRequest="140" Margin="0, 15, 0, 10"/>
+                <Button Text="Status Check" Clicked="OnRefreshStatusClicked" MaximumWidthRequest="140" Margin="0, 15, 0, 10"/>
                 <!--<ImageButton Grid.Row="2" Grid.Column="1" ToolTipProperties.Text="Run Command"
                     x:Name="Refresh"
                     Clicked="OnRefreshStatusClicked"
