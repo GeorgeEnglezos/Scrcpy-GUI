@@ -59,14 +59,28 @@
                 VerticalOptions="Start"
                 HorizontalOptions="Center"
                 ZIndex="1"
-                TranslationY="-15">
+                TranslationY="-25">
                 <Label 
                    FontSize="22" Text="Virtual Display"
-                    TextColor="{StaticResource Purple2}"
+                   TextColor="{StaticResource Purple2}"
                    FontAttributes="Bold"
-                   Padding="10,0"
+                   Padding="10,0,0,0"
                    VerticalOptions="Center"
                    HorizontalOptions="Center"/>
-            </FlexLayout>
+                <ImageButton
+                    ToolTipProperties.Text="Clear Settings"
+                    Clicked="CleanSettings"
+                    HeightRequest="50"
+                    WidthRequest="50"
+                    BackgroundColor="Transparent"
+                    Margin="0"
+                    Padding="0"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center">
+                <ImageButton.Source>
+                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Purple1}" Size="20"/>
+                </ImageButton.Source>
+            </ImageButton>
+        </FlexLayout>
         </Grid>
 </ContentView>

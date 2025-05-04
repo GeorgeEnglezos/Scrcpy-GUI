@@ -82,23 +82,6 @@ namespace ScrcpyGUI.Models
     
     public class VirtualDisplayOptions
     {
-        private static VirtualDisplayOptions? _instance;
-        private static readonly object _lock = new object();
-
-        public static VirtualDisplayOptions Instance
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    if (_instance == null)
-                    {
-                        _instance = new VirtualDisplayOptions();
-                    }
-                    return _instance;
-                }
-            }
-        }
 
         public bool NewDisplay { get; set; }
         public string Resolution { get; set; }
@@ -106,7 +89,7 @@ namespace ScrcpyGUI.Models
         public bool NoVdSystemDecorations { get; set; }
         public string Dpi { get; set; }
 
-        private VirtualDisplayOptions()
+        public VirtualDisplayOptions()
         {
             NewDisplay = false;
             Resolution = "";
