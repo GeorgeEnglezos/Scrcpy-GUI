@@ -7,7 +7,8 @@ namespace ScrcpyGUI.Controls
     public partial class OptionsPackageSelectionPanel : ContentView
     {
         public event EventHandler<string> PackageSelected;
-        public List<string> packageList { get; set; } = new List<string>(); // Initialize packageList
+        public List<string> installedPackageList { get; set; } = new List<string>(); // Initialize packageList
+        public List<string> allPackageList { get; set; } = new List<string>(); // Initialize packageList
 
         private string _packageTextColor = "Black";
         public string PackageTextColor
@@ -30,10 +31,16 @@ namespace ScrcpyGUI.Controls
             }
         }
 
-        public List<string> PackageList
+        public List<string> InstalledPackageList
         {
-            get => packageList;
-            set => packageList = value;
+            get => installedPackageList;
+            set => installedPackageList = value;
+        }
+        
+        public List<string> AllPackageList
+        {
+            get => allPackageList;
+            set => allPackageList = value;
         }
 
         public OptionsPackageSelectionPanel()
@@ -45,9 +52,12 @@ namespace ScrcpyGUI.Controls
 
         public async Task LoadPackages()
         {
-            var result = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.GetPackages, AdbCmdService.installedPackagesCommand);
-            string packageListOutput = result.Output;
-            if (string.IsNullOrEmpty(packageListOutput) || packageListOutput.Contains("no devices/emulators found"))
+            var allPackagesResult = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.GetPackages, AdbCmdService.allPackagesCommand);
+            var installedPackagesResult = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.GetPackages, AdbCmdService.installedPackagesCommand);
+            bool installedPackagesFound = installedPackagesResult.Output != null && installedPackagesResult.Output.Length > 0 && !installedPackagesResult.Output.Contains("no devices/emulators found");
+            bool allPackagesFound = allPackagesResult.Output != null && allPackagesResult.Output.Length > 0 && !allPackagesResult.Output.Contains("no devices/emulators found");
+            
+            if (!installedPackagesFound || !allPackagesFound)
             {
                 PackageSearchEntry.IsEnabled = false;
                 PackageTextColor = "Grey";
@@ -58,7 +68,8 @@ namespace ScrcpyGUI.Controls
                 PackageSearchEntry.IsEnabled = true;
                 PackageTextColor = "#7b63b2";
             }
-            packageList = FormatPackageList(packageListOutput) ?? new List<string>();
+            installedPackageList = FormatPackageList(installedPackagesResult.Output) ?? new List<string>();
+            allPackageList = FormatPackageList(allPackagesResult.Output) ?? new List<string>();
         }
 
         private List<string> FormatPackageList(string packageResponse)
@@ -77,6 +88,13 @@ namespace ScrcpyGUI.Controls
             return packageNames;
         }
 
+        private void SystemAppsCheckbox_CheckedChanged(object sender, CheckedChangedEventArgs e)
+        {
+            // Simulate TextChanged event
+            var text = PackageSearchEntry.Text;
+            PackageSearchEntry_TextChanged(PackageSearchEntry, new TextChangedEventArgs(text, text));
+        }
+
         private void PackageSearchEntry_TextChanged(object sender, TextChangedEventArgs e)
         {
             string searchText = e.NewTextValue?.ToLower();
@@ -88,7 +106,11 @@ namespace ScrcpyGUI.Controls
                     return;
                 }
 
-            var suggestions = packageList.Where(p => p.ToLower().Contains(searchText)).ToList();
+
+            List<string> suggestions;
+
+            if (SystemAppsCheckbox.IsChecked == true) { suggestions = AllPackageList.Where(p => p.ToLower().Contains(searchText)).ToList(); }
+            else {suggestions = InstalledPackageList.Where(p => p.ToLower().Contains(searchText)).ToList();} 
 
             if (suggestions.Count > 0)
             {
