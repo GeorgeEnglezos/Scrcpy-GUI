@@ -10,9 +10,9 @@ public partial class OptionsGeneralPanel : ContentView
     private GeneralCastOptions generalSettings = GeneralCastOptions.Instance;
 
     public OptionsGeneralPanel()
-	{
-		InitializeComponent();
-	}
+    {
+        InitializeComponent();
+    }
 
     private void OnFullscreenCheckedChanged(object sender, CheckedChangedEventArgs e)
     {
@@ -20,11 +20,6 @@ public partial class OptionsGeneralPanel : ContentView
         OnWindowsCastSettings_Changed();
     }
 
-    //private void OnSoundCheckedChanged(object sender, CheckedChangedEventArgs e)
-    //{
-    //    generalSettings.StreamSound = e.Value;
-    //    OnWindowsCastSettings_Changed();
-    //}
     private void OnScreenOffCheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         generalSettings.TurnScreenOff = e.Value;
@@ -36,13 +31,6 @@ public partial class OptionsGeneralPanel : ContentView
         generalSettings.Crop = e.NewTextValue;
         OnWindowsCastSettings_Changed();
     }
-
-    //private void OnShowTapsCheckedChanged(object sender, CheckedChangedEventArgs e)
-    //{
-    //    generalSettings.ShowTaps = e.Value;
-    //    OnWindowsCastSettings_Changed();
-    //}
-
     private void OnVideoOrientationChanged(object sender, EventArgs e)
     {
         if (VideoOrientationPicker.SelectedItem != null)
@@ -76,18 +64,6 @@ public partial class OptionsGeneralPanel : ContentView
         OnWindowsCastSettings_Changed();
     }
 
-    //private void OnWindowPositionEntryTextChanged(object sender, TextChangedEventArgs e)
-    //{
-    //    generalSettings.WindowPosition = e.NewTextValue;
-    //    OnWindowsCastSettings_Changed();
-    //}
-
-    //private void OnWindowSizeEntryTextChanged(object sender, TextChangedEventArgs e)
-    //{
-    //    generalSettings.WindowSize = e.NewTextValue;
-    //    OnWindowsCastSettings_Changed();
-    //}
-
     private void OnDisableScreensaverCheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         generalSettings.DisableScreensaver = e.Value;
@@ -97,5 +73,30 @@ public partial class OptionsGeneralPanel : ContentView
     private void OnWindowsCastSettings_Changed()
     {
         GeneralOptionsChanged?.Invoke(this, generalSettings.GenerateCommandPart());
+    }
+
+    public void CleanSettings(object sender, EventArgs e)
+    {
+        GeneralOptionsChanged?.Invoke(this, "");
+        generalSettings = new GeneralCastOptions();
+        ResetAllControls();
+    }
+
+    private void ResetAllControls()
+    {
+        // Reset CheckBoxes
+        FullscreenCheck.IsChecked = false;
+        TurnScreenOffCheck.IsChecked = false;
+        StayAwakeCheck.IsChecked = false;
+        WindowBorderlessCheck.IsChecked = false;
+        WindowAlwaysOnTopCheck.IsChecked = false;
+        DisableScreensaverCheck.IsChecked = false;
+
+        // Reset Entries
+        CropEntry.Text = string.Empty;
+        WindowTitleEntry.Text = string.Empty;
+
+        // Reset Picker
+        VideoOrientationPicker.SelectedIndex = -1; // This sets it to no selection
     }
 }

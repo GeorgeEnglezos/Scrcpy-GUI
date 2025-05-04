@@ -26,7 +26,7 @@
         HorizontalOptions="End"
         VerticalOptions="Center">
         <ImageButton.Source>
-            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Purple2}" Size="20"/>
+                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Purple1}" Size="20"/>
         </ImageButton.Source>
         </ImageButton>
         
