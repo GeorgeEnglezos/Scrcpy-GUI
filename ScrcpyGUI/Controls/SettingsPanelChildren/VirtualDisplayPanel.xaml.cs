@@ -7,7 +7,7 @@ public partial class OptionsVirtualDisplayPanel : ContentView
 {
 
     public event EventHandler<string> VirtualDisplaySettingsChanged;
-    private VirtualDisplayOptions virtualDisplaySettings = VirtualDisplayOptions.Instance;
+    private VirtualDisplayOptions virtualDisplaySettings = new VirtualDisplayOptions();
 
     public OptionsVirtualDisplayPanel()
     {
@@ -68,4 +68,29 @@ public partial class OptionsVirtualDisplayPanel : ContentView
         virtualDisplaySettings.NoVdSystemDecorations = e.Value;
         OnVirtualDisplaySettings_Changed();
     }
+
+    public void CleanSettings(object sender, EventArgs e)
+    {
+        VirtualDisplaySettingsChanged?.Invoke(this, "");
+        virtualDisplaySettings = new VirtualDisplayOptions();
+        ResetAllControls();
+    }
+
+    private void ResetAllControls()
+    {
+        // Reset CheckBoxes
+        NewDisplay.IsChecked = false;
+        NoVdDestroyContent.IsChecked = false;
+        NoVdSystemDecorations.IsChecked = false;
+
+        // Reset Picker
+        ResolutionPicker.SelectedIndex = -1;
+
+        // Reset Entry
+        DpiEntry.Text = string.Empty;
+
+        // Optionally hide resolution container if logic depends on it
+        ResolutionContainer.IsVisible = false;
+    }
+
 }
