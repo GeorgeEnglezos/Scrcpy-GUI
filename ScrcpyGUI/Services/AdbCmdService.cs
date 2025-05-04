@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 
 public static class AdbCmdService
 {
-    const string fullCommand = "scrcpy.exe --pause-on-exit=if-error --new-display=3840x2160";
+    public const string allPackagesCommand = "adb shell pm list packages";
     public const string installedPackagesCommand = "adb shell pm list packages -3";
-    //public const string scrcpyPathTemp = "C:\\scrcpy-win64-v3.1";
 
     public enum CommandEnum
     {
