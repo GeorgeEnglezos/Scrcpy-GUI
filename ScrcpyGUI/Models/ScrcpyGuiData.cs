@@ -26,23 +26,6 @@ namespace ScrcpyGUI.Models
     }
     public class ScreenRecordingOptions
     {
-        private static ScreenRecordingOptions? _instance;
-        private static readonly object _lock = new object();
-
-        public static ScreenRecordingOptions Instance
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    if (_instance == null)
-                    {
-                        _instance = new ScreenRecordingOptions();
-                    }
-                    return _instance;
-                }
-            }
-        }
 
         public string MaxSize { get; set; }
         public string Bitrate { get; set; }
@@ -50,7 +33,7 @@ namespace ScrcpyGUI.Models
         public string OutputFormat { get; set; }
         public string OutputFile { get; set; }
 
-        private ScreenRecordingOptions()
+        public ScreenRecordingOptions()
         {
             MaxSize = "";
             Bitrate = "";

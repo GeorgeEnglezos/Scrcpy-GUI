@@ -7,7 +7,7 @@ public partial class OptionsScreenRecordingPanel : ContentView
 
         public event EventHandler<string> ScreenRecordingOptionsChanged;
 
-        private ScreenRecordingOptions screenRecordingOptions = ScreenRecordingOptions.Instance;
+        private ScreenRecordingOptions screenRecordingOptions = new ScreenRecordingOptions();
 
         public OptionsScreenRecordingPanel()
         {
@@ -71,5 +71,24 @@ public partial class OptionsScreenRecordingPanel : ContentView
         {
             ScreenRecordingOptionsChanged?.Invoke(this, screenRecordingOptions.GenerateCommandPart());
         }
+
+    public void CleanSettings(object sender, EventArgs e)
+    {
+        ScreenRecordingOptionsChanged?.Invoke(this, "");
+        screenRecordingOptions = new ScreenRecordingOptions();
+        ResetAllControls();
+    }
+
+    private void ResetAllControls()
+    {
+        // Reset Entries
+        ResolutionEntry.Text = string.Empty;
+        BitrateEntry.Text = string.Empty;
+        FramerateEntry.Text = string.Empty;
+        OutputFileEntry.Text = string.Empty;
+
+        // Reset Picker
+        OutputFormatPicker.SelectedIndex = -1;
+    }
 }
 

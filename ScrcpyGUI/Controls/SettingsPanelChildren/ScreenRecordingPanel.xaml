@@ -61,24 +61,38 @@
                 </FlexLayout>
             </Border>
 
-            <!-- Label and Checkbox -->
-            <FlexLayout Grid.RowSpan="2" 
+        <!-- Label and Checkbox -->
+        <FlexLayout Grid.RowSpan="2" 
                     BackgroundColor="#1f1f1f"
                     VerticalOptions="Start"
                     HorizontalOptions="Center"
                     ZIndex="1"
-                    TranslationY="-22">
-                <Label Text="Recording"
-                       TextColor="{StaticResource Purple2}"
-                   FontSize="22"
-                   FontAttributes="Bold"
-                   Padding="10,0"
-                   VerticalOptions="Center"
-                   HorizontalOptions="Center"/>
-                <CheckBox x:Name="EnableRecordingCheckBox" 
-                      CheckedChanged="OnEnableRecordingCheckedChanged" 
-                      VerticalOptions="Center"
-                      HorizontalOptions="Center"/>
-            </FlexLayout>
-        </Grid>
+                    TranslationY="-25">
+            <CheckBox x:Name="EnableRecordingCheckBox" 
+                    CheckedChanged="OnEnableRecordingCheckedChanged" 
+                    VerticalOptions="Center"
+                    HorizontalOptions="Center"
+                    Margin="10,0,0,0"/>
+            <Label Text="Recording"
+                    TextColor="{StaticResource Purple2}"
+                    FontSize="22"
+                    FontAttributes="Bold"
+                    VerticalOptions="Center"
+                    HorizontalOptions="Center"/>
+            <ImageButton
+                ToolTipProperties.Text="Clear Settings"
+                Clicked="CleanSettings"
+                HeightRequest="50"
+                WidthRequest="50"
+                BackgroundColor="Transparent"
+                Margin="0"
+                Padding="0"
+                HorizontalOptions="Center"
+                VerticalOptions="Center">
+                <ImageButton.Source>
+                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Purple1}" Size="20"/>
+                </ImageButton.Source>
+            </ImageButton>
+        </FlexLayout>
+    </Grid>
 </ContentView>
