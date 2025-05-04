@@ -233,11 +233,9 @@ namespace ScrcpyGUI.Models
         public bool StayAwake { get; set; }
         public bool WindowBorderless { get; set; }
         public bool WindowAlwaysOnTop { get; set; }
-        //public string WindowPosition { get; set; }
-        //public string WindowSize { get; set; }
         public bool DisableScreensaver { get; set; }
 
-        private GeneralCastOptions()
+        public GeneralCastOptions()
         {
             Fullscreen = false;
             TurnScreenOff = false;
@@ -247,8 +245,6 @@ namespace ScrcpyGUI.Models
             StayAwake = false;
             WindowBorderless = false;
             WindowAlwaysOnTop = false;
-            //WindowPosition = string.Empty;
-            //WindowSize = string.Empty;
             DisableScreensaver = false;
         }
 
