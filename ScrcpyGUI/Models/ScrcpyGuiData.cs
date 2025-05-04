@@ -148,23 +148,6 @@ namespace ScrcpyGUI.Models
 
     public class AudioOptions
     {
-        private static AudioOptions? _instance;
-        private static readonly object _lock = new object();
-
-        public static AudioOptions Instance
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    if (_instance == null)
-                    {
-                        _instance = new AudioOptions();
-                    }
-                    return _instance;
-                }
-            }
-        }
 
         public string AudioBitRate { get; set; } //64000 or 64K
         public string AudioBuffer { get; set; }
@@ -173,7 +156,7 @@ namespace ScrcpyGUI.Models
         public string AudioCodecOptions { get; set; }
         public string AudioCodec { get; set; }
 
-        private AudioOptions()
+        public AudioOptions()
         {
             AudioBitRate = "";
             AudioBuffer = "";
@@ -207,23 +190,6 @@ namespace ScrcpyGUI.Models
 
     public class GeneralCastOptions
     {
-        private static GeneralCastOptions? _instance;
-        private static readonly object _lock = new object();
-
-        public static GeneralCastOptions Instance
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    if (_instance == null)
-                    {
-                        _instance = new GeneralCastOptions();
-                    }
-                    return _instance;
-                }
-            }
-        }
 
         public bool Fullscreen { get; set; }
         public bool TurnScreenOff { get; set; }

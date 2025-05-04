@@ -7,7 +7,7 @@ public partial class OptionsGeneralPanel : ContentView
 {
 
     public event EventHandler<string> GeneralOptionsChanged;
-    private GeneralCastOptions generalSettings = GeneralCastOptions.Instance;
+    private GeneralCastOptions generalSettings = new GeneralCastOptions();
 
     public OptionsGeneralPanel()
     {
