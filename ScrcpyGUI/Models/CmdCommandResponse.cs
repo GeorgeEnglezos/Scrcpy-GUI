@@ -11,6 +11,7 @@ namespace ScrcpyGUI.Models
         public string Output { get; set; }
         public string RawError { get; set; }
         public string RawOutput { get; set; }
+        public int ExitCode { get; set; }
 
         public CmdCommandResponse()
         {

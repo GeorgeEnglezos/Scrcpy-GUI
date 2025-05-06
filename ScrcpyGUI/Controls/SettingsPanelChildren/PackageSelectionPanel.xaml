@@ -34,26 +34,9 @@
         HorizontalOptions="End"
         VerticalOptions="Center">
         <ImageButton.Source>
-            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Purple1}" Size="20"/>
+                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Buttons}" Size="20"/>
             </ImageButton.Source>
         </ImageButton>
-        
-        <!--<ImageButton
-        ToolTipProperties.Text="Refresh package list"
-        Clicked="RefreshPackages"
-        HeightRequest="30"
-        WidthRequest="30"
-        BackgroundColor="Transparent"
-        Margin="0"
-        Padding="0"
-        Grid.Row="0"
-        Grid.Column="1"
-        HorizontalOptions="End"
-        VerticalOptions="Center">
-        <ImageButton.Source>
-                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf021;" Color="{StaticResource Purple2}" Size="20"/>
-        </ImageButton.Source>
-        </ImageButton>-->
 
         <CollectionView
         x:Name="PackageSuggestionsCollectionView"

@@ -3,8 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="ScrcpyGUI.Controls.WirelessConnectionPanel">
     <!-- Main Grid -->
-    <Grid RowDefinitions="Auto, *">
-
+    <Grid RowDefinitions="Auto, *" Margin="0, 0, 0, 20">
         <!-- Border -->
         <Border Grid.Row="1" Padding="0, 10, 0, 20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
             <VerticalStackLayout HorizontalOptions="Center">
@@ -19,7 +18,7 @@
                             BackgroundColor="Transparent">
 
                             <ImageButton.Source>
-                                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource Purple1}" Size="25"/>
+                            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource Buttons}" Size="25"/>
                             </ImageButton.Source>
                         </ImageButton>
                     </HorizontalStackLayout>
@@ -35,11 +34,13 @@
                             BackgroundColor="Transparent">
 
                             <ImageButton.Source>
-                                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource Purple1}" Size="25"/>
+                            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource Buttons}" Size="25"/>
                             </ImageButton.Source>
                         </ImageButton>
 
                     </HorizontalStackLayout>
+
+                <Button Text="Disable TCP" Clicked="OnResetToUsb" MaximumWidthRequest="140" Margin="0, 15, 0, 10"  BackgroundColor="{StaticResource Buttons}" TextColor="White" FontAttributes="Bold" FontSize="16"/>
 
             </VerticalStackLayout>
         </Border>
