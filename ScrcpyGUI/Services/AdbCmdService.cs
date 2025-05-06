@@ -111,7 +111,8 @@ public static class AdbCmdService
             response.RawError = errorOutput;
             response.Output = string.IsNullOrEmpty(errorOutput) ? output : errorOutput;
 
-            // Return the response containing the output or error
+            response.ExitCode = process.ExitCode;
+
             return response;
         }
         catch (Exception ex)
@@ -126,14 +127,26 @@ public static class AdbCmdService
     public static async Task<bool> CheckIfAdbIsInstalled()
     {
         var result = await RunAdbCommandAsync(CommandEnum.RunScrcpy, "adb version");
-        return result.Output.Contains("Android Debug Bridge");
+        return result.RawOutput.Contains("Android Debug Bridge");
     }
 
 
     public async static Task<bool> CheckIfScrcpyIsInstalled()
     {
-        var result = await RunAdbCommandAsync( CommandEnum.RunScrcpy, "scrcpy --version");
-        return result.Output.Contains("scrcpy");
+        try
+        {
+            // Run scrcpy with no arguments to check if it is installed and accessible.
+            var result = await RunAdbCommandAsync(CommandEnum.RunScrcpy, "scrcpy --version");
+
+            // If the exit code is zero, scrcpy is installed and accessible.
+            return result.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            // Log the exception for debugging if needed.
+            Debug.WriteLine($"Error checking scrcpy installation: {ex.Message}");
+            return false;
+        }
     }
 
     public static async Task<bool> CheckIfDeviceIsConnected()

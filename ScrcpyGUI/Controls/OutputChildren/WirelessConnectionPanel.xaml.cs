@@ -6,12 +6,12 @@ using ScrcpyGUI.Models;
 
 namespace ScrcpyGUI.Controls
 {
-	public partial class WirelessConnectionPanel : ContentView
-	{
-		public WirelessConnectionPanel()
-		{
-			InitializeComponent();
-		}
+    public partial class WirelessConnectionPanel : ContentView
+    {
+        public WirelessConnectionPanel()
+        {
+            InitializeComponent();
+        }
 
         private async void OnRunTCP(object sender, EventArgs e)
         {
@@ -42,5 +42,9 @@ namespace ScrcpyGUI.Controls
             }
         }
 
+        private async void OnResetToUsb(object sender, EventArgs e)
+        {
+            var result = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.Tcp, "adb usb");
+        }
     }
 }

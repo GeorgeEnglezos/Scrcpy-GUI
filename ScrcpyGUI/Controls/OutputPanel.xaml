@@ -62,7 +62,7 @@
                     Margin="5">
                                         
                     <ImageButton.Source>
-                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource Purple1}" Size="50"/>
+                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource Buttons}" Size="50"/>
                     </ImageButton.Source>
                 </ImageButton>
 
@@ -74,7 +74,7 @@
                     BackgroundColor="Transparent"
                     Margin="5">
                     <ImageButton.Source>
-                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf004;" Color="{StaticResource Purple1}" Size="50"/>
+                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf004;" Color="{StaticResource Buttons}" Size="50"/>
                     </ImageButton.Source>
                 </ImageButton>
 

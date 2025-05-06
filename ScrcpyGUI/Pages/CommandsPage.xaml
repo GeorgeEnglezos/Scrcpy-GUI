@@ -42,7 +42,7 @@
                                 WidthRequest="40"
                                 Grid.Column="1">
                             <ImageButton.Source>
-                                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource Purple2}" Size="30"/>
+                                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource Buttons}" Size="30"/>
                             </ImageButton.Source>
                         </ImageButton>
                     </Grid>
@@ -83,7 +83,7 @@
                                                     Grid.Column="1"
                                                     BindingContext="{Binding .}">
                                                 <ImageButton.Source>
-                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource Purple2}" Size="25"/>
+                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource Buttons}" Size="25"/>
                                                 </ImageButton.Source>
                                             </ImageButton>
                                             <ImageButton Margin="10, 0, 10, 0"
@@ -95,7 +95,7 @@
                                                     Grid.Column="2"
                                                     BindingContext="{Binding .}">
                                                 <ImageButton.Source>
-                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf2ed;" Color="{StaticResource Purple2}" Size="25"/>
+                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf2ed;" Color="{StaticResource Buttons}" Size="25"/>
                                                 </ImageButton.Source>
                                             </ImageButton>
                                         </Grid>

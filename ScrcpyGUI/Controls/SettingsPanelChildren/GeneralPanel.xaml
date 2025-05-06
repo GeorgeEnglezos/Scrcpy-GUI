@@ -97,7 +97,7 @@
                     HorizontalOptions="Center"
                     VerticalOptions="Center">
                     <ImageButton.Source>
-                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Purple1}" Size="20"/>
+                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Buttons}" Size="20"/>
                     </ImageButton.Source>
                 </ImageButton>
         </FlexLayout>

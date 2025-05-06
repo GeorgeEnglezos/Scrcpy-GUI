@@ -30,7 +30,7 @@
                         <Label x:Name="DeviceStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding DeviceStatusColor}"  FontAttributes="Bold" FontSize="17"/>
                     </HorizontalStackLayout>
                 </FlexLayout>
-                <Button Text="Status Check" Clicked="OnRefreshStatusClicked" MaximumWidthRequest="140" Margin="0, 15, 0, 10"/>
+                <Button Text="Status Check" Clicked="OnRefreshStatusClicked" MaximumWidthRequest="140" Margin="0, 15, 0, 10" BackgroundColor="{StaticResource Buttons}" TextColor="White" FontAttributes="Bold" FontSize="16"/>
             </VerticalStackLayout>
         </Border>
 
