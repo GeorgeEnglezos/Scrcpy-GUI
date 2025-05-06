@@ -18,7 +18,9 @@ public static class AdbCmdService
         RunScrcpy,
         CheckAdbVersion,
         CheckScrcpyVersion,
-        CheckConnectedDevices
+        CheckConnectedDevices,
+        Tcp,
+        PhoneIp
     }
 
 
@@ -143,4 +145,15 @@ public static class AdbCmdService
         return lines.Skip(1).Any(line => line.Contains("\tdevice"));
     }
 
+    public async static Task<string> RunTCPPort(string port)
+    {
+        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"adb tcpip {port}");
+        return result.Output.ToString();
+    }
+
+    public async static Task<string> RunPhoneIp(string ip)
+    {
+        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"adb connect {ip}");
+        return result.Output.ToString();
+    }
 }

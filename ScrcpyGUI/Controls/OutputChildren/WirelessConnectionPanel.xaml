@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScrcpyGUI.Controls.WirelessConnectionPanel">
+    <!-- Main Grid -->
+    <Grid RowDefinitions="Auto, *">
+
+        <!-- Border -->
+        <Border Grid.Row="1" Padding="0, 10, 0, 20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
+            <VerticalStackLayout HorizontalOptions="Center">
+                    <HorizontalStackLayout Spacing="5" Grid.Row="0">
+                        <Label FontSize="18" Text="Start TCP mode with port:" VerticalOptions="Center" />
+                        <Entry FontSize="18" x:Name="TcpipEntry" Placeholder="TCP Port" Margin="0,5" Text="5555"/>
+                        <ImageButton ToolTipProperties.Text="Start TCP port"
+                            x:Name="RunTCPCommand"
+                            Clicked="OnRunTCP"
+                            HeightRequest="18"
+                            WidthRequest="18"
+                            BackgroundColor="Transparent">
+
+                            <ImageButton.Source>
+                                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource Purple1}" Size="25"/>
+                            </ImageButton.Source>
+                        </ImageButton>
+                    </HorizontalStackLayout>
+
+                    <HorizontalStackLayout Spacing="5" Grid.Row="1">
+                        <Label FontSize="18" Text="Input phone IP:" VerticalOptions="Center" />
+                        <Entry FontSize="18" x:Name="PhoneIpEntry" Placeholder="Phone IP" Margin="5" Text=""/>
+                        <ImageButton ToolTipProperties.Text="Start TCP port"
+                            x:Name="RunPhoneIpCommand"
+                            Clicked="OnRunPhoneIp"
+                            HeightRequest="18"
+                            WidthRequest="18"
+                            BackgroundColor="Transparent">
+
+                            <ImageButton.Source>
+                                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource Purple1}" Size="25"/>
+                            </ImageButton.Source>
+                        </ImageButton>
+
+                    </HorizontalStackLayout>
+
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- Label and Checkbox -->
+        <FlexLayout Grid.RowSpan="2"
+                    BackgroundColor="#1f1f1f"
+                    VerticalOptions="Start"
+                    HorizontalOptions="Center"
+                    ZIndex="1"
+                    TranslationY="-15">
+            <Label Text="Wireless Connection"
+                   TextColor="{StaticResource Purple2}"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   Padding="10, 0"
+                   VerticalOptions="Center"
+                   HorizontalOptions="Center"/>
+        </FlexLayout>
+    </Grid>
+</ContentView>

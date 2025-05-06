@@ -23,7 +23,7 @@
             ZIndex="1"/>
         <!--Stroke="{StaticResource Purple4}"-->
         <Border Padding="20" StrokeThickness="3" Stroke="{StaticResource Purple4}">
-            <Grid RowDefinitions="Auto,Auto, Auto, Auto"
+            <Grid RowDefinitions="Auto,Auto, Auto, Auto, Auto"
                 ColumnDefinitions="*,Auto,Auto"
                 Padding="10"
                 ColumnSpacing="15"   
@@ -36,12 +36,10 @@
                                                HorizontalOptions="Fill" 
                                                Margin="0,20, 0, 0"/>
 
-                <!--<HorizontalStackLayout Spacing="5" Grid.Row="1" Grid.ColumnSpan="3" ToolTipProperties.Text="Use Virtual Display" HorizontalOptions="Center" VerticalOptions="Center">
-                    <Label Text="Allow multiple windows!" FontAttributes="Bold" FontSize="20" VerticalTextAlignment="Center" TextColor="WhiteSmoke"/>
-                    <CheckBox x:Name="MultiCastCheck" CheckedChanged="OnAllowMultipleCastsChanged"  Margin="5" Color="WhiteSmoke"/>
-                </HorizontalStackLayout>-->
-
-
+                <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" 
+                                               Grid.Row="1" Grid.ColumnSpan="3"
+                                               HorizontalOptions="Fill" 
+                                               Margin="0,20, 0, 0"/>
 
                 <Border Stroke="{StaticResource Purple2}" Grid.Row="2" Grid.Column="0" StrokeThickness="2">
                     <Editor x:Name="FinalCommandPreview"
@@ -96,6 +94,8 @@
                         FontSize="16"
                         FontAttributes="Bold"/>
                 </Border>
+
+
 
             </Grid>
         </Border>
