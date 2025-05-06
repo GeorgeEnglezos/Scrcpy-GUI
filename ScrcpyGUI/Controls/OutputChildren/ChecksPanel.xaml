@@ -9,7 +9,7 @@
         <!-- Border -->
         <Border Grid.Row="1" Padding="0, 10, 0, 20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
             <VerticalStackLayout>
-            <FlexLayout x:Name="OptionsContainer" Margin="0, 5, 0, 0"
+                <FlexLayout x:Name="OptionsContainer" Margin="0, 5, 0, 0"
                         Wrap="Wrap"
                         Direction="Row"
                         JustifyContent="Center"
@@ -29,22 +29,8 @@
                         <Label Padding="5" Text="Device Connected: " VerticalTextAlignment="Center"  FontAttributes="Bold" FontSize="17"/>
                         <Label x:Name="DeviceStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding DeviceStatusColor}"  FontAttributes="Bold" FontSize="17"/>
                     </HorizontalStackLayout>
-            </FlexLayout>
-
-                
+                </FlexLayout>
                 <Button Text="Status Check" Clicked="OnRefreshStatusClicked" MaximumWidthRequest="140" Margin="0, 15, 0, 10"/>
-                <!--<ImageButton Grid.Row="2" Grid.Column="1" ToolTipProperties.Text="Run Command"
-                    x:Name="Refresh"
-                    Clicked="OnRefreshStatusClicked"
-                    HeightRequest="50"
-                    WidthRequest="50"
-                    BackgroundColor="Transparent"
-                    Margin="1">
-
-                    <ImageButton.Source>
-                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf021;" Color="{StaticResource Purple2}" Size="50"/>
-                    </ImageButton.Source>
-                </ImageButton>-->
             </VerticalStackLayout>
         </Border>
 

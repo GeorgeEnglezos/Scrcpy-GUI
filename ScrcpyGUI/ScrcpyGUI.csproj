@@ -116,6 +116,9 @@
 	  <MauiXaml Update="Controls\OutputChildren\ChecksPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Controls\OutputChildren\WirelessConnectionPanel.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Controls\SettingsPanelChildren\AudioPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
