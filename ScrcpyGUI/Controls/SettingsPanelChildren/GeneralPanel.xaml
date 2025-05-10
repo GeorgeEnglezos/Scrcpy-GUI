@@ -7,72 +7,85 @@
         <Grid RowDefinitions="Auto, *"  Padding="0, 30">
             <!-- Border -->
         <Border Grid.Row="1" Padding="20, 30" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
-            <FlexLayout x:Name="OptionsContainer" 
-                    Wrap="Wrap" 
-                    Direction="Row" 
-                    JustifyContent="Center"
-                    AlignItems="Center">
-                    
-                <HorizontalStackLayout Spacing="5">
-                    <Label Text="Fullscreen" VerticalTextAlignment="Center" FontSize="16"/>
-                    <CheckBox x:Name="FullscreenCheck" CheckedChanged="OnFullscreenCheckedChanged" Margin="5"/>
+            <FlexLayout x:Name="OptionsContainer"
+                Direction="Row"
+                Wrap="Wrap"
+                JustifyContent="SpaceBetween"
+                AlignItems="Center"
+                AlignContent="Start">
+
+                <!--Row 1-->
+                    <!-- Window Title -->
+                    <HorizontalStackLayout WidthRequest="350" Spacing="10">
+                        <Label Text="Window Title" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                        <Entry x:Name="WindowTitleEntry" Placeholder="e.g., My Device" TextChanged="OnWindowTitleEntryTextChanged" VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+
+                    <!-- Fullscreen -->
+                    <HorizontalStackLayout WidthRequest="260" Spacing="10">
+                        <Label Text="Fullscreen" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                        <CheckBox x:Name="FullscreenCheck" CheckedChanged="OnFullscreenCheckedChanged" VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+
+                <!--Row 2-->
+                <!-- Screen off -->
+                <HorizontalStackLayout WidthRequest="350" Spacing="10">
+                    <Label Text="Screen off" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <CheckBox x:Name="TurnScreenOffCheck" CheckedChanged="OnScreenOffCheckedChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
-                <HorizontalStackLayout Spacing="5">
-                    <Label Text="Turn screen off" VerticalTextAlignment="Center" FontSize="16"/>
-                    <CheckBox x:Name="TurnScreenOffCheck" CheckedChanged="OnScreenOffCheckedChanged" Margin="5"/>
+                <!-- Stay Awake -->
+                <HorizontalStackLayout WidthRequest="260" Spacing="10">
+                    <Label Text="Stay Awake" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <CheckBox x:Name="StayAwakeCheck" CheckedChanged="OnStayAwakeCheckedChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
-                <HorizontalStackLayout Spacing="5">
-                    <Label Text="Crop (W:H:X:Y)" VerticalTextAlignment="Center" FontSize="16"/>
-                    <Entry x:Name="CropEntry" Placeholder="e.g., 900:1170:0:120" TextChanged="OnCropEntryTextChanged" Margin="5"/>
+                <!--Row 3-->
+                <!-- Crop Entry -->
+                <HorizontalStackLayout WidthRequest="350" Spacing="10">
+                    <Label Text="Crop Screen (W:H:X:Y)" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <Entry x:Name="CropEntry" Placeholder="e.g., 900:1170:0:120" TextChanged="OnCropEntryTextChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
-                <HorizontalStackLayout Spacing="5">
-                        <Label Text="Set Video Orientation" VerticalTextAlignment="Center" FontSize="16"/>
-                        <Picker x:Name="VideoOrientationPicker" 
-                                SelectedIndexChanged="OnVideoOrientationChanged" 
-                                Margin="5">
-                            <Picker.ItemsSource>
-                                <x:Array Type="{x:Type x:String}">
-                                    <x:String>0</x:String>
-                                    <x:String>90</x:String>
-                                    <x:String>180</x:String>
-                                    <x:String>270</x:String>
-                                </x:Array>
-                            </Picker.ItemsSource>
-                        </Picker>
-                    </HorizontalStackLayout>
+                <!-- Screen Orientation -->
+                <HorizontalStackLayout WidthRequest="260" Spacing="10">
+                    <Label Text="Screen Orientation" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <Picker x:Name="VideoOrientationPicker" SelectedIndexChanged="OnVideoOrientationChanged" VerticalOptions="Center">
+                        <Picker.ItemsSource>
+                            <x:Array Type="{x:Type x:String}">
+                                <x:String>0</x:String>
+                                <x:String>90</x:String>
+                                <x:String>180</x:String>
+                                <x:String>270</x:String>
+                            </x:Array>
+                        </Picker.ItemsSource>
+                    </Picker>
+                </HorizontalStackLayout>
 
-                    <HorizontalStackLayout Spacing="5">
-                        <Label Text="Stay Awake" VerticalTextAlignment="Center" FontSize="16"/>
-                        <CheckBox x:Name="StayAwakeCheck" CheckedChanged="OnStayAwakeCheckedChanged" Margin="5"/>
-                    </HorizontalStackLayout>
+                <!--Row 4-->
+                <!-- Window Borderless -->
+                <HorizontalStackLayout WidthRequest="350" Spacing="10">
+                    <Label Text="Window Borderless" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <CheckBox x:Name="WindowBorderlessCheck" CheckedChanged="OnWindowBorderlessCheckedChanged" VerticalOptions="Center"/>
+                </HorizontalStackLayout>
 
-                    <HorizontalStackLayout Spacing="5">
-                        <Label Text="Window Title" VerticalTextAlignment="Center" FontSize="16"/>
-                        <Entry x:Name="WindowTitleEntry" Placeholder="e.g., My Device" TextChanged="OnWindowTitleEntryTextChanged" Margin="5"/>
-                    </HorizontalStackLayout>
+                <!-- Always on Top -->
+                <HorizontalStackLayout WidthRequest="260" Spacing="10">
+                    <Label Text="Window Always on Top" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <CheckBox x:Name="WindowAlwaysOnTopCheck" CheckedChanged="OnWindowAlwaysOnTopCheckedChanged" VerticalOptions="Center"/>
+                </HorizontalStackLayout>
 
-                    <HorizontalStackLayout Spacing="5">
-                        <Label Text="Window Borderless" VerticalTextAlignment="Center" FontSize="16"/>
-                        <CheckBox x:Name="WindowBorderlessCheck" CheckedChanged="OnWindowBorderlessCheckedChanged" Margin="5"/>
-                    </HorizontalStackLayout>
+                <!--Row 5-->
+                <!-- Disable Screensaver -->
+                <HorizontalStackLayout WidthRequest="350" Spacing="10">
+                    <Label Text="Disable Screensaver" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <CheckBox x:Name="DisableScreensaverCheck" CheckedChanged="OnDisableScreensaverCheckedChanged" VerticalOptions="Center"/>
+                </HorizontalStackLayout>
 
-                    <HorizontalStackLayout Spacing="5">
-                        <Label Text="Window Always on Top" VerticalTextAlignment="Center" FontSize="16"/>
-                        <CheckBox x:Name="WindowAlwaysOnTopCheck" CheckedChanged="OnWindowAlwaysOnTopCheckedChanged" Margin="5"/>
-                    </HorizontalStackLayout>
+            </FlexLayout>
+        </Border>
 
-                    <HorizontalStackLayout Spacing="5">
-                        <Label Text="Disable Screensaver" VerticalTextAlignment="Center" FontSize="16"/>
-                        <CheckBox x:Name="DisableScreensaverCheck" CheckedChanged="OnDisableScreensaverCheckedChanged" Margin="5"/>
-                    </HorizontalStackLayout>
-
-                </FlexLayout>
-            </Border>
-
-            <!-- Label and Checkbox -->
+        <!-- Label and Checkbox -->
             <FlexLayout Grid.RowSpan="2" 
                 BackgroundColor="#1f1f1f"
                 VerticalOptions="Start"
