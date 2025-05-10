@@ -13,15 +13,15 @@
                         JustifyContent="Center"
                         AlignItems="Center">
 
-                    <HorizontalStackLayout Spacing="5">
-                        <Label FontSize="15" Text="NewDisplay" VerticalTextAlignment="Center"/>
-                        <CheckBox x:Name="NewDisplay" CheckedChanged="OnNewDisplayCheckedChanged" Margin="5"/>
-                    </HorizontalStackLayout>
+                <HorizontalStackLayout>
+                    <Label FontSize="16" Text="NewDisplay" VerticalTextAlignment="Center" Margin="0,5"/>
+                    <CheckBox x:Name="NewDisplay" CheckedChanged="OnNewDisplayCheckedChanged" />
+                </HorizontalStackLayout>
 
                     <!-- Resolution Dropdown -->
-                    <HorizontalStackLayout x:Name="ResolutionContainer" Spacing="5" IsVisible="False">
-                        <Label FontSize="15" Text="Resolution" VerticalTextAlignment="Center"/>
-                    <Picker x:Name="ResolutionPicker" SelectedIndexChanged="OnResolutionSelected" Margin="5">
+                <HorizontalStackLayout x:Name="ResolutionContainer" IsVisible="False" WidthRequest="230" Margin="5,5">
+                        <Label FontSize="16" Text="Resolution" VerticalTextAlignment="Center" Padding="10,5"/>
+                        <Picker x:Name="ResolutionPicker" SelectedIndexChanged="OnResolutionSelected">
                             <Picker.ItemsSource>
                                 <x:Array Type="{x:Type x:String}">
                                     <x:String>1920x1080</x:String>
@@ -35,25 +35,25 @@
                         </Picker>
                     </HorizontalStackLayout>
 
-                <HorizontalStackLayout Spacing="5" ToolTipProperties.Text="Move to main display after closing the window" >
-                        <Label FontSize="15" Text="Don't destroy content" VerticalTextAlignment="Center"/>
-                        <CheckBox x:Name="NoVdDestroyContent" CheckedChanged="OnNoVdDestroyContentCheckedChanged" Margin="5"/>
+                <HorizontalStackLayout  ToolTipProperties.Text="Move to main display after closing the window" >
+                    <Label FontSize="16" Text="Don't destroy content" VerticalTextAlignment="Center" Margin="5,5"/>
+                        <CheckBox x:Name="NoVdDestroyContent" CheckedChanged="OnNoVdDestroyContentCheckedChanged"/>
                     </HorizontalStackLayout>
 
-                    <HorizontalStackLayout Spacing="5">
-                        <Label FontSize="15" Text="No display decorations" VerticalTextAlignment="Center"/>
-                    <CheckBox x:Name="NoVdSystemDecorations" CheckedChanged="OnNoVdSystemDecorationsCheckedChanged" Margin="5"/>
+                    <HorizontalStackLayout >
+                    <Label FontSize="16" Text="No display decorations" VerticalTextAlignment="Center" Margin="5,5"/>
+                    <CheckBox x:Name="NoVdSystemDecorations" CheckedChanged="OnNoVdSystemDecorationsCheckedChanged"/>
                     </HorizontalStackLayout>
 
                     <!-- DPI Input -->
-                    <HorizontalStackLayout Spacing="5">
-                        <Label FontSize="15" Text="DPI" VerticalTextAlignment="Center" />
-                    <Entry x:Name="DpiEntry" TextChanged="OnDpiTextChanged" Keyboard="Numeric" Margin="5"/>
+                    <HorizontalStackLayout >
+                    <Label FontSize="16" Text="DPI" VerticalTextAlignment="Center" Margin="5,5"/>
+                    <Entry x:Name="DpiEntry" TextChanged="OnDpiTextChanged" Keyboard="Numeric"/>
                     </HorizontalStackLayout>
                 </FlexLayout>
             </Border>
 
-            <!-- Label FontSize="15"and Checkbox -->
+            <!-- Label FontSize="16"and Checkbox -->
             <FlexLayout Grid.RowSpan="2" 
                 BackgroundColor="#1f1f1f"
                 VerticalOptions="Start"

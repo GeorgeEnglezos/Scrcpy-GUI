@@ -4,62 +4,63 @@
              x:Class="ScrcpyGUI.Controls.OptionsScreenRecordingPanel">
 
         <!-- Main Grid -->
-        <Grid RowDefinitions="*" Padding="0, 10">
+        <Grid RowDefinitions="*">
             <!-- Border -->
         <Border Grid.Row="1" Padding="20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
-                <FlexLayout x:Name="OptionsContainer" 
-                        IsVisible="{Binding Source={x:Reference EnableRecordingCheckBox}, Path=IsChecked}" 
-                        Wrap="Wrap" 
-                        Direction="Row" 
-                        JustifyContent="Center"
-                        AlignItems="Center">
+            <FlexLayout x:Name="OptionsContainer"
+                IsVisible="{Binding Source={x:Reference EnableRecordingCheckBox}, Path=IsChecked}"
+                Direction="Row"
+                Wrap="Wrap"
+                JustifyContent="SpaceBetween"
+                AlignItems="Center"
+                AlignContent="Start">
+                
+                <!-- Resolution -->
+                <HorizontalStackLayout WidthRequest="330" Spacing="6" Margin="0,2">
+                    <Label Text="Max Size"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="100" />
+                    <Entry x:Name="ResolutionEntry" Placeholder="(Biggest value only) e.g., 1920" Keyboard="Numeric" TextChanged="OnResolutionChanged"  VerticalOptions="Center"/>
+                </HorizontalStackLayout>
 
-                    <!--Resolution-->
-                    <HorizontalStackLayout Spacing="5" Margin="5">
-                        <Label Text="Max Size" VerticalTextAlignment="Center" FontSize="16" />
-                        <Entry x:Name="ResolutionEntry" Placeholder="(Biggest value only) e.g., 1920" Keyboard="Numeric" TextChanged="OnResolutionChanged" />
-                    </HorizontalStackLayout>
+                <!-- Bitrate -->
+                <HorizontalStackLayout WidthRequest="330" Spacing="6" Margin="0,2">
+                    <Label Text="Bitrate (Mbps)"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="120" />
+                    <Entry x:Name="BitrateEntry" Placeholder="e.g., 8" Keyboard="Numeric" TextChanged="OnBitrateChanged"  VerticalOptions="Center"/>
+                </HorizontalStackLayout>
 
-                    <!--Bitrate-->
-                    <HorizontalStackLayout Spacing="5" Margin="5">
-                        <Label Text="Bitrate (Mbps)" VerticalTextAlignment="Center" FontSize="16" />
-                        <Entry x:Name="BitrateEntry" Placeholder="e.g., 8" Keyboard="Numeric" TextChanged="OnBitrateChanged" />
-                    </HorizontalStackLayout>
+                <!-- Framerate -->
+                <HorizontalStackLayout WidthRequest="220" Spacing="6" Margin="0,2">
+                    <Label Text="Max fps"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="100" />
+                    <Entry x:Name="FramerateEntry" Placeholder="e.g., 30" Keyboard="Numeric" TextChanged="OnFramerateChanged"  VerticalOptions="Center"/>
+                </HorizontalStackLayout>
 
-                    <!--Framerate-->
-                    <HorizontalStackLayout Spacing="5" Margin="5">
-                        <Label Text="Max fps" VerticalTextAlignment="Center" FontSize="16" />
-                        <Entry x:Name="FramerateEntry" Placeholder="e.g., 30" Keyboard="Numeric" TextChanged="OnFramerateChanged" />
-                    </HorizontalStackLayout>
+                <!-- Output Format -->
+                <HorizontalStackLayout WidthRequest="330" Spacing="6" Margin="0,2">
+                    <Label Text="Output Format"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="120" />
+                    <Picker x:Name="OutputFormatPicker" SelectedIndexChanged="OnOutputFormatChanged"  VerticalOptions="Center">
+                        <Picker.ItemsSource>
+                            <x:Array Type="{x:Type x:String}">
+                                <x:String>mp4</x:String>
+                                <x:String>m4a</x:String>
+                                <x:String>aac</x:String>
+                                <x:String>mkv</x:String>
+                                <x:String>mka</x:String>
+                                <x:String>avi</x:String>
+                                <x:String>opus</x:String>
+                                <x:String>flac</x:String>
+                                <x:String>wav</x:String>
+                            </x:Array>
+                        </Picker.ItemsSource>
+                    </Picker>
+                </HorizontalStackLayout>
 
-                    <!--Output Format-->
-                    <HorizontalStackLayout Spacing="5" Margin="5">
-                        <Label Text="Output Format" VerticalTextAlignment="Center" FontSize="16" />
-                        <Picker x:Name="OutputFormatPicker" SelectedIndexChanged="OnOutputFormatChanged">
-                            <Picker.ItemsSource>
-                                <x:Array Type="{x:Type x:String}">
-                                    <x:String>mp4</x:String>
-                                    <x:String>m4a</x:String>
-                                    <x:String>aac</x:String>
-                                    <x:String>mkv</x:String>
-                                    <x:String>mka</x:String>
-                                    <x:String>avi</x:String>
-                                    <x:String>opus</x:String>
-                                    <x:String>flac</x:String>
-                                    <x:String>wav</x:String>
-                                </x:Array>
-                            </Picker.ItemsSource>
-                        </Picker>
-                    </HorizontalStackLayout>
+                <!-- Output File -->
+                <HorizontalStackLayout WidthRequest="500" Spacing="6" Margin="0,2">
+                    <Label Text="Output File"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="100" />
+                    <Entry x:Name="OutputFileEntry" Placeholder="e.g., scrcpy --record D:\Recordings\output.mp4" TextChanged="OnOutputFileChanged" VerticalOptions="Center"/>
+                </HorizontalStackLayout>
 
-                    <!--Output File-->
-                    <HorizontalStackLayout Spacing="5" Margin="5">
-                        <Label Text="Output File" VerticalTextAlignment="Center" FontSize="16" />
-                        <Entry x:Name="OutputFileEntry" Placeholder="e.g., scrcpy --record D:\Recordings\output.mp4" TextChanged="OnOutputFileChanged" WidthRequest="340"/>
-                    </HorizontalStackLayout>
-
-                </FlexLayout>
-            </Border>
+            </FlexLayout>
+        </Border>
 
         <!-- Label and Checkbox -->
         <FlexLayout Grid.RowSpan="2" 

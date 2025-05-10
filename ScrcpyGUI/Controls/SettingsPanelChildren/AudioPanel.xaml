@@ -16,13 +16,13 @@
 
                 <!-- No Audio -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="6" Margin="0,2">
-                    <Label Text="No Audio" VerticalTextAlignment="Center" FontSize="16" WidthRequest="200"/>
+                    <Label Text="No Audio" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
                     <CheckBox x:Name="NoAudioCheckBox" CheckedChanged="OnNoAudioChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
                 <!-- Audio Codec -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="6" Margin="0,2">
-                    <Label Text="Audio Codec" VerticalTextAlignment="Center" FontSize="16" WidthRequest="200"/>
+                    <Label Text="Audio Codec" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
                     <Picker x:Name="AudioCodecPicker" SelectedIndexChanged="OnAudioCodecChanged" VerticalOptions="Center">
                         <Picker.ItemsSource>
                             <x:Array Type="{x:Type x:String}">
@@ -37,25 +37,25 @@
 
                 <!-- Audio Bit Rate -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="6" Margin="0,2">
-                    <Label Text="Audio Bit Rate" VerticalTextAlignment="Center" FontSize="16" WidthRequest="200"/>
+                    <Label Text="Audio Bit Rate" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
                     <Entry x:Name="AudioBitRateEntry" Placeholder="e.g., 64000 or 64K" TextChanged="OnAudioBitRateChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
                 <!-- Audio Buffer -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="6" Margin="0,2">
-                    <Label Text="Audio Buffer" VerticalTextAlignment="Center" FontSize="16" WidthRequest="200"/>
+                    <Label Text="Audio Buffer" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
                     <Entry x:Name="AudioBufferEntry" Placeholder="e.g., 512" TextChanged="OnAudioBufferChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
                 <!-- Enable Audio Duplication -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="6" Margin="0,2">
-                    <Label Text="Enable Audio Duplication" VerticalTextAlignment="Center" FontSize="16" WidthRequest="200"/>
+                    <Label Text="Enable Audio Duplication" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
                     <CheckBox x:Name="AudioDupCheckBox" CheckedChanged="OnAudioDupChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
                 <!-- Audio Codec Options -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="6" Margin="0,2">
-                    <Label Text="Audio Codec Options" VerticalTextAlignment="Center" FontSize="16" WidthRequest="200"/>
+                    <Label Text="Audio Codec Options" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
                     <Entry x:Name="AudioCodecOptionsEntry" Placeholder="e.g., bitrate=128k" TextChanged="OnAudioCodecOptionsChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
