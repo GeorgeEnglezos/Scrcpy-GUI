@@ -82,7 +82,7 @@
                     Padding="10"
                     StrokeThickness="3"
                     Stroke="{StaticResource Purple2}"
-                    BackgroundColor="White"
+                    BackgroundColor="#101010"
                     MinimumHeightRequest="100"
                     Margin="0,10,0,0">
 
@@ -90,7 +90,7 @@
                         Text="Command Output"
                         HorizontalOptions="Center"
                         VerticalOptions="Center"
-                        TextColor="Black"
+                        TextColor="white"
                         FontSize="16"
                         FontAttributes="Bold"/>
                 </Border>
