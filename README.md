@@ -27,7 +27,6 @@ With Scrcpy-GUI, you can:
 
 # ✅ TODO
 - Improve error handling and user feedback
-- Finalize the UI Look and feel    
 
 # 🐞 Known Issues
 -
