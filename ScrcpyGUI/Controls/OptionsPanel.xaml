@@ -18,16 +18,8 @@
                ZIndex="1" />
 
         <Border Padding="20" StrokeThickness="2" Stroke="{StaticResource Purple4}">
-            <Grid Padding="10" ColumnSpacing="15" RowSpacing="10">
-                <!-- Define rows for vertical stacking -->
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
+            <Grid Padding="10" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                
                 <!-- Settings Panel -->
                 <controls:OptionsPackageSelectionPanel x:Name="OptionsPackageSelectionPanel" 
                                                         Grid.Row="0" 

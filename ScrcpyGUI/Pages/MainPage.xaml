@@ -10,8 +10,8 @@
 
     <ScrollView>
         <Grid x:Name="MainGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,*">
-            <controls:OptionsPanel x:Name="OptionsPanel" Margin="0, 0, 30, 0" Grid.Column="0" Grid.Row="0"/>
-            <controls:OutputPanel x:Name="OutputPanel" Grid.Column="1" Grid.Row="0"/>
+            <controls:OptionsPanel x:Name="OptionsPanel" Margin="0, 0, 10, 0" Grid.Column="0" Grid.Row="0" MaximumWidthRequest="1000"/>
+            <controls:OutputPanel x:Name="OutputPanel" Grid.Column="1" Grid.Row="0" MaximumWidthRequest="1000"/>
         </Grid>
     </ScrollView>
 
