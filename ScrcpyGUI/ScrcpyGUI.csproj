@@ -140,6 +140,9 @@
 	  <MauiXaml Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Controls\SharedControls\CommandBorder.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Pages\InfoPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

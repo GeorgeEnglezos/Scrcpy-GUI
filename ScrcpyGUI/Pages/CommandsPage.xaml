@@ -1,8 +1,9 @@
 ﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="ScrcpyGUI.CommandsPage">
+             x:Class="ScrcpyGUI.CommandsPage"
+             Shell.Title="">
     
-    <ScrollView>
+    <ScrollView >
         <VerticalStackLayout Padding="30,0" Spacing="25">
 
             <!--Most Recent Command-->
