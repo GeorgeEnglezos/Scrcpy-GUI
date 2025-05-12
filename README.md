@@ -5,11 +5,11 @@ Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting 
 With Scrcpy-GUI, you can:
 - Easily generate more complex scrcpy command-line arguments
 - Get full control of the Virtual displays and the ability to launch apps in there like launchers or gaming frontends
-    
-![image](https://github.com/user-attachments/assets/b571ec17-dab8-41b6-81fa-3ae63c1e4407)
-![image](https://github.com/user-attachments/assets/b21554b1-65f9-40ef-a90c-2494535e2fef)
+
+![Main Menu](https://github.com/user-attachments/assets/f6964a11-e912-4dc5-9690-d9de11464bf3)
+![Screenshot_6](https://github.com/user-attachments/assets/f77cb1d8-ed6c-4a16-b591-19636a4e19aa)
+![Daijisho - eden](https://github.com/user-attachments/assets/9acc6fb3-6b48-4f30-82e6-0a865bf540c3)
 ![image](https://github.com/user-attachments/assets/bb2e60c2-f443-40ce-a749-52af4fb9622f)
-![image](https://github.com/user-attachments/assets/1ab2b032-1ebf-45ad-8d1b-677510317cff)
 
 
 <h2>🛠️ Installation Steps (for windows):</h2>
