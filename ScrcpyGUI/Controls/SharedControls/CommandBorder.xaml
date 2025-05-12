@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             x:Class="ScrcpyGUI.Controls.SharedControls.CommandBorder"
+             x:Name="This">
+
+    <Border Padding="10" Stroke="#333" StrokeThickness="2">
+
+        <Grid ColumnDefinitions="*, Auto, Auto">
+            <Label Text="{Binding CommandText, Source={x:Reference This}}"
+                Padding="10"
+                HorizontalOptions="Start"
+                VerticalOptions="Center"
+                TextColor="White"
+                FontSize="16"
+                FontAttributes="Bold"
+                Grid.Column="0"/>
+
+            <ImageButton Margin="10,0,10,0"
+                ToolTipProperties.Text="{Binding CommandTooltip, Source={x:Reference This}}"                         
+                BackgroundColor="Transparent"
+                HeightRequest="30"
+                WidthRequest="30"
+                Grid.Column="1">
+                <ImageButton.Source>
+                    <FontImageSource FontFamily="FontAwesome" 
+                                     Glyph="&#xf05a;" 
+                                     Color="{StaticResource Buttons}" 
+                                     Size="25"/>
+                </ImageButton.Source>
+            </ImageButton>
+            
+            <ImageButton Margin="10,0,10,0"
+                BackgroundColor="Transparent"
+                Clicked="OnCopyClicked"
+                HeightRequest="30"
+                WidthRequest="30"
+                Grid.Column="2">
+                <ImageButton.Source>
+                    <FontImageSource FontFamily="FontAwesome" 
+                                     Glyph="&#xf0c5;" 
+                                     Color="{StaticResource Buttons}" 
+                                     Size="25"/>
+                </ImageButton.Source>
+            </ImageButton>
+        </Grid>
+    </Border>
+</ContentView>

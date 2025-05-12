@@ -5,75 +5,37 @@ using System.Diagnostics;
 
 namespace ScrcpyGUI
 {
-    public partial class InfoPage : ContentPage, INotifyPropertyChanged
+    public partial class InfoPage : ContentPage
     {
-        private string _adbStatusColor = "Black";
-        private string _scrcpyStatusColor = "Black";
-        private string _deviceStatusColor = "Black";
+        const string scrcpy_gui_url = "https://github.com/GeorgeEnglezos/Scrcpy-GUI";
+        const string scrcpy_official = "https://github.com/Genymobile/scrcpy";
+        const string scrcpy_official_docs = "https://github.com/Genymobile/scrcpy/tree/master/doc";
 
-        public string AdbStatusColor
-        {
-            get => _adbStatusColor;
-            set { _adbStatusColor = value; OnPropertyChanged(); }
-        }
-
-        public string ScrcpyStatusColor
-        {
-            get => _scrcpyStatusColor;
-            set { _scrcpyStatusColor = value; OnPropertyChanged(); }
-        }
-
-        public string DeviceStatusColor
-        {
-            get => _deviceStatusColor;
-            set { _deviceStatusColor = value; OnPropertyChanged(); }
-        }
 
         public InfoPage()
         {
             InitializeComponent();
-            BindingContext = this;
-            RefreshStatus();
+        }
+        // In your .xaml.cs file (code-behind)
+        private async void OpenScrcpyGui(object sender, EventArgs e)
+        {
+            await Launcher.OpenAsync(scrcpy_gui_url);
         }
 
-        private void OnRefreshStatusClicked(object sender, EventArgs e)
+        private async void OpenScrcpyOfficial(object sender, EventArgs e)
         {
-            RefreshStatus();
+            await Launcher.OpenAsync(scrcpy_official);
         }
 
-        private void RefreshStatus()
+        private async void OpenScrcpyOfficialDocs(object sender, EventArgs e)
         {
-            CheckAdbInstallation();
-            CheckScrcpyInstallation();
-            CheckDeviceConnection();
-        }
-        private async Task CheckAdbInstallation()
-        {
-            bool isAdbInstalled = await AdbCmdService.CheckIfAdbIsInstalled();
-            AdbStatusLabel.Text = isAdbInstalled ? "Yes" : "No";
-            AdbStatusColor = isAdbInstalled ? "Green" : "Red";
+            await Launcher.OpenAsync(scrcpy_official_docs);
         }
 
-        private async Task CheckScrcpyInstallation()
+        private async void OnCopyCommand(object sender, EventArgs e)
         {
-            bool isScrcpyInstalled = await AdbCmdService.CheckIfScrcpyIsInstalled();
-            ScrcpyStatusLabel.Text = isScrcpyInstalled ? "Yes" : "No";
-            ScrcpyStatusColor = isScrcpyInstalled ? "Green" : "Red";
-        }
-
-        private async Task CheckDeviceConnection()
-        {
-            bool isDeviceConnected = await AdbCmdService.CheckIfDeviceIsConnected();
-            DeviceStatusLabel.Text = isDeviceConnected ? "Yes" : "No";
-            DeviceStatusColor = isDeviceConnected ? "Green" : "Red";
-        }
-
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            await Clipboard.SetTextAsync("dotnet --info");
+            await DisplayAlert("Copied", "Command copied to clipboard", "OK");
         }
     }
 }

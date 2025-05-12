@@ -1,27 +1,134 @@
-﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="ScrcpyGUI.InfoPage">
+﻿<ContentPage 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:ScrcpyGUI"
+    xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+    xmlns:sharedControls="clr-namespace:ScrcpyGUI.Controls.SharedControls"
+    xmlns:models="clr-namespace:ScrcpyGUI.Models"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    x:Class="ScrcpyGUI.InfoPage"
+    x:DataType="local:InfoPage"
+    Shell.Title="">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="30,0" Spacing="25">
-            <Label Text="ADB and Scrcpy Status" FontSize="20" FontAttributes="Bold" />
+    <Grid RowDefinitions="*, Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="20">
+
+                <!--Resources-->
+                <Label Text="Tools"
+                       TextColor="{StaticResource Secondary}"
+                       Margin="20, 5, 0,5" 
+                       FontSize="30"/>
+                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0,0, 0, 20" />
+
+                <VerticalStackLayout WidthRequest="300" MaximumHeightRequest="500" HorizontalOptions="Start">
+                        <controls:ChecksPanel 
+                            x:Name="ChecksPanel" 
+
+                            Grid.Row="0"
+                            Grid.ColumnSpan="3"
+                            HorizontalOptions="Fill" 
+                            Margin="0,20, 0, 0"/>
+                    </VerticalStackLayout>
+
             
-            <HorizontalStackLayout Spacing="10">
-                <Label Text="ADB Installed:" VerticalTextAlignment="Center" />
-                <Label x:Name="AdbStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding AdbStatusColor}" />
-            </HorizontalStackLayout>
+                <!--Resources-->
+                <Label Text="Resources"
+                       TextColor="{StaticResource Secondary}"
+                       Margin="20, 50, 0,5" 
+                       FontSize="30"/>
+                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
 
-            <HorizontalStackLayout Spacing="10">
-                <Label Text="Scrcpy Installed:" VerticalTextAlignment="Center" />
-                <Label x:Name="ScrcpyStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding ScrcpyStatusColor}" />
-            </HorizontalStackLayout>
+                <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start">
 
-            <HorizontalStackLayout Spacing="10">
-                <Label Text="Device Connected:" VerticalTextAlignment="Center" />
-                <Label x:Name="DeviceStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding DeviceStatusColor}" />
-            </HorizontalStackLayout>
+                    <Border BackgroundColor="Transparent"
+                       WidthRequest="300"
+                       Padding="15"
+                       Margin="5">
+                        <VerticalStackLayout>
+                            <Label Text="Official Scrcpy"
+                               FontSize="Subtitle"
+                               FontAttributes="Bold"
+                               Margin="0,0,0,5" />
+                            <Label Text="Visit the official Scrcpy GitHub Repo"
+                               FontSize="Body"
+                               TextColor="{StaticResource Secondary}"
+                               Margin="0,0,0,10" />
+                            <Button Text="Open GitHub"
+                                Clicked="OpenScrcpyOfficial" />
+                        </VerticalStackLayout>
+                    </Border>
 
-            <Button Text="Refresh Status" Clicked="OnRefreshStatusClicked" />
-        </VerticalStackLayout>
-    </ScrollView>
+                    <Border BackgroundColor="Transparent"
+                       WidthRequest="300"
+                       Padding="15"
+                       Margin="5">
+                        <VerticalStackLayout>
+                            <Label Text="Official Docs"
+                               FontSize="Subtitle"
+                               FontAttributes="Bold"
+                               Margin="0,0,0,5" />
+                            <Label Text="Visit Scrcpy's Official Documentation"
+                               FontSize="Body"
+                               TextColor="{StaticResource Secondary}"
+                               Margin="0,0,0,10" />
+                            <Button Text="Open GitHub"
+                                Clicked="OpenScrcpyOfficial" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border BackgroundColor="Transparent"
+                       WidthRequest="300"
+                       Padding="15"
+                       Margin="5">
+                        <VerticalStackLayout>
+                            <Label Text="Scrcpy GUI"
+                               FontSize="Subtitle"
+                               FontAttributes="Bold"
+                               Margin="0,0,0,5" />
+                            <Label Text="Visit the GUI's GitHub page"
+                               FontSize="Body"
+                               TextColor="{StaticResource Secondary}"
+                               Margin="0,0,0,10" />
+                            <Button Text="Open GitHub"
+                                Clicked="OpenScrcpyOfficial" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                </FlexLayout>
+
+                    <!--Commands-->
+                    <Label Text="Useful Commands"
+                       TextColor="{StaticResource Secondary}"
+                       Margin="20, 50, 0,5" 
+                       FontSize="30"/>
+                    <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
+
+                <VerticalStackLayout Padding="20" Spacing="16">
+
+                    <!--Command 1-->
+                    <sharedControls:CommandBorder CommandText="scrcpy --version" CommandTooltip="Check if scrcpy is installed and which version you have installed!"/>
+                    <sharedControls:CommandBorder CommandText="adb --version" CommandTooltip="Check if ADB is installed and which version you have installed!"/>
+                    <sharedControls:CommandBorder CommandText="winget install --exact Genymobile.scrcpy" CommandTooltip="Install the latest Scrcpy version!" />
+                    <sharedControls:CommandBorder CommandText="winget uninstall --exact Genymobile.scrcpy" CommandTooltip="Uninstall Scrcpy from your machine!" />
+                    <sharedControls:CommandBorder CommandText="winget uninstall 'Android SDK Platform-Tools'" CommandTooltip="Install the latest ADB version!" />
+                    <sharedControls:CommandBorder CommandText="winget install 'Android SDK Platform-Tools'" CommandTooltip="Uninstall ADB from your machine!" />
+
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+
+
+        <!-- Fixed Footer -->
+        <Border Grid.Row="1"
+                BackgroundColor="{StaticResource Background}"
+                Padding="10"
+                StrokeThickness="0"
+                HorizontalOptions="Fill">
+            <Label Text="Scrcpy GUI v1.3.2 - Created by George Englezos"
+                   HorizontalOptions="Center"
+                   FontSize="Small"
+                   TextColor="{StaticResource Secondary}" />
+        </Border>
+    </Grid>
 </ContentPage>
