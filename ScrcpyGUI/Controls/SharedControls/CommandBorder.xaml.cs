@@ -1,7 +1,7 @@
 using System.Diagnostics;
 
 
-namespace ScrcpyGUI.Controls.SharedControls;
+namespace ScrcpyGUI.Controls;
 public partial class CommandBorder : ContentView
 {
 	public CommandBorder()

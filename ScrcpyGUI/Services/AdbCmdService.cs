@@ -23,6 +23,12 @@ public static class AdbCmdService
         PhoneIp
     }
 
+    public enum ConnectionType
+    {
+        None,
+        Usb,
+        TcpIp
+    }
 
     public static List<string> OutputHistory = new();  // Global list to track all outputs
     public static List<string> ErrorHistory = new();   // Global list to track all error outputs
@@ -148,14 +154,44 @@ public static class AdbCmdService
             return false;
         }
     }
-
-    public static async Task<bool> CheckIfDeviceIsConnected()
+    public static async Task<ConnectionType> CheckDeviceConnection()
     {
         var result = await RunAdbCommandAsync(CommandEnum.RunScrcpy, "adb devices");
         var lines = result.Output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-        // Skip the first line ("List of devices attached") and check if any subsequent line contains "device"
-        return lines.Skip(1).Any(line => line.Contains("\tdevice"));
+        // Skip the header line
+        foreach (var line in lines.Skip(1))
+        {
+            if (line.Contains("\tdevice"))
+            {
+                var parts = line.Split('\t');
+                if (parts.Length > 0)
+                {
+                    var deviceIdentifier = parts[0].Trim();
+
+                    // Check if it contains a colon, indicating IP:port
+                    if (deviceIdentifier.Contains(':'))
+                    {
+                        var ipAddressPart = deviceIdentifier.Split(':')[0];
+                        if (System.Net.IPAddress.TryParse(ipAddressPart, out _))
+                        {
+                            return ConnectionType.TcpIp;
+                        }
+                    }
+                    // If no colon, try parsing the whole identifier as an IP
+                    else if (System.Net.IPAddress.TryParse(deviceIdentifier, out _))
+                    {
+                        return ConnectionType.TcpIp; // Could be an older format or a direct IP
+                    }
+                    else if (!string.IsNullOrEmpty(deviceIdentifier))
+                    {
+                        return ConnectionType.Usb;
+                    }
+                }
+            }
+        }
+
+        return ConnectionType.None; // No connected device found
     }
 
     public async static Task<string> RunTCPPort(string port)

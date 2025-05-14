@@ -97,10 +97,18 @@ namespace ScrcpyGUI.Controls
 
         private async Task<bool> CheckDeviceConnection()
         {
-            bool isDeviceConnected = await AdbCmdService.CheckIfDeviceIsConnected();
-            DeviceStatusLabel.Text = isDeviceConnected ? "Yes" : "No";
-            DeviceStatusColor = isDeviceConnected ? "Green" : "Red";
-            return isDeviceConnected;
+            AdbCmdService.ConnectionType deviceConnection = await AdbCmdService.CheckDeviceConnection();
+            if(deviceConnection == AdbCmdService.ConnectionType.None)
+            {
+                DeviceStatusLabel.Text ="No";
+                DeviceStatusColor = "Red";
+                return false;
+            }
+            else { 
+                DeviceStatusLabel.Text = deviceConnection == AdbCmdService.ConnectionType.Usb ? "Yes (USB)" : "Yes (TCP)";
+                DeviceStatusColor = "Green";
+                return true;
+            }
         }
 
         private async void InvokeRefresh(string message)

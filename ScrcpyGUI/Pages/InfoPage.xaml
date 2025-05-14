@@ -1,14 +1,9 @@
-﻿<ContentPage 
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:ScrcpyGUI"
-    xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
-    xmlns:sharedControls="clr-namespace:ScrcpyGUI.Controls.SharedControls"
-    xmlns:models="clr-namespace:ScrcpyGUI.Models"
-    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-    x:Class="ScrcpyGUI.InfoPage"
-    x:DataType="local:InfoPage"
-    Shell.Title="">
+﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             x:Class="ScrcpyGUI.InfoPage"
+             Shell.Title="">
+             <!--xmlns:sharedControls="clr-namespace:ScrcpyGUI.Controls.SharedControls"-->
 
     <Grid RowDefinitions="*, Auto">
         <ScrollView Grid.Row="0">
@@ -22,16 +17,15 @@
                 <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0,0, 0, 20" />
 
                 <VerticalStackLayout WidthRequest="300" MaximumHeightRequest="500" HorizontalOptions="Start">
-                        <controls:ChecksPanel 
+                    <controls:ChecksPanel 
                             x:Name="ChecksPanel" 
-
                             Grid.Row="0"
                             Grid.ColumnSpan="3"
                             HorizontalOptions="Fill" 
                             Margin="0,20, 0, 0"/>
-                    </VerticalStackLayout>
+                </VerticalStackLayout>
 
-            
+
                 <!--Resources-->
                 <Label Text="Resources"
                        TextColor="{StaticResource Secondary}"
@@ -97,22 +91,22 @@
 
                 </FlexLayout>
 
-                    <!--Commands-->
-                    <Label Text="Useful Commands"
+                <!--Commands-->
+                <Label Text="Useful Commands"
                        TextColor="{StaticResource Secondary}"
                        Margin="20, 50, 0,5" 
                        FontSize="30"/>
-                    <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
+                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
 
                 <VerticalStackLayout Padding="20" Spacing="16">
 
                     <!--Command 1-->
-                    <sharedControls:CommandBorder CommandText="scrcpy --version" CommandTooltip="Check if scrcpy is installed and which version you have installed!"/>
-                    <sharedControls:CommandBorder CommandText="adb --version" CommandTooltip="Check if ADB is installed and which version you have installed!"/>
-                    <sharedControls:CommandBorder CommandText="winget install --exact Genymobile.scrcpy" CommandTooltip="Install the latest Scrcpy version!" />
-                    <sharedControls:CommandBorder CommandText="winget uninstall --exact Genymobile.scrcpy" CommandTooltip="Uninstall Scrcpy from your machine!" />
-                    <sharedControls:CommandBorder CommandText="winget uninstall 'Android SDK Platform-Tools'" CommandTooltip="Install the latest ADB version!" />
-                    <sharedControls:CommandBorder CommandText="winget install 'Android SDK Platform-Tools'" CommandTooltip="Uninstall ADB from your machine!" />
+                    <controls:CommandBorder CommandText="scrcpy --version" CommandTooltip="Check if scrcpy is installed and which version you have installed!"/>
+                    <controls:CommandBorder CommandText="adb --version" CommandTooltip="Check if ADB is installed and which version you have installed!"/>
+                    <controls:CommandBorder CommandText="winget install --exact Genymobile.scrcpy" CommandTooltip="Install the latest Scrcpy version!" />
+                    <controls:CommandBorder CommandText="winget uninstall --exact Genymobile.scrcpy" CommandTooltip="Uninstall Scrcpy from your machine!" />
+                    <controls:CommandBorder CommandText="winget uninstall 'Android SDK Platform-Tools'" CommandTooltip="Install the latest ADB version!" />
+                    <controls:CommandBorder CommandText="winget install 'Android SDK Platform-Tools'" CommandTooltip="Uninstall ADB from your machine!" />
 
                 </VerticalStackLayout>
             </VerticalStackLayout>
@@ -121,7 +115,7 @@
 
         <!-- Fixed Footer -->
         <Border Grid.Row="1"
-                BackgroundColor="{StaticResource Background}"
+                BackgroundColor="{StaticResource BackGroundGrey}"
                 Padding="10"
                 StrokeThickness="0"
                 HorizontalOptions="Fill">
