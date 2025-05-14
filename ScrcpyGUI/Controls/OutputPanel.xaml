@@ -22,24 +22,17 @@
             BackgroundColor="#1f1f1f"
             ZIndex="1"/>
         <!--Stroke="{StaticResource Purple4}"-->
-        <Border Padding="20" StrokeThickness="3" Stroke="{StaticResource Purple4}">
+        <Border Padding="30" StrokeThickness="3" Stroke="{StaticResource Purple4}">
             <Grid RowDefinitions="Auto,Auto, Auto, Auto, Auto"
                 ColumnDefinitions="*,Auto,Auto"
-                Padding="10"
                 ColumnSpacing="15"   
                 RowSpacing="10">
 
 
-                <controls:ChecksPanel x:Name="ChecksPanel" 
-                                               Grid.Row="0"
-                                               Grid.ColumnSpan="3"
-                                               HorizontalOptions="Fill" 
-                                               Margin="0,20, 0, 0"/>
-
-                <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" 
-                                               Grid.Row="1" Grid.ColumnSpan="3"
-                                               HorizontalOptions="Fill" 
-                                               Margin="0,20, 0, 0"/>
+                <FlexLayout Grid.Row="0" Grid.ColumnSpan="3" Wrap="Wrap" Direction="Row" JustifyContent="SpaceAround">
+                    <controls:ChecksPanel x:Name="ChecksPanel" MaximumWidthRequest="400" Margin="0, 20"/>
+                    <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" MaximumWidthRequest="400" Margin="0, 20"/>
+                </FlexLayout>
 
                 <Border Stroke="{StaticResource Purple2}" Grid.Row="2" Grid.Column="0" StrokeThickness="2">
                     <Editor x:Name="FinalCommandPreview"
