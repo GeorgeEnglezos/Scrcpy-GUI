@@ -7,30 +7,31 @@
     <Grid RowDefinitions="Auto, *">
 
         <!-- Border -->
-        <Border Grid.Row="1" Padding="0, 10, 0, 20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
+        <Border Grid.Row="1" Padding="0, 20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
             <VerticalStackLayout>
-                <FlexLayout x:Name="OptionsContainer" Margin="0, 5, 0, 0"
-                        Wrap="Wrap"
-                        Direction="Row"
-                        JustifyContent="Center"
-                        AlignItems="Start">
+                <FlexLayout
+                    x:Name="OptionsContainer"
+                    Wrap="Wrap"
+                    Direction="Row"
+                    JustifyContent="SpaceAround"
+                    AlignItems="Start">
 
-                    <HorizontalStackLayout Padding="5">
-                        <Label Padding="5" Text="ADB Installed: " VerticalTextAlignment="Center" FontAttributes="Bold" FontSize="17"/>
-                        <Label x:Name="AdbStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding AdbStatusColor}"  FontAttributes="Bold" FontSize="17"/>
+                    <HorizontalStackLayout  WidthRequest="270">
+                        <Label Padding="7" Text="ADB Installed: " VerticalTextAlignment="Center" FontAttributes="Bold" FontSize="18" WidthRequest="180"/>
+                        <Label x:Name="AdbStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding AdbStatusColor}"  FontAttributes="Bold" FontSize="18"/>
                     </HorizontalStackLayout>
 
-                    <HorizontalStackLayout Padding="5">
-                        <Label Padding="5" Text="Scrcpy Installed: " VerticalTextAlignment="Center"  FontAttributes="Bold" FontSize="17"/>
-                        <Label x:Name="ScrcpyStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding ScrcpyStatusColor}"  FontAttributes="Bold" FontSize="17"/>
+                    <HorizontalStackLayout WidthRequest="270">
+                        <Label Padding="7" Text="Scrcpy Installed: " VerticalTextAlignment="Center"  FontAttributes="Bold" FontSize="18" WidthRequest="180"/>
+                        <Label x:Name="ScrcpyStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding ScrcpyStatusColor}"  FontAttributes="Bold" FontSize="18"/>
                     </HorizontalStackLayout>
 
-                    <HorizontalStackLayout Padding="5" >
-                        <Label Padding="5" Text="Device Connected: " VerticalTextAlignment="Center"  FontAttributes="Bold" FontSize="17"/>
-                        <Label x:Name="DeviceStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding DeviceStatusColor}"  FontAttributes="Bold" FontSize="17"/>
+                    <HorizontalStackLayout WidthRequest="270">
+                        <Label Padding="7" Text="Device Connected: " VerticalTextAlignment="Center"  FontAttributes="Bold" FontSize="18" WidthRequest="180"/>
+                        <Label x:Name="DeviceStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding DeviceStatusColor}"  FontAttributes="Bold" FontSize="18"/>
                     </HorizontalStackLayout>
                 </FlexLayout>
-                <Button Text="Status Check" Clicked="OnRefreshStatusClicked" MaximumWidthRequest="140" Margin="0, 15, 0, 10" BackgroundColor="{StaticResource Buttons}" TextColor="White" FontAttributes="Bold" FontSize="16"/>
+                <Button Margin="0, 20"   Text="Status Check" Clicked="OnRefreshStatusClicked" MaximumWidthRequest="140"  BackgroundColor="{StaticResource Buttons}" TextColor="White" FontAttributes="Bold" FontSize="16"/>
             </VerticalStackLayout>
         </Border>
 
