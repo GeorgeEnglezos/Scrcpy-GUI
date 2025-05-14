@@ -1,7 +1,8 @@
 ﻿using Microsoft.Maui.Layouts;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using ScrcpyGUI.Models;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ScrcpyGUI
 {

@@ -27,7 +27,7 @@
     </ShellContent>
 
     <ShellContent
-        Title="Info Page"
+        Title="Resources"
         ContentTemplate="{DataTemplate local:InfoPage}"
         Route="InfoPage">
         <ShellContent.Icon>

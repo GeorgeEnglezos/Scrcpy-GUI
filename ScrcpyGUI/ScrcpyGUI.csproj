@@ -110,6 +110,9 @@
 	  <Compile Update="Pages\InfoPage.xaml.cs">
 	    <DependentUpon>InfoPage.xaml</DependentUpon>
 	  </Compile>
+	  <Compile Update="Pages\InfoPage.xaml.cs">
+	    <DependentUpon>InfoPage.xaml</DependentUpon>
+	  </Compile>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -141,6 +144,9 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Controls\SharedControls\CommandBorder.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\InfoPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Pages\InfoPage.xaml">
