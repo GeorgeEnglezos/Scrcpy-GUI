@@ -24,7 +24,6 @@ public partial class OutputPanel : ContentView
     {
         var settings = DataStorage.LoadData().AppSettings;
 
-        // Apply visibility based on saved AppSettings
         ChecksPanel.IsVisible = !settings.HideStatusPanel;
         WirelessConnectionPanel.IsVisible = !settings.HideTcpPanel;
         AdbOutputLabelBorder.IsVisible = !settings.HideOutputPanel;
@@ -106,9 +105,46 @@ public partial class OutputPanel : ContentView
         }
     }
 
+
+    private void OnSizeChanged(object sender, EventArgs e)
+    {
+        if (Width < 750) // Switch to vertical layout
+        {
+            ResponsiveGrid.RowDefinitions.Clear();
+            ResponsiveGrid.ColumnDefinitions.Clear();
+
+            ResponsiveGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Star });
+            ResponsiveGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Star });
+
+            ResponsiveGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+            Grid.SetRow(ChecksPanel, 0);
+            Grid.SetColumn(ChecksPanel, 0);
+
+            Grid.SetRow(WirelessConnectionPanel, 1);
+            Grid.SetColumn(WirelessConnectionPanel, 0);
+        }
+        else // Horizontal layout
+        {
+            ResponsiveGrid.RowDefinitions.Clear();
+            ResponsiveGrid.ColumnDefinitions.Clear();
+
+            ResponsiveGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            ResponsiveGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            ResponsiveGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+            Grid.SetRow(ChecksPanel, 0);
+            Grid.SetColumn(ChecksPanel, 0);
+
+            Grid.SetRow(WirelessConnectionPanel, 0);
+            Grid.SetColumn(WirelessConnectionPanel, 1);
+        }
+    }
+
+
     private void OnSaveGeneratedCommand(object sender, EventArgs e)
     {
-        // Append the new command to the existing data
         DataStorage.AppendFavoriteCommand(command);
         Application.Current.MainPage.DisplayAlert("Command saved", "View the saved commands in the 'Favorites Page'!", "OK");
     }

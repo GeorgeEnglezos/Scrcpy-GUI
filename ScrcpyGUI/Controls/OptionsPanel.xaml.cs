@@ -19,7 +19,6 @@ public partial class OptionsPanel : ContentView
     {
         InitializeComponent();
 
-        // Subscribe to the PackageSelected event
         OptionsPackageSelectionPanel.PackageSelected += OnPackageSelected;
         OptionsScreenRecordingPanel.ScreenRecordingOptionsChanged += OnScreenRecordingOptionsChanged;
         OptionsGeneralPanel.GeneralOptionsChanged += OnGeneralOptionsChanged;
@@ -31,7 +30,6 @@ public partial class OptionsPanel : ContentView
     {
         var settings = DataStorage.LoadData().AppSettings;
 
-        // Apply visibility based on saved AppSettings
         OptionsScreenRecordingPanel.IsVisible = !settings.HideRecordingPanel;
         OptionsVirtualDisplayPanel.IsVisible = !settings.HideVirtualMonitorPanel;
     }
@@ -95,7 +93,6 @@ public partial class OptionsPanel : ContentView
         fullCommand += virtualDisplayCommandPart;
         fullCommand += recordingCommandPart;
 
-        // Ensure the event is only invoked if there are subscribers
         ScrcpyCommandChanged?.Invoke(this, fullCommand);
         Debug.WriteLine($"ScrcpyCommandChanged Invoked with {fullCommand}");
         return fullCommand;

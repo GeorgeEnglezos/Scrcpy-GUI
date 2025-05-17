@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             x:Class="ScrcpyGUI.Controls.OutputPanel">
+             x:Class="ScrcpyGUI.Controls.OutputPanel"             
+             SizeChanged="OnSizeChanged">
     
     <!-- Settings Panel -->
     <Grid x:Name="CommandPanel"
@@ -21,18 +22,18 @@
             TranslationY="-18"
             BackgroundColor="#1f1f1f"
             ZIndex="1"/>
-        <!--Stroke="{StaticResource Purple4}"-->
         <Border Padding="30" StrokeThickness="3" Stroke="{StaticResource Purple4}">
             <Grid RowDefinitions="Auto,Auto, Auto, Auto, Auto"
                 ColumnDefinitions="*,Auto,Auto"
                 ColumnSpacing="15"   
                 RowSpacing="10">
 
+                <!-- Responsive Grid for Panels -->
+                <Grid x:Name="ResponsiveGrid" Grid.Row="0" Grid.ColumnSpan="3" RowDefinitions="Auto, Auto" ColumnDefinitions="*, *">
+                    <controls:ChecksPanel x:Name="ChecksPanel" Grid.Row="0" Grid.Column="0" Margin="0, 20, 0, 20"/>
+                    <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" Grid.Row="0" Grid.Column="1" Margin="0, 20"/>
+                </Grid>
 
-                <FlexLayout Grid.Row="0" Grid.ColumnSpan="3" Wrap="Wrap" Direction="Row" JustifyContent="SpaceAround">
-                    <controls:ChecksPanel x:Name="ChecksPanel" MaximumWidthRequest="400" Margin="0, 20"/>
-                    <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" MaximumWidthRequest="400" Margin="0, 20"/>
-                </FlexLayout>
 
                 <Border Stroke="{StaticResource Purple2}" Grid.Row="2" Grid.Column="0" StrokeThickness="2">
                     <Editor x:Name="FinalCommandPreview"

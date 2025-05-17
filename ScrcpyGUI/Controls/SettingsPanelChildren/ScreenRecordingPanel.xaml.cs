@@ -16,11 +16,8 @@ public partial class OptionsScreenRecordingPanel : ContentView
 
         private void OnEnableRecordingCheckedChanged(object sender, CheckedChangedEventArgs e)
         {
-            if (!e.Value) // If the checkbox is unchecked
+            if (!e.Value)
             {
-                // Reset all options to their default values
-
-                // Notify listeners about the reset
                 ScreenRecordingOptions_Changed();
 
                 // Optionally, clear the UI fields

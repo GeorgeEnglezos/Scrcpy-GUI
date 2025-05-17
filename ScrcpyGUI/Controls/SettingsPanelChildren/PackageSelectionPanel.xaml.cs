@@ -7,8 +7,8 @@ namespace ScrcpyGUI.Controls
     public partial class OptionsPackageSelectionPanel : ContentView
     {
         public event EventHandler<string> PackageSelected;
-        public List<string> installedPackageList { get; set; } = new List<string>(); // Initialize packageList
-        public List<string> allPackageList { get; set; } = new List<string>(); // Initialize packageList
+        public List<string> installedPackageList { get; set; } = new List<string>();
+        public List<string> allPackageList { get; set; } = new List<string>();
 
         private string _packageTextColor = "Black";
         public string PackageTextColor
@@ -131,7 +131,6 @@ namespace ScrcpyGUI.Controls
                 string selectedPackage = e.CurrentSelection[0]?.ToString() ?? string.Empty;
                 SettingSelectedPackage = selectedPackage;
 
-                // Trigger the event
                 PackageSelected?.Invoke(this, selectedPackage);
             }
         }
@@ -143,7 +142,7 @@ namespace ScrcpyGUI.Controls
 
             // Reset the CollectionView
             PackageSuggestionsCollectionView.ItemsSource = null;
-            PackageSuggestionsCollectionView.SelectedItem = null; // Clear the selected item
+            PackageSuggestionsCollectionView.SelectedItem = null;
             PackageSuggestionsCollectionView.IsVisible = false;
             PackageSelected?.Invoke(this, "");
         }

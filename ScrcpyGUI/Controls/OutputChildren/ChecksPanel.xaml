@@ -11,10 +11,10 @@
             <VerticalStackLayout>
                 <FlexLayout
                     x:Name="OptionsContainer"
-                    Wrap="Wrap"
-                    Direction="Row"
+                    Wrap="NoWrap"
+                    Direction="Column"
                     JustifyContent="SpaceAround"
-                    AlignItems="Start">
+                    AlignItems="Center">
 
                     <HorizontalStackLayout  WidthRequest="270">
                         <Label Padding="7" Text="ADB Installed: " VerticalTextAlignment="Center" FontAttributes="Bold" FontSize="18" WidthRequest="180"/>
