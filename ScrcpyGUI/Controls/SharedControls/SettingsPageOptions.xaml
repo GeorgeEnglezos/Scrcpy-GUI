@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             x:Class="ScrcpyGUI.Controls.SettingsPageOptions"
+             x:Name="Root">
+
+    <HorizontalStackLayout WidthRequest="420" HorizontalOptions="Start">
+        <Label x:Name="LabelControl"
+               WidthRequest="350"
+               HorizontalOptions="Start"
+               VerticalOptions="Center"
+               Padding="0, 10"
+               TextColor="White"
+               FontSize="16"
+               FontAttributes="Bold"
+               Text="{Binding LabelText, Source={x:Reference Root}}"/>
+
+        <CheckBox IsChecked="{Binding IsChecked, Source={x:Reference Root}}"
+                  VerticalOptions="Center"
+                  HorizontalOptions="Center"
+                  CheckedChanged="CheckBox_CheckedChanged"/>
+    </HorizontalStackLayout>
+</ContentView>

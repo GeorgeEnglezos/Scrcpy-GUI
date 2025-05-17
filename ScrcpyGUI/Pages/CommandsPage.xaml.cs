@@ -97,7 +97,7 @@ namespace ScrcpyGUI
                 // If found, delete the item
                 if (indexToDelete >= 0)
                 {
-                    DataStorage.RemoveCommandAtIndex(indexToDelete);
+                    DataStorage.RemoveFavoriteCommandAtIndex(indexToDelete);
                     //DisplayAlert("Success", $"Removed: {text}", "OK");
                     Navigation.PushAsync(new CommandsPage());
                     SavedCommandsList.Remove(text);

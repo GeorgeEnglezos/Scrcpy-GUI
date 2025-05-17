@@ -28,7 +28,7 @@ public static class DataStorage
     }
 
     // Append a new command to the FavoriteCommands list
-    public static void AppendCommand(string newCommand)
+    public static void AppendFavoriteCommand(string newCommand)
     {
         var data = LoadData();
         data.FavoriteCommands.Add(newCommand);
@@ -36,7 +36,7 @@ public static class DataStorage
     }
 
     // Remove a command at a specific index
-    public static bool RemoveCommandAtIndex(int index)
+    public static bool RemoveFavoriteCommandAtIndex(int index)
     {
         var data = LoadData();
         if (index >= 0 && index < data.FavoriteCommands.Count)
