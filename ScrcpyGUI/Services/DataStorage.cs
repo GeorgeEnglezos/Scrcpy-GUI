@@ -6,25 +6,28 @@ using System.IO;
 
 public static class DataStorage
 {
-    private static readonly string FilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ScrcpyGui-Data.json");
+    private static readonly string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ScrcpyGui-Data.json");
+    public static ScrcpyGuiData staticSavedData { get; set; } = new ScrcpyGuiData();
 
     // Load the ScrcpyGuiData
     public static ScrcpyGuiData LoadData()
     {
-        if (!File.Exists(FilePath))
+        if (!File.Exists(filePath))
         {
             return new ScrcpyGuiData();
         }
 
-        string jsonString = File.ReadAllText(FilePath);
-        return JsonConvert.DeserializeObject<ScrcpyGuiData>(jsonString) ?? new ScrcpyGuiData();
+        string jsonString = File.ReadAllText(filePath);
+        staticSavedData = JsonConvert.DeserializeObject<ScrcpyGuiData>(jsonString) ?? new ScrcpyGuiData();
+        return staticSavedData;
     }
 
     // Save the ScrcpyGuiData to a file
     public static void SaveData(ScrcpyGuiData data)
     {
+        staticSavedData = data;
         string jsonString = JsonConvert.SerializeObject(data);
-        File.WriteAllText(FilePath, jsonString);
+        File.WriteAllText(filePath, jsonString);
     }
 
     // Append a new command to the FavoriteCommands list
@@ -59,9 +62,9 @@ public static class DataStorage
     // Clear all saved data
     public static void ClearAll()
     {
-        if (File.Exists(FilePath))
+        if (File.Exists(filePath))
         {
-            File.Delete(FilePath);
+            File.Delete(filePath);
         }
     }
 }

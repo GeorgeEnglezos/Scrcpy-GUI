@@ -11,7 +11,6 @@ public partial class OutputPanel : ContentView
     public event EventHandler<string>? PageRefreshed;
     const string baseScrcpyCommand = "scrcpy.exe --pause-on-exit=if-error";
 
-    // Add a public parameterless constructor
     public OutputPanel()
     {
         InitializeComponent();
@@ -21,7 +20,16 @@ public partial class OutputPanel : ContentView
         command = baseScrcpyCommand;
     }
 
-    // Existing constructor with SettingsParentPanel parameter
+    public void ApplySavedVisibilitySettings()
+    {
+        var settings = DataStorage.LoadData().AppSettings;
+
+        // Apply visibility based on saved AppSettings
+        ChecksPanel.IsVisible = !settings.HideStatusPanel;
+        WirelessConnectionPanel.IsVisible = !settings.HideTcpPanel;
+        AdbOutputLabelBorder.IsVisible = !settings.HideOutputPanel;
+    }
+
     public OutputPanel(OptionsPanel settingsParentPanel) : this()
     {
         SetOptionsPanelReferenceFromMainPage(settingsParentPanel);
@@ -37,8 +45,6 @@ public partial class OutputPanel : ContentView
         base.OnBindingContextChanged();
     }
 
-
-    // Method to set the SettingsParentPanel instance and subscribe to its event
     public void SetOptionsPanelReferenceFromMainPage(OptionsPanel optionsPanel)
     {
         optionsPanel.ScrcpyCommandChanged += OnScrcpyCommandChanged;
@@ -46,10 +52,8 @@ public partial class OutputPanel : ContentView
 
     private void OnScrcpyCommandChanged(object? sender, string e)
     {
-        Debug.WriteLine($"Scrcpy command changed: {e}");
         command = e;
 
-        // Update the UI with the new command
         if (FinalCommandPreview != null)
         {
             FinalCommandPreview.Text = e;
@@ -60,20 +64,16 @@ public partial class OutputPanel : ContentView
     {
         try
         {
-            // Await the async method to get the result
             var result = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.RunScrcpy, command);
 
-            // Access the response values
             AdbOutputLabel.Text = string.IsNullOrEmpty(result.RawError)
                 ? $"Output:\n{result.Output}"
                 : $"Error:\n{result.RawError}";
 
-            // Save the most recent command
             DataStorage.SaveMostRecentCommand(command);
         }
         catch (Exception ex)
         {
-            // Handle any exception that occurred during the command execution
             AdbOutputLabel.Text = $"Exception:\n{ex.Message}";
         }
     }
@@ -112,5 +112,4 @@ public partial class OutputPanel : ContentView
         DataStorage.AppendFavoriteCommand(command);
         Application.Current.MainPage.DisplayAlert("Command saved", "View the saved commands in the 'Favorites Page'!", "OK");
     }
-
 }
