@@ -4,11 +4,10 @@
              x:Class="ScrcpyGUI.Controls.OptionsScreenRecordingPanel">
 
         <!-- Main Grid -->
-        <Grid RowDefinitions="*">
+    <Grid RowDefinitions="*" Padding="0">
             <!-- Border -->
-        <Border Grid.Row="1" Padding="20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
+        <Border Grid.Row="1" Padding="20, 30" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
             <FlexLayout x:Name="OptionsContainer"
-                IsVisible="{Binding Source={x:Reference EnableRecordingCheckBox}, Path=IsChecked}"
                 Direction="Row"
                 Wrap="Wrap"
                 JustifyContent="SpaceBetween"
@@ -16,26 +15,26 @@
                 AlignContent="Start">
                 
                 <!-- Resolution -->
-                <HorizontalStackLayout WidthRequest="330" Spacing="6" Margin="0,2">
-                    <Label Text="Max Size"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="100" />
+                <HorizontalStackLayout WidthRequest="400" Spacing="10" Margin="0,2">
+                    <Label Text="Max Size"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="140" />
                     <Entry x:Name="ResolutionEntry" Placeholder="(Biggest value only) e.g., 1920" Keyboard="Numeric" TextChanged="OnResolutionChanged"  VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
                 <!-- Bitrate -->
-                <HorizontalStackLayout WidthRequest="330" Spacing="6" Margin="0,2">
-                    <Label Text="Bitrate (Mbps)"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="120" />
+                <HorizontalStackLayout WidthRequest="330" Spacing="10" Margin="0,2">
+                    <Label Text="Bitrate (Mbps)"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="140" />
                     <Entry x:Name="BitrateEntry" Placeholder="e.g., 8" Keyboard="Numeric" TextChanged="OnBitrateChanged"  VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
                 <!-- Framerate -->
-                <HorizontalStackLayout WidthRequest="220" Spacing="6" Margin="0,2">
-                    <Label Text="Max fps"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="100" />
+                <HorizontalStackLayout WidthRequest="330" Spacing="10" Margin="0,2">
+                    <Label Text="Max fps"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="140" />
                     <Entry x:Name="FramerateEntry" Placeholder="e.g., 30" Keyboard="Numeric" TextChanged="OnFramerateChanged"  VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
                 <!-- Output Format -->
-                <HorizontalStackLayout WidthRequest="330" Spacing="6" Margin="0,2">
-                    <Label Text="Output Format"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="120" />
+                <HorizontalStackLayout WidthRequest="330" Spacing="10" Margin="0,2">
+                    <Label Text="Output Format"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="140" />
                     <Picker x:Name="OutputFormatPicker" SelectedIndexChanged="OnOutputFormatChanged"  VerticalOptions="Center">
                         <Picker.ItemsSource>
                             <x:Array Type="{x:Type x:String}">
@@ -54,8 +53,8 @@
                 </HorizontalStackLayout>
 
                 <!-- Output File -->
-                <HorizontalStackLayout WidthRequest="500" Spacing="6" Margin="0,2">
-                    <Label Text="Output File"  VerticalTextAlignment="Center" FontSize="16" WidthRequest="100" />
+                <HorizontalStackLayout WidthRequest="500" Spacing="10" Margin="0,2">
+                    <Label Text="Output File" VerticalTextAlignment="Center" FontSize="16" WidthRequest="140" />
                     <Entry x:Name="OutputFileEntry" Placeholder="e.g., scrcpy --record D:\Recordings\output.mp4" TextChanged="OnOutputFileChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
@@ -69,11 +68,6 @@
                     HorizontalOptions="Center"
                     ZIndex="1"
                     TranslationY="-25">
-            <CheckBox x:Name="EnableRecordingCheckBox" 
-                    CheckedChanged="OnEnableRecordingCheckedChanged" 
-                    VerticalOptions="Center"
-                    HorizontalOptions="Center"
-                    Margin="10,0,0,0"/>
             <Label Text="Recording"
                     TextColor="{StaticResource Purple2}"
                     FontSize="22"
