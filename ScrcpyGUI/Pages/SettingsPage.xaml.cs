@@ -1,66 +1,67 @@
-﻿using Microsoft.Maui.Layouts;
+﻿using ScrcpyGUI.Controls;
 using ScrcpyGUI.Models;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using static System.Net.Mime.MediaTypeNames;
+using System;
 
-namespace ScrcpyGUI
+namespace ScrcpyGUI;
+
+public partial class SettingsPage : ContentPage
 {
-    public partial class SettingsPage : ContentPage
+    ScrcpyGuiData scrcpyData = new ScrcpyGuiData();
+    AppSettings settings = new AppSettings();
+
+    public SettingsPage()
     {
+        InitializeComponent();
+        scrcpyData = DataStorage.LoadData();
+        settings = scrcpyData.AppSettings;
+        InitializeCheckboxValues();
+    }
 
-        AppSettings settings = new AppSettings();
-        ScrcpyGuiData scrcpyData = new ScrcpyGuiData();
-        public SettingsPage()
-        {
-            InitializeComponent();
-            scrcpyData = DataStorage.LoadData();
-            settings = scrcpyData.AppSettings;
-        }
+    private void InitializeCheckboxValues()
+    {
+        CmdCheckbox.IsChecked = settings.OpenCmds;
+        WirelessPanelCheckbox.IsChecked = settings.HideTcpPanel;
+        StatusPanelCheckbox.IsChecked = settings.HideStatusPanel;
+        OutputPanelCheckbox.IsChecked = settings.HideOutputPanel;
+        RecordingPanelCheckbox.IsChecked = settings.HideRecordingPanel;
+        VirtualMonitorCheckbox.IsChecked = settings.HideVirtualMonitorPanel;
+    }
 
-        private void OnCMDChanged(object sender, CheckedChangedEventArgs e)
-        {
-            bool isChecked = e.Value;
-            settings.OpenCmds = isChecked;
-            SaveChanges();
-        }        
-        
-        private void OnWirelessPanelChanged(object sender, CheckedChangedEventArgs e)
-        {
-            bool isChecked = e.Value;
-            settings.ShowTcpPanel = isChecked;
-            SaveChanges();
-        }        
+    private void OnCMDChanged(object sender, CheckedChangedEventArgs e)
+    {
+        settings.OpenCmds = e.Value;
+    }
 
-        private void OnStatusPanelChanged(object sender, CheckedChangedEventArgs e)
-        {
-            bool isChecked = e.Value;
-            settings.ShowStatusPanel = isChecked;
-            SaveChanges();
-        }
+    private void OnWirelessPanelChanged(object sender, CheckedChangedEventArgs e)
+    {
+        settings.HideTcpPanel = e.Value;
+    }
 
-        private void OnHideVirtualDisplayPanelChanged(object sender, CheckedChangedEventArgs e)
-        {
-            bool isChecked = e.Value;
-            settings.HideVirtualMonitorPanel = isChecked;
-            SaveChanges();
-        }
-        private void OnHideRecordingPanelChanged(object sender, CheckedChangedEventArgs e)
-        {
-            bool isChecked = e.Value;
-            settings.HideRecordingPanel = isChecked;
-            SaveChanges();
-        }
-        private void OnHideOutputPanelChanged(object sender, CheckedChangedEventArgs e)
-        {
-            bool isChecked = e.Value;
-            settings.HideOutputPanel = isChecked;
-            SaveChanges();
-        }
+    private void OnStatusPanelChanged(object sender, CheckedChangedEventArgs e)
+    {
+        settings.HideStatusPanel = e.Value;
+    }
 
-        private void SaveChanges() {
-            scrcpyData.AppSettings = settings;
-            DataStorage.SaveData(scrcpyData);
-        }
+    private void OnHideVirtualDisplayPanelChanged(object sender, CheckedChangedEventArgs e)
+    {
+        settings.HideVirtualMonitorPanel = e.Value;
+    }
+
+    private void OnHideRecordingPanelChanged(object sender, CheckedChangedEventArgs e)
+    {
+        settings.HideRecordingPanel = e.Value;
+    }
+
+    private void OnHideOutputPanelChanged(object sender, CheckedChangedEventArgs e)
+    {
+        settings.HideOutputPanel = e.Value;
+    }
+
+    private void SaveChanges(object sender, EventArgs e)
+    {
+        scrcpyData = DataStorage.LoadData();
+        scrcpyData.AppSettings = settings;
+        DataStorage.SaveData(scrcpyData);
+        DisplayAlert("Info", "Changes Saved", "OK");
     }
 }

@@ -30,8 +30,8 @@ namespace ScrcpyGUI.Models
 
     public class AppSettings() {
         public bool OpenCmds = false;
-        public bool ShowTcpPanel = false;
-        public bool ShowStatusPanel = false;
+        public bool HideTcpPanel = false;
+        public bool HideStatusPanel = false;
         public bool HideOutputPanel = false;
         public bool HideRecordingPanel = false;
         public bool HideVirtualMonitorPanel = false;

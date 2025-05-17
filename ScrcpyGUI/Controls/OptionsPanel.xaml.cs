@@ -27,6 +27,15 @@ public partial class OptionsPanel : ContentView
         OptionsAudioPanel.AudioSettingsChanged += OnAudioSettingsChanged;
     }
 
+    public void ApplySavedVisibilitySettings()
+    {
+        var settings = DataStorage.LoadData().AppSettings;
+
+        // Apply visibility based on saved AppSettings
+        OptionsScreenRecordingPanel.IsVisible = !settings.HideRecordingPanel;
+        OptionsVirtualDisplayPanel.IsVisible = !settings.HideVirtualMonitorPanel;
+    }
+
     public void SetOutputPanelReferenceFromMainPage(OutputPanel outputpanel)
     {
         outputpanel.PageRefreshed += OnRefreshPage;

@@ -71,25 +71,26 @@
                     </ImageButton.Source>
                 </ImageButton>
 
-                <Border Grid.Row="3" Grid.ColumnSpan="3"
-                    Padding="10"
-                    StrokeThickness="3"
-                    Stroke="{StaticResource Purple2}"
-                    BackgroundColor="#101010"
-                    MinimumHeightRequest="100"
-                    Margin="0,10,0,0">
+                <Border x:Name="AdbOutputLabelBorder" 
+                        Grid.Row="3" 
+                        Grid.ColumnSpan="3"                             
+                        StrokeThickness="3" 
+                        Stroke="{StaticResource Purple2}">
 
-                    <Label x:Name="AdbOutputLabel"
-                        Text="Command Output"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Center"
-                        TextColor="white"
-                        FontSize="16"
-                        FontAttributes="Bold"/>
+                    <Editor x:Name="AdbOutputLabel"
+                            Text="Command Output"
+                            FontFamily="Consolas"
+                            FontSize="15"
+                            BackgroundColor="#101010"
+                            MinimumHeightRequest="100"
+                            VerticalOptions="Center"
+                            TextColor="white"
+                            FontAttributes="Bold"
+                            IsReadOnly="True"
+                            Margin="0"
+                            VerticalTextAlignment="Start"
+                            HorizontalOptions="FillAndExpand"/>
                 </Border>
-
-
-
             </Grid>
         </Border>
     </Grid>

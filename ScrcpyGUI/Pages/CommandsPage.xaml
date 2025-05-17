@@ -15,7 +15,7 @@
                    Padding="10,0"
                    HorizontalOptions="Center"
                    VerticalOptions="Start"
-                   TranslationY="-17"
+                   TranslationY="-20"
                    BackgroundColor="#1f1f1f"
                    TextColor="{StaticResource Purple2}"
                    ZIndex="1"
@@ -32,7 +32,7 @@
                                            HorizontalOptions="Center"
                                            VerticalOptions="Center"
                                            TextColor="White"
-                                           FontSize="20"
+                                           FontSize="18"
                                            FontAttributes="Bold"
                                            Grid.Column="0" />
                         <ImageButton Margin="10, 0, 10, 0"
@@ -59,7 +59,7 @@
                            Padding="10,0"
                            HorizontalOptions="Center"
                            VerticalOptions="Start"
-                           TranslationY="-17"
+                           TranslationY="-20"
                            BackgroundColor="#1f1f1f"
                            TextColor="{StaticResource Purple2}"
                            ZIndex="1"/>
@@ -74,7 +74,7 @@
                                             <Grid.GestureRecognizers>
                                                 <TapGestureRecognizer Tapped="OnCommandTapped" />
                                             </Grid.GestureRecognizers>
-                                            <Label Text="{Binding .}" VerticalOptions="Center" Grid.Column="0" FontSize="20"/>
+                                            <Label Text="{Binding .}" VerticalOptions="Center" Grid.Column="0" FontSize="18" FontAttributes="Bold"/>
                                             <ImageButton Margin="10, 0, 10, 0"
                                                     x:Name="CopyCommand"
                                                     Clicked="OnCopyCommand"

@@ -37,6 +37,8 @@ public static class AdbCmdService
     {
         var response = new CmdCommandResponse();
 
+        bool showCmds = DataStorage.LoadData().AppSettings.OpenCmds && commandType == CommandEnum.RunScrcpy;
+
         try
         {
             // Set up the process information for cmd.exe
@@ -46,9 +48,9 @@ public static class AdbCmdService
                 Arguments = $"/c \"{command}\"",  // Command to run
                 WindowStyle = ProcessWindowStyle.Normal,
                 UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true  // Hide the command window
+                RedirectStandardOutput = !showCmds,
+                RedirectStandardError = !showCmds,
+                CreateNoWindow = !showCmds // Hide the command window
             };
 
             // Store the last command if it's of the RunScrcpy type
@@ -132,7 +134,7 @@ public static class AdbCmdService
 
     public static async Task<bool> CheckIfAdbIsInstalled()
     {
-        var result = await RunAdbCommandAsync(CommandEnum.RunScrcpy, "adb version");
+        var result = await RunAdbCommandAsync(CommandEnum.CheckAdbVersion, "adb version");
         return result.RawOutput.Contains("Android Debug Bridge");
     }
 
@@ -142,7 +144,7 @@ public static class AdbCmdService
         try
         {
             // Run scrcpy with no arguments to check if it is installed and accessible.
-            var result = await RunAdbCommandAsync(CommandEnum.RunScrcpy, "scrcpy --version");
+            var result = await RunAdbCommandAsync(CommandEnum.CheckScrcpyVersion, "scrcpy --version");
 
             // If the exit code is zero, scrcpy is installed and accessible.
             return result.ExitCode == 0;
@@ -156,7 +158,7 @@ public static class AdbCmdService
     }
     public static async Task<ConnectionType> CheckDeviceConnection()
     {
-        var result = await RunAdbCommandAsync(CommandEnum.RunScrcpy, "adb devices");
+        var result = await RunAdbCommandAsync(CommandEnum.CheckAdbVersion, "adb devices");
         var lines = result.Output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
         // Skip the header line

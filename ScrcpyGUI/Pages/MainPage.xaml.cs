@@ -25,6 +25,13 @@ namespace ScrcpyGUI
             AppRefreshed?.Invoke(this, EventArgs.Empty);
         }
 
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+            OutputPanel.ApplySavedVisibilitySettings();
+            OptionsPanel.ApplySavedVisibilitySettings();
+        }
+
         private void OnSizeChanged(object sender, EventArgs e)
         {
             if (Width < 1000) // Example threshold for switching layout

@@ -9,6 +9,7 @@
 
         <Grid ColumnDefinitions="*, Auto, Auto">
             <Label Text="{Binding CommandText, Source={x:Reference This}}"
+                FontFamily="Courier New"
                 Padding="10"
                 HorizontalOptions="Start"
                 VerticalOptions="Center"
