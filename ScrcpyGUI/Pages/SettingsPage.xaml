@@ -1,0 +1,59 @@
+﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             x:Class="ScrcpyGUI.SettingsPage"
+             Shell.Title="">
+             <!--xmlns:sharedControls="clr-namespace:ScrcpyGUI.Controls.SharedControls"-->
+
+    <Grid RowDefinitions="*, Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="20">
+
+                <!--Commands-->
+                <Label Text="App Settings"
+                       TextColor="{StaticResource Secondary}"
+                       Margin="20, 50, 0,5" 
+                       FontSize="30"/>
+                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
+
+                <controls:SettingsPageOptions LabelText="Show CMD windows for scrcpy commands."
+                           IsChecked="{Binding IsCmdChecked}"
+                           CheckedChanged="OnCMDChanged"/>
+
+                <controls:SettingsPageOptions LabelText="Hide TCP panel in Home."
+                           IsChecked="{Binding IsWirelessPanelChecked}"
+                           CheckedChanged="OnWirelessPanelChanged"/>
+
+                <controls:SettingsPageOptions LabelText="Hide Installation Status in Home."
+                           IsChecked="{Binding IsStatusPanelChecked}"
+                           CheckedChanged="OnStatusPanelChanged"/>
+                
+                <controls:SettingsPageOptions LabelText="Hide Output window in Home."
+                           IsChecked="{Binding IsHideOutputStatusPanelChecked}"
+                           CheckedChanged="OnHideOutputPanelChanged"/>
+                                
+                <controls:SettingsPageOptions LabelText="Hide Recording Options in Home."
+                           IsChecked="{Binding IsHideRecordingPanelChecked}"
+                           CheckedChanged="OnHideRecordingPanelChanged"/>
+                                                
+                <controls:SettingsPageOptions LabelText="Hide Virtual Display Options in Home."
+                           IsChecked="{Binding IsHideVirtualDisplayPanelChecked}"
+                           CheckedChanged="OnHideVirtualDisplayPanelChanged"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+
+        <!-- Fixed Footer -->
+        <Border Grid.Row="1"
+                BackgroundColor="{StaticResource BackGroundGrey}"
+                Padding="10"
+                StrokeThickness="0"
+                HorizontalOptions="Fill">
+            <Label Text="Scrcpy GUI v1.3.2 - Created by George Englezos"
+                   HorizontalOptions="Center"
+                   FontSize="Small"
+                   TextColor="{StaticResource Secondary}" />
+        </Border>
+    </Grid>
+</ContentPage>

@@ -34,5 +34,14 @@
             <FontImageSource FontFamily="FontAwesome" Glyph="&#xf05a;" Size="20" />
         </ShellContent.Icon>
     </ShellContent>
+    
+    <ShellContent
+        Title="Settings"
+        ContentTemplate="{DataTemplate local:SettingsPage}"
+        Route="SettingsPage">
+        <ShellContent.Icon>
+            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf013;" Size="20" />
+        </ShellContent.Icon>
+    </ShellContent>
 
 </Shell>

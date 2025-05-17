@@ -107,6 +107,12 @@
 	  <Compile Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml.cs">
 	    <DependentUpon>VirtualDisplayPanel.xaml</DependentUpon>
 	  </Compile>
+	  <Compile Update="Controls\SharedControls\SettingsPageOptions.xaml.cs">
+	    <DependentUpon>SettingsPageOptions.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Pages\SettingsPage.xaml.cs">
+	    <DependentUpon>SettingsPage.xaml</DependentUpon>
+	  </Compile>
 	  <Compile Update="Pages\InfoPage.xaml.cs">
 	    <DependentUpon>InfoPage.xaml</DependentUpon>
 	  </Compile>
@@ -143,7 +149,13 @@
 	  <MauiXaml Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Controls\SharedControls\SettingsPageOptions.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Controls\SharedControls\CommandBorder.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\SettingsPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Pages\InfoPage.xaml">

@@ -109,7 +109,7 @@ public partial class OutputPanel : ContentView
     private void OnSaveGeneratedCommand(object sender, EventArgs e)
     {
         // Append the new command to the existing data
-        DataStorage.AppendCommand(command);
+        DataStorage.AppendFavoriteCommand(command);
         Application.Current.MainPage.DisplayAlert("Command saved", "View the saved commands in the 'Favorites Page'!", "OK");
     }
 

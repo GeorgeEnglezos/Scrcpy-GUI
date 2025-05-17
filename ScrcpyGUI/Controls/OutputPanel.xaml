@@ -10,9 +10,9 @@
         Padding="20"
         MinimumWidthRequest="300"
         HorizontalOptions="FillAndExpand">
-        
+
         <Label Text="Commands Preview and Output"
-               TextColor="MintCream"
+            TextColor="MintCream"
             FontSize="24"
             FontAttributes="Bold"
             Padding="10,0"

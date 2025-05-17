@@ -11,19 +11,32 @@ namespace ScrcpyGUI.Models
     {
         public string MostRecentCommand { get; set; }
         public List<string> FavoriteCommands { get; set; }
+        public AppSettings AppSettings { get; set; }
 
-        public ScrcpyGuiData(string mostRecentCommand, List<string> favoriteCommands)
+        public ScrcpyGuiData(string mostRecentCommand, List<string> favoriteCommands, AppSettings appSettings)
         {
             MostRecentCommand = mostRecentCommand;
             FavoriteCommands = favoriteCommands ?? new List<string>();
+            AppSettings = appSettings ?? new AppSettings();
         }
 
         public ScrcpyGuiData()
         {
             MostRecentCommand = "";
             FavoriteCommands = new List<string>();
+            AppSettings = new AppSettings();
         }
     }
+
+    public class AppSettings() {
+        public bool OpenCmds = false;
+        public bool ShowTcpPanel = false;
+        public bool ShowStatusPanel = false;
+        public bool HideOutputPanel = false;
+        public bool HideRecordingPanel = false;
+        public bool HideVirtualMonitorPanel = false;
+    }
+
     public class ScreenRecordingOptions
     {
 

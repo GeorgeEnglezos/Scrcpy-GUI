@@ -2,7 +2,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="ScrcpyGUI.Controls.OptionsPackageSelectionPanel">
-    <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="*, Auto, Auto">
+    <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="*, Auto, Auto,Auto">
 
         <Entry
         x:Name="PackageSearchEntry"
@@ -30,11 +30,28 @@
         Margin="0"
         Padding="0"
         Grid.Row="0"
-        Grid.Column="2"
+        Grid.Column="3"
         HorizontalOptions="End"
         VerticalOptions="Center">
         <ImageButton.Source>
                 <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Buttons}" Size="20"/>
+            </ImageButton.Source>
+        </ImageButton>
+        
+        <ImageButton
+        ToolTipProperties.Text="Refresh Packages"
+        Clicked="RefreshPackages"            
+        HeightRequest="30"
+        WidthRequest="30"
+        BackgroundColor="Transparent"
+        Margin="0"
+        Padding="0"
+        Grid.Row="0"
+        Grid.Column="2"
+        HorizontalOptions="End"
+        VerticalOptions="Center">
+        <ImageButton.Source>
+                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf021;" Color="{StaticResource Buttons}" Size="20"/>
             </ImageButton.Source>
         </ImageButton>
 
