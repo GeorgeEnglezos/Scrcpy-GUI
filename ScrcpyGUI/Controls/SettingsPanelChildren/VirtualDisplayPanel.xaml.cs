@@ -13,7 +13,6 @@ public partial class OptionsVirtualDisplayPanel : ContentView
     {
         InitializeComponent();
 
-        // Add event handlers for property changes
         BindingContext = virtualDisplaySettings;
     }
 
@@ -22,7 +21,6 @@ public partial class OptionsVirtualDisplayPanel : ContentView
         VirtualDisplaySettingsChanged?.Invoke(this, virtualDisplaySettings.GenerateCommandPart());
     }
 
-    // Event handler for NewDisplay property
     private void OnNewDisplayCheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         virtualDisplaySettings.NewDisplay = e.Value;
@@ -30,14 +28,12 @@ public partial class OptionsVirtualDisplayPanel : ContentView
         OnVirtualDisplaySettings_Changed();
     }
 
-    // Event handler for Resolution property
     private void OnResolutionTextChanged(object sender, TextChangedEventArgs e)
     {
         virtualDisplaySettings.Resolution = e.NewTextValue;
         OnVirtualDisplaySettings_Changed();
     }
 
-    // Event handler for Resolution selection
     private void OnResolutionSelected(object sender, EventArgs e)
     {
         if (ResolutionPicker.SelectedItem != null)
@@ -47,22 +43,18 @@ public partial class OptionsVirtualDisplayPanel : ContentView
         }
     }
 
-    // Event handler for DPI property
     private void OnDpiTextChanged(object sender, TextChangedEventArgs e)
     {
-        // Assuming a DPI property exists in VirtualDisplayOptions
         virtualDisplaySettings.Dpi = e.NewTextValue;
         OnVirtualDisplaySettings_Changed();
     }
 
-    // Event handler for NoVdDestroyContent property
     private void OnNoVdDestroyContentCheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         virtualDisplaySettings.NoVdDestroyContent = e.Value;
         OnVirtualDisplaySettings_Changed();
     }
 
-    // Event handler for NoVdSystemDecorations property
     private void OnNoVdSystemDecorationsCheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         virtualDisplaySettings.NoVdSystemDecorations = e.Value;

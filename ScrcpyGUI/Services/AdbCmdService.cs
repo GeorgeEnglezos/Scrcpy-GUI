@@ -41,11 +41,10 @@ public static class AdbCmdService
 
         try
         {
-            // Set up the process information for cmd.exe
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = $"/c \"{command}\"",  // Command to run
+                Arguments = $"/c \"{command}\"",
                 WindowStyle = ProcessWindowStyle.Normal,
                 UseShellExecute = false,
                 RedirectStandardOutput = !showCmds,
@@ -53,7 +52,6 @@ public static class AdbCmdService
                 CreateNoWindow = !showCmds // Hide the command window
             };
 
-            // Store the last command if it's of the RunScrcpy type
             if (commandType == CommandEnum.RunScrcpy)
             {
                 Preferences.Set("lastCommand", command);
@@ -96,9 +94,6 @@ public static class AdbCmdService
                 process.WaitForExit();
             });
 
-            // Log the process exit code
-            Debug.WriteLine($"Exit Code: {process.ExitCode}");
-
             // Capture the output and error from the StringBuilder objects
             var output = outputBuilder.ToString();
             var errorOutput = errorBuilder.ToString();
@@ -106,15 +101,14 @@ public static class AdbCmdService
             // Store all outputs in the global lists for history tracking
             if (!string.IsNullOrEmpty(output))
             {
-                OutputHistory.Add(output);  // Keep all outputs
+                OutputHistory.Add(output);
             }
 
             if (!string.IsNullOrEmpty(errorOutput))
             {
-                ErrorHistory.Add(errorOutput);  // Keep all error outputs
+                ErrorHistory.Add(errorOutput);
             }
 
-            // Determine what to set as the response output
             response.RawOutput = output;
             response.RawError = errorOutput;
             response.Output = string.IsNullOrEmpty(errorOutput) ? output : errorOutput;
@@ -125,7 +119,6 @@ public static class AdbCmdService
         }
         catch (Exception ex)
         {
-            // Catch any exceptions and log them
             Debug.WriteLine($"Exception: {ex.Message}");
             response.Output = $"Error: {ex.Message}";
             return response;
@@ -143,7 +136,6 @@ public static class AdbCmdService
     {
         try
         {
-            // Run scrcpy with no arguments to check if it is installed and accessible.
             var result = await RunAdbCommandAsync(CommandEnum.CheckScrcpyVersion, "scrcpy --version");
 
             // If the exit code is zero, scrcpy is installed and accessible.

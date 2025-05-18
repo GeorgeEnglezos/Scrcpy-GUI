@@ -15,9 +15,9 @@ namespace ScrcpyGUI.Models
 
         public CmdCommandResponse()
         {
-            Output = string.Empty; // Initialize Output to an empty string
-            RawError = string.Empty; // Initialize RawError to an empty string
-            RawOutput = string.Empty; // Initialize RawOutput to an empty string
+            Output = string.Empty;
+            RawError = string.Empty;
+            RawOutput = string.Empty;
         }
     }
 }
