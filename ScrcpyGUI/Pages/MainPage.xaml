@@ -11,7 +11,7 @@
     <Grid RowDefinitions="Auto, *, Auto">
 
         <!-- Fixed Header -->
-        <controls:FixedHeader Grid.Row="0" />
+        <controls:FixedHeader x:Name="FixedHeader" Grid.Row="0" />
 
         <ScrollView Grid.Row="1" Margin="0, 0">
             <Grid x:Name="MainGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,*">

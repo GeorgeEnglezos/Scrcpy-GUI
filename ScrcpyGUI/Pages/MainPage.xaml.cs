@@ -15,8 +15,11 @@ namespace ScrcpyGUI
             // Explicitly set the SettingsParentPanel for the OutputPanel
             OutputPanel.SetOptionsPanelReferenceFromMainPage(OptionsPanel);
             OptionsPanel.SetOutputPanelReferenceFromMainPage(OutputPanel);
-            OutputPanel.PageRefreshed += OnRefreshPage;
+            //OutputPanel.PageRefreshed += OnRefreshPage;
+            FixedHeader.DeviceChanged += OnDeviceChanged;
         }
+
+
 
         public event EventHandler AppRefreshed;
 
@@ -63,10 +66,14 @@ namespace ScrcpyGUI
                 Grid.SetRow(OutputPanel, 0); // Assign OutputPanel to the first row
             }
         }
-
-        public async void ReloadPage() {
-            //await Navigation.PushAsync(new MainPage());
-            //Navigation.RemovePage(this);
+        private async void OnDeviceChanged(object? sender, string e)
+        {
+            await OptionsPanel.PackageSelector.LoadPackages();
         }
+
+        //public async void ReloadPage() {
+        //    //await Navigation.PushAsync(new MainPage());
+        //    //Navigation.RemovePage(this);
+        //}
     }
 }
