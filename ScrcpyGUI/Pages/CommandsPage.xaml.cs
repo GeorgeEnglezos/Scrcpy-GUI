@@ -72,14 +72,14 @@ namespace ScrcpyGUI
         {
             var button = (ImageButton)sender;
             var command = (string)button.BindingContext;
-            // Handle the copy command event here
+
             Clipboard.SetTextAsync(command);
             DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
         }
         private void OnCopyMostRecentCommand(object sender, EventArgs e)
         {
             var command = MostRecentCommand.Text;
-            // Handle the copy command event here
+
             Clipboard.SetTextAsync(command);
             DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
         }

@@ -81,7 +81,7 @@
                                TextColor="{StaticResource Secondary}"
                                Margin="0,0,0,10" />
                             <Button Text="Open GitHub"
-                                Clicked="OpenScrcpyOfficial" />
+                                Clicked="OpenScrcpyGui" />
                         </VerticalStackLayout>
                     </Border>
 

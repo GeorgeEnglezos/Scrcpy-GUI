@@ -9,7 +9,6 @@ public static class DataStorage
     private static readonly string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ScrcpyGui-Data.json");
     public static ScrcpyGuiData staticSavedData { get; set; } = new ScrcpyGuiData();
 
-    // Load the ScrcpyGuiData
     public static ScrcpyGuiData LoadData()
     {
         if (!File.Exists(filePath))
@@ -22,7 +21,6 @@ public static class DataStorage
         return staticSavedData;
     }
 
-    // Save the ScrcpyGuiData to a file
     public static void SaveData(ScrcpyGuiData data)
     {
         staticSavedData = data;
@@ -30,7 +28,6 @@ public static class DataStorage
         File.WriteAllText(filePath, jsonString);
     }
 
-    // Append a new command to the FavoriteCommands list
     public static void AppendFavoriteCommand(string newCommand)
     {
         var data = LoadData();
@@ -38,7 +35,6 @@ public static class DataStorage
         SaveData(data);
     }
 
-    // Remove a command at a specific index
     public static bool RemoveFavoriteCommandAtIndex(int index)
     {
         var data = LoadData();
@@ -51,7 +47,6 @@ public static class DataStorage
         return false;
     }
 
-    // Save the most recent command
     public static void SaveMostRecentCommand(string command)
     {
         var data = LoadData();
@@ -59,7 +54,6 @@ public static class DataStorage
         SaveData(data);
     }
 
-    // Clear all saved data
     public static void ClearAll()
     {
         if (File.Exists(filePath))

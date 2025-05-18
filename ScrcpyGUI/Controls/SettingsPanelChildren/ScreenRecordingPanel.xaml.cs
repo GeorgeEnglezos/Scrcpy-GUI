@@ -20,7 +20,6 @@ public partial class OptionsScreenRecordingPanel : ContentView
             {
                 ScreenRecordingOptions_Changed();
 
-                // Optionally, clear the UI fields
                 ResolutionEntry.Text = string.Empty;
                 BitrateEntry.Text = string.Empty;
                 FramerateEntry.Text = string.Empty;

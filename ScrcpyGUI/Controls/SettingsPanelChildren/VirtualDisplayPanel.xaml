@@ -4,56 +4,78 @@
              x:Class="ScrcpyGUI.Controls.OptionsVirtualDisplayPanel">
 
         <!-- Main Grid -->
-    <Grid RowDefinitions="Auto, *" Padding="0, 30">
+    <Grid RowDefinitions="*" Padding="0" Margin="0, 30">
             <!-- Border -->
-        <Border Grid.Row="1" Padding="20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
+        <Border Grid.Row="1" Padding="20, 30" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
                 <FlexLayout x:Name="OptionsContainer" 
-                        Wrap="Wrap" 
-                        Direction="Row" 
-                        JustifyContent="Center"
-                        AlignItems="Center">
+                    Direction="Row"
+                    Wrap="Wrap"
+                    JustifyContent="SpaceBetween"
+                    AlignItems="Center"
+                    AlignContent="Start">
 
-                <HorizontalStackLayout>
-                    <Label FontSize="16" Text="NewDisplay" VerticalTextAlignment="Center" Margin="0,5"/>
-                    <CheckBox x:Name="NewDisplay" CheckedChanged="OnNewDisplayCheckedChanged" />
-                </HorizontalStackLayout>
+                    <HorizontalStackLayout WidthRequest="350"  Spacing="10" Margin="0,2">
+                        <Label FontSize="16" Text="New display" VerticalTextAlignment="Center" WidthRequest="180"/>
+                        <CheckBox x:Name="NewDisplay" CheckedChanged="OnNewDisplayCheckedChanged" />
+                    </HorizontalStackLayout>
 
-                    <!-- Resolution Dropdown -->
-                <HorizontalStackLayout x:Name="ResolutionContainer" IsVisible="False" WidthRequest="230" Margin="5,5">
-                        <Label FontSize="16" Text="Resolution" VerticalTextAlignment="Center" Padding="10,5"/>
+                        <!-- Resolution Dropdown -->
+                    <HorizontalStackLayout x:Name="ResolutionContainer" IsVisible="False" WidthRequest="350"  Spacing="10" Margin="0,2">
+                        <Label FontSize="16" Text="Resolution" VerticalTextAlignment="Center" WidthRequest="180"/>
                         <Picker x:Name="ResolutionPicker" SelectedIndexChanged="OnResolutionSelected">
                             <Picker.ItemsSource>
                                 <x:Array Type="{x:Type x:String}">
+                                <!--Most Common-->
                                     <x:String>1920x1080</x:String>
                                     <x:String>1280x720</x:String>
                                     <x:String>1366x768</x:String>
                                     <x:String>1600x900</x:String>
                                     <x:String>2560x1440</x:String>
                                     <x:String>3840x2160</x:String>
+                                <!--4:3 Resolutions (Common in older consoles like NES, SNES, PS1)-->
+                                    <x:String>640x480</x:String>
+                                    <x:String>800x600</x:String>
+                                    <x:String>1024x768</x:String>
+                                    <x:String>1152x864</x:String>
+                                    <x:String>1400x1050</x:String>
+                                    <x:String>1600x1200</x:String>
+                                    <x:String>2048x1536</x:String>
+                                <!--16:10 Resolutions (Good compromise between 4:3 and 16:9)-->
+                                    <x:String>1280x800</x:String>
+                                    <x:String>1440x900</x:String>
+                                    <x:String>1680x1050</x:String>
+                                    <x:String>1920x1200</x:String>
+                                    <x:String>2560x1600</x:String>
+                                    <x:String>3840x2400</x:String>
+                                <!--Ultra-wide & Modern-->
+                                    <x:String>2560x1080</x:String>
+                                    <x:String>3440x1440</x:String>
+                                    <x:String>3840x1600</x:String>
+                                    <x:String>5120x1440</x:String>
+                                    <x:String>5120x2160</x:String>
+                                    <x:String>7680x4320</x:String>
                                 </x:Array>
                             </Picker.ItemsSource>
                         </Picker>
                     </HorizontalStackLayout>
 
-                <HorizontalStackLayout  ToolTipProperties.Text="Move to main display after closing the window" >
-                    <Label FontSize="16" Text="Don't destroy content" VerticalTextAlignment="Center" Margin="5,5"/>
+                    <HorizontalStackLayout  ToolTipProperties.Text="Move to main display after closing the window" WidthRequest="350" Spacing="10" Margin="0,2">
+                        <Label FontSize="16" Text="Don't destroy content" VerticalTextAlignment="Center" WidthRequest="180"/>
                         <CheckBox x:Name="NoVdDestroyContent" CheckedChanged="OnNoVdDestroyContentCheckedChanged"/>
                     </HorizontalStackLayout>
 
-                    <HorizontalStackLayout >
-                    <Label FontSize="16" Text="No display decorations" VerticalTextAlignment="Center" Margin="5,5"/>
-                    <CheckBox x:Name="NoVdSystemDecorations" CheckedChanged="OnNoVdSystemDecorationsCheckedChanged"/>
+                    <HorizontalStackLayout  WidthRequest="350" Spacing="10" Margin="0,2">
+                        <Label FontSize="16" Text="No display decorations" VerticalTextAlignment="Center" WidthRequest="180"/>
+                        <CheckBox x:Name="NoVdSystemDecorations" CheckedChanged="OnNoVdSystemDecorationsCheckedChanged"/>
                     </HorizontalStackLayout>
 
-                    <!-- DPI Input -->
-                    <HorizontalStackLayout >
-                    <Label FontSize="16" Text="DPI" VerticalTextAlignment="Center" Margin="5,5"/>
-                    <Entry x:Name="DpiEntry" TextChanged="OnDpiTextChanged" Keyboard="Numeric"/>
+                    <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
+                    <Label FontSize="16" Text="Dots Per Inch (DPI)" VerticalTextAlignment="Center" WidthRequest="180"/>
+                        <Entry x:Name="DpiEntry" TextChanged="OnDpiTextChanged" Keyboard="Numeric"/>
                     </HorizontalStackLayout>
                 </FlexLayout>
             </Border>
 
-            <!-- Label FontSize="16"and Checkbox -->
             <FlexLayout Grid.RowSpan="2" 
                 BackgroundColor="#1f1f1f"
                 VerticalOptions="Start"
