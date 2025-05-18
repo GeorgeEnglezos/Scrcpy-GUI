@@ -218,4 +218,25 @@ namespace ScrcpyGUI.Models
             }
         }
     }
+
+
+    public class ConnectedDevice
+    {
+        public string CombinedName { get; set; }
+        public string DeviceName { get; set; }
+        public string DeviceId { get; set; }
+
+        public ConnectedDevice(){
+            CombinedName = "";
+            DeviceName = "";
+            DeviceId = "";
+        }
+
+        public ConnectedDevice(string combinedName, string deviceName, string id)
+        {
+            this.CombinedName = combinedName;
+            this.DeviceName = deviceName;
+            this.DeviceId = id;
+        }
+    }
 }

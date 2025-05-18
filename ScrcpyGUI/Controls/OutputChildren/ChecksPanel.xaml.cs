@@ -37,6 +37,20 @@ namespace ScrcpyGUI.Controls
             InitializeComponent();
             BindingContext = this;
             PerformInitialChecks();
+            StartDeviceWatcher();
+        }
+
+        private void StartDeviceWatcher()
+        {
+            Dispatcher.StartTimer(TimeSpan.FromSeconds(5), () =>
+            {
+                Dispatcher.Dispatch(() =>
+                {
+                    RefreshStatus();
+                });
+
+                return true; // Keep the timer running
+            });
         }
 
         private void OnRefreshStatusClicked(object sender, EventArgs e)

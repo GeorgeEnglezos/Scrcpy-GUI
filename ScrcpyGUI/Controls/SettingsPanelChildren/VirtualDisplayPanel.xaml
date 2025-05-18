@@ -99,10 +99,10 @@
                     Padding="0"
                     HorizontalOptions="Center"
                     VerticalOptions="Center">
-                <ImageButton.Source>
-                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Buttons}" Size="20"/>
-                </ImageButton.Source>
-            </ImageButton>
-        </FlexLayout>
+                    <ImageButton.Source>
+                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Buttons}" Size="20"/>
+                    </ImageButton.Source>
+                </ImageButton>
+            </FlexLayout>
         </Grid>
 </ContentView>

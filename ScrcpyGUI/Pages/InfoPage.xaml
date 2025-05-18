@@ -110,15 +110,6 @@
 
 
         <!-- Fixed Footer -->
-        <Border Grid.Row="1"
-                BackgroundColor="{StaticResource BackGroundGrey}"
-                Padding="10"
-                StrokeThickness="0"
-                HorizontalOptions="Fill">
-            <Label Text="Scrcpy GUI v1.3.3 - Developed by George Englezos"
-                   HorizontalOptions="Center"
-                   FontSize="Small"
-                   TextColor="{StaticResource Secondary}" />
-        </Border>
+        <controls:FixedFooter Grid.Row="1" />
     </Grid>
 </ContentPage>
