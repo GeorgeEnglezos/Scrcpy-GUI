@@ -1,4 +1,5 @@
 ﻿using Microsoft.Maui.Controls.Internals;
+using Microsoft.VisualBasic;
 using ScrcpyGUI.Models;
 using System;
 using System.Collections.Generic;
@@ -9,8 +10,8 @@ using System.Threading.Tasks;
 
 public static class AdbCmdService
 {
-    public const string allPackagesCommand = "adb shell pm list packages";
-    public const string installedPackagesCommand = "adb shell pm list packages -3";
+    public const string allPackagesCommand = "shell pm list packages";
+    public const string installedPackagesCommand = "shell pm list packages -3";
     public static ConnectedDevice selectedDevice = new ConnectedDevice();
     public enum CommandEnum
     {
@@ -41,6 +42,13 @@ public static class AdbCmdService
 
         try
         {
+            if (commandType == CommandEnum.RunScrcpy) {
+                command = $"scrcpy.exe -s {selectedDevice.DeviceId} {command} ";
+            }
+            if (commandType == CommandEnum.GetPackages) {
+                command = $"adb -s {selectedDevice.DeviceId} {command} ";
+            }
+
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
@@ -54,7 +62,6 @@ public static class AdbCmdService
 
             if (commandType == CommandEnum.RunScrcpy)
             {
-                command += $" -s{selectedDevice.DeviceId}";
                 Preferences.Set("lastCommand", command);
             }
 
@@ -188,6 +195,19 @@ public static class AdbCmdService
 
         return ConnectionType.None; // No connected device found
     }
+
+    public async static Task<string> RunTCPPort(string port)
+    {
+        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"adb tcpip {port}");
+        return result.Output.ToString();
+    }
+
+    public async static Task<string> RunPhoneIp(string ip)
+    {
+        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"adb connect {ip}");
+        return result.Output.ToString();
+    }
+
     public static List<ConnectedDevice> GetAdbDevices()
     {
         var list = new List<ConnectedDevice>();
@@ -227,16 +247,5 @@ public static class AdbCmdService
         }
 
         return list;
-    }
-    public async static Task<string> RunTCPPort(string port)
-    {
-        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"adb tcpip {port}");
-        return result.Output.ToString();
-    }
-
-    public async static Task<string> RunPhoneIp(string ip)
-    {
-        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"adb connect {ip}");
-        return result.Output.ToString();
     }
 }

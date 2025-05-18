@@ -5,10 +5,14 @@ using System.Diagnostics;
 namespace ScrcpyGUI.Controls;
 public partial class FixedHeader : ContentView
 {
+
+    public event EventHandler<string>? DeviceChanged;
+
+
     public FixedHeader()
     {
         InitializeComponent();
-        LoadDevices();
+        LoadDevices(true);
         StartDeviceWatcher();
     }
 
@@ -26,7 +30,7 @@ public partial class FixedHeader : ContentView
 
                 Dispatcher.Dispatch(() =>
                 {
-                    LoadDevices();
+                    LoadDevices(false);
                 });
             }
 
@@ -34,14 +38,14 @@ public partial class FixedHeader : ContentView
         });
     }
 
-    private void LoadDevices()
+    private void LoadDevices(bool initial)
     {
         var devices = AdbCmdService.GetAdbDevices();
         DevicePicker.ItemsSource = devices;
 
         if (devices.Count > 0)
         {
-            DevicePicker.SelectedIndex = 0;
+            if (initial) DevicePicker.SelectedIndex = 0;
             if (devices.Count == 1)
             {
                 DevicePicker.IsEnabled = false;
@@ -70,6 +74,10 @@ public partial class FixedHeader : ContentView
         string deviceId = selectedDevice.DeviceId;
 
         AdbCmdService.selectedDevice = selectedDevice;
+
+        //Fire event
+        DeviceChanged?.Invoke(this, "");
+
     }
 
 }

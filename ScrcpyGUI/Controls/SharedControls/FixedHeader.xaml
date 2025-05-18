@@ -10,7 +10,7 @@
             StrokeThickness="0"
             HorizontalOptions="Fill">
 
-        <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+        <HorizontalStackLayout Spacing="10" VerticalOptions="Center" HorizontalOptions="Center">
             <Label Text="Scrcpy-GUI v1.4.0 -"
                    FontSize="16"
                    FontAttributes="Bold"

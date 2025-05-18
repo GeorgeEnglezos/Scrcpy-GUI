@@ -5,10 +5,12 @@ namespace ScrcpyGUI.Controls;
 
 public partial class OptionsPanel : ContentView
 {
+
+    public OptionsPackageSelectionPanel PackageSelector => OptionsPackageSelectionPanel;
     public event EventHandler<string> ScrcpyCommandChanged;
     public event EventHandler PageRefreshed;
 
-    const string baseScrcpyCommand = "scrcpy.exe --pause-on-exit=if-error";
+    const string baseScrcpyCommand = " --pause-on-exit=if-error";
     private string settingSelectedPackage = "";
     private string recordingCommandPart;
     private string generalCommandPart;
