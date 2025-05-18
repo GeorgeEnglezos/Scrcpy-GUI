@@ -107,6 +107,12 @@
 	  <Compile Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml.cs">
 	    <DependentUpon>VirtualDisplayPanel.xaml</DependentUpon>
 	  </Compile>
+	  <Compile Update="Controls\SharedControls\FixedFooter.xaml.cs">
+	    <DependentUpon>FixedFooter.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Controls\SharedControls\FixedHeader.xaml.cs">
+	    <DependentUpon>FixedHeader.xaml</DependentUpon>
+	  </Compile>
 	  <Compile Update="Controls\SharedControls\SettingsPageOptions.xaml.cs">
 	    <DependentUpon>SettingsPageOptions.xaml</DependentUpon>
 	  </Compile>
@@ -147,6 +153,12 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Controls\SharedControls\FixedFooter.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Controls\SharedControls\FixedHeader.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Controls\SharedControls\SettingsPageOptions.xaml">

@@ -8,12 +8,17 @@
              x:DataType="local:MainPage"
              SizeChanged="OnSizeChanged"
              Shell.Title="">
+    <Grid RowDefinitions="Auto, *, Auto">
 
-    <ScrollView Margin="0, 30">
-        <Grid x:Name="MainGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,*">
-            <controls:OptionsPanel x:Name="OptionsPanel" Margin="0, 0, 10, 0" Grid.Column="0" Grid.Row="0" MaximumWidthRequest="1000"/>
-            <controls:OutputPanel x:Name="OutputPanel" Grid.Column="1" Grid.Row="0" MaximumWidthRequest="1000"/>
-        </Grid>
-    </ScrollView>
+        <!-- Fixed Header -->
+        <controls:FixedHeader Grid.Row="0" />
+
+        <ScrollView Grid.Row="1" Margin="0, 0">
+            <Grid x:Name="MainGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,*">
+                <controls:OptionsPanel x:Name="OptionsPanel" Margin="0, 0, 10, 0" Grid.Column="0" Grid.Row="0" MaximumWidthRequest="1000"/>
+                <controls:OutputPanel x:Name="OutputPanel" Grid.Column="1" Grid.Row="0" MaximumWidthRequest="1000"/>
+            </Grid>
+        </ScrollView>
+    </Grid>
 
 </ContentPage>

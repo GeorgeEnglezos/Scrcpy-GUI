@@ -11,7 +11,7 @@ public static class AdbCmdService
 {
     public const string allPackagesCommand = "adb shell pm list packages";
     public const string installedPackagesCommand = "adb shell pm list packages -3";
-
+    public static ConnectedDevice selectedDevice = new ConnectedDevice();
     public enum CommandEnum
     {
         GetPackages,
@@ -54,6 +54,7 @@ public static class AdbCmdService
 
             if (commandType == CommandEnum.RunScrcpy)
             {
+                command += $" -s{selectedDevice.DeviceId}";
                 Preferences.Set("lastCommand", command);
             }
 
@@ -187,7 +188,46 @@ public static class AdbCmdService
 
         return ConnectionType.None; // No connected device found
     }
+    public static List<ConnectedDevice> GetAdbDevices()
+    {
+        var list = new List<ConnectedDevice>();
 
+        try
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "adb",
+                    Arguments = "devices -l",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            while (!process.StandardOutput.EndOfStream)
+            {
+                var line = process.StandardOutput.ReadLine();
+                if (!string.IsNullOrWhiteSpace(line) && line.Contains("device") && !line.StartsWith("List"))
+                {
+                    var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    var id = parts[0];
+                    var modelEntry = parts.FirstOrDefault(p => p.StartsWith("model:"));
+                    var model = modelEntry != null ? modelEntry.Split(':')[1] : "Unknown";
+
+                    list.Add(new ConnectedDevice($"{model}", model, id));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Error loading devices");
+        }
+
+        return list;
+    }
     public async static Task<string> RunTCPPort(string port)
     {
         var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"adb tcpip {port}");

@@ -27,6 +27,8 @@ public partial class OutputPanel : ContentView
         ChecksPanel.IsVisible = !settings.HideStatusPanel;
         WirelessConnectionPanel.IsVisible = !settings.HideTcpPanel;
         AdbOutputLabelBorder.IsVisible = !settings.HideOutputPanel;
+
+        OnSizeChanged(null, EventArgs.Empty);
     }
 
     public OutputPanel(OptionsPanel settingsParentPanel) : this()
@@ -105,10 +107,9 @@ public partial class OutputPanel : ContentView
         }
     }
 
-
     private void OnSizeChanged(object sender, EventArgs e)
     {
-        if (Width < 750) // Switch to vertical layout
+        if (Width < 750 || !ChecksPanel.IsVisible || !WirelessConnectionPanel.IsVisible) // Switch to vertical layout
         {
             ResponsiveGrid.RowDefinitions.Clear();
             ResponsiveGrid.ColumnDefinitions.Clear();
