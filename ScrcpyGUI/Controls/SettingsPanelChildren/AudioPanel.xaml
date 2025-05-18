@@ -16,13 +16,13 @@
 
                 <!-- No Audio -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="6" Margin="0,2">
-                    <Label Text="No Audio" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <Label Text="No Audio" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"  FontAttributes="Bold"/>
                     <CheckBox x:Name="NoAudioCheckBox" CheckedChanged="OnNoAudioChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
                 <!-- Audio Codec -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="6" Margin="0,2">
-                    <Label Text="Audio Codec" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <Label Text="Audio Codec" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"  FontAttributes="Bold"/>
                     <Picker x:Name="AudioCodecPicker" SelectedIndexChanged="OnAudioCodecChanged" VerticalOptions="Center">
                         <Picker.ItemsSource>
                             <x:Array Type="{x:Type x:String}">

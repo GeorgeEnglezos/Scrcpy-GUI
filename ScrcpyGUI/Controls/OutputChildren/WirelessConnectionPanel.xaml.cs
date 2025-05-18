@@ -13,38 +13,65 @@ namespace ScrcpyGUI.Controls
             InitializeComponent();
         }
 
-        private async void OnRunTCP(object sender, EventArgs e)
-        {
-            var port = TcpipEntry.Text?.Trim();
-            if (!string.IsNullOrEmpty(port))
-            {
-                var result = await AdbCmdService.RunTCPPort(port);
-                await Application.Current.MainPage.DisplayAlert("TCP Result", result, "OK");
-            }
-            else
-            {
-                await Application.Current.MainPage.DisplayAlert("Error", "Please enter a valid port.", "OK");
-            }
-        }
-
-
-        private async void OnRunPhoneIp(object sender, EventArgs e)
-        {
-            var ip = PhoneIpEntry.Text?.Trim();
-            if (!string.IsNullOrEmpty(ip))
-            {
-                var result = await AdbCmdService.RunPhoneIp(ip);
-                await Application.Current.MainPage.DisplayAlert("IP Result", result, "OK");
-            }
-            else
-            {
-                await Application.Current.MainPage.DisplayAlert("Error", "Please enter a valid IP address.", "OK");
-            }
-        }
-
         private async void OnResetToUsb(object sender, EventArgs e)
         {
-            var result = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.Tcp, "adb usb");
+            var result = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.Tcp, "usb");
+            await ShowDialog("Stop Connection", result.Output);
+        }
+
+        private async void OnAutoStartConnection(object sender, EventArgs e)
+        {
+            var port = TcpipEntry.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(port))
+                port = "5555";
+
+            var ip = await AdbCmdService.GetPhoneIp();
+            if (string.IsNullOrEmpty(ip))
+            {
+                await ShowDialog("Connection Failed", "Could not automatically retrieve phone IP. Make sure the device is connected via USB.");
+                return;
+            }
+
+            var portResult = await AdbCmdService.RunTCPPort(port);
+            var ipResult = await AdbCmdService.RunPhoneIp(ip);
+
+            string summary = $"Auto-detected IP: {ip}\n\nTCP Result:\n{portResult}\n\nIP Result:\n{ipResult}";
+            await ShowDialog("Auto Connection Status", summary);
+        }
+
+        private async void OnStartConnection(object sender, EventArgs e)
+        {
+            var port = TcpipEntry.Text?.Trim();
+            var ip = PhoneIpEntry.Text?.Trim();
+
+            if (string.IsNullOrEmpty(port) && string.IsNullOrEmpty(ip))
+            {
+                await ShowDialog("Missing Input", "Please enter both the port and IP address.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(port))
+            {
+                await ShowDialog("Missing Port", "Please enter a valid TCP port.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(ip))
+            {
+                await ShowDialog("Missing IP", "Please enter a valid IP address.");
+                return;
+            }
+
+            var portResult = await AdbCmdService.RunTCPPort(port);
+            var ipResult = await AdbCmdService.RunPhoneIp(ip);
+
+            string summary = $"TCP Result:\n{portResult}\n\nIP Result:\n{ipResult}";
+            await ShowDialog("Connection Status", summary);
+        }
+
+        private async Task ShowDialog(string title, string message)
+        {
+            await Application.Current.MainPage.DisplayAlert(title, message, "OK");
         }
     }
-}
+    }

@@ -15,7 +15,7 @@
                     AlignContent="Start">
 
                     <HorizontalStackLayout WidthRequest="350"  Spacing="10" Margin="0,2">
-                        <Label FontSize="16" Text="New display" VerticalTextAlignment="Center" WidthRequest="180"/>
+                        <Label FontSize="16" Text="New display" VerticalTextAlignment="Center" WidthRequest="180"  FontAttributes="Bold"/>
                         <CheckBox x:Name="NewDisplay" CheckedChanged="OnNewDisplayCheckedChanged" />
                     </HorizontalStackLayout>
 
