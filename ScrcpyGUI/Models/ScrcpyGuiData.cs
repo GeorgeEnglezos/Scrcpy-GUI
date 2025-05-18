@@ -238,5 +238,21 @@ namespace ScrcpyGUI.Models
             this.DeviceName = deviceName;
             this.DeviceId = id;
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is ConnectedDevice other)
+            {
+                return CombinedName.Equals(other.CombinedName) &&
+                        DeviceName.Equals(other.DeviceName) &&
+                        DeviceId.Equals(other.DeviceId);
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(CombinedName, DeviceName, DeviceId);
+        }
     }
 }

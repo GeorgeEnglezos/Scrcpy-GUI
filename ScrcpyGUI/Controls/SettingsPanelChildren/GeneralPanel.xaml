@@ -23,14 +23,14 @@
 
                     <!-- Fullscreen -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                        <Label Text="Fullscreen" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                        <Label Text="Fullscreen" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180" FontAttributes="Bold"/>
                         <CheckBox x:Name="FullscreenCheck" CheckedChanged="OnFullscreenCheckedChanged" VerticalOptions="Center"/>
                     </HorizontalStackLayout>
 
                 <!--Row 2-->
                 <!-- Screen off -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="Screen off" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <Label Text="Screen off" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"  FontAttributes="Bold"/>
                     <CheckBox x:Name="TurnScreenOffCheck" CheckedChanged="OnScreenOffCheckedChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
@@ -62,7 +62,6 @@
                     </Picker>
                 </HorizontalStackLayout>
 
-                <!--Row 4-->
                 <!-- Window Borderless -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
                     <Label Text="Window Borderless" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
@@ -75,12 +74,26 @@
                     <CheckBox x:Name="WindowAlwaysOnTopCheck" CheckedChanged="OnWindowAlwaysOnTopCheckedChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
 
-                <!--Row 5-->
                 <!-- Disable Screensaver -->
                 <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
                     <Label Text="Disable Screensaver" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
                     <CheckBox x:Name="DisableScreensaverCheck" CheckedChanged="OnDisableScreensaverCheckedChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
+                               
+                <!-- no-window -->
+                <!--
+                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
+                    <Label Text="No Window" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <CheckBox x:Name="NoWindowCheck" CheckedChanged="OnNoWindowCheckedChanged" VerticalOptions="Center"/>
+                </HorizontalStackLayout>
+                -->
+                <!-- no-control -->
+                <!--
+                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
+                    <Label Text="No Control" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
+                    <CheckBox x:Name="NoControlCheck" CheckedChanged="OnNoControlCheckedChanged" VerticalOptions="Center"/>
+                </HorizontalStackLayout>
+                -->
 
             </FlexLayout>
         </Border>

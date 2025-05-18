@@ -9,14 +9,14 @@ public partial class OutputPanel : ContentView
 {
     private string command = "";
     public event EventHandler<string>? PageRefreshed;
-    const string baseScrcpyCommand = "--pause-on-exit=if-error";
+    const string baseScrcpyCommand = "scrcpy.exe --pause-on-exit=if-error";
 
     public OutputPanel()
     {
         InitializeComponent();
         BindingContext = this;
         ChecksPanel.StatusRefreshed += OnRefreshPage;
-        FinalCommandPreview.Text = "Default Command: scrcpy.exe "+ baseScrcpyCommand;
+        FinalCommandPreview.Text = "Default Command: "+ baseScrcpyCommand;
         command = baseScrcpyCommand;
     }
 
@@ -57,7 +57,7 @@ public partial class OutputPanel : ContentView
 
         if (FinalCommandPreview != null)
         {
-            FinalCommandPreview.Text = "scrcpy.exe " + e;
+            FinalCommandPreview.Text = e;
         }
     }
 
@@ -146,7 +146,7 @@ public partial class OutputPanel : ContentView
 
     private void OnSaveGeneratedCommand(object sender, EventArgs e)
     {
-        DataStorage.AppendFavoriteCommand("scrcpy.exe "+command);
+        DataStorage.AppendFavoriteCommand(command);
         Application.Current.MainPage.DisplayAlert("Command saved", "View the saved commands in the 'Favorites Page'!", "OK");
     }
 }

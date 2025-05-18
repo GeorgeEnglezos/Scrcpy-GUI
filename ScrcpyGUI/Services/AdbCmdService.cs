@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 public static class AdbCmdService
@@ -42,10 +44,15 @@ public static class AdbCmdService
 
         try
         {
+            if (command.Equals("usb") && !IPAddress.TryParse(selectedDevice.DeviceId, out _)) {
+                response.RawError = "Device isn't connected Wirelessly!";
+            }
             if (commandType == CommandEnum.RunScrcpy) {
+                command = command.Replace("scrcpy.exe", "");
                 command = $"scrcpy.exe -s {selectedDevice.DeviceId} {command} ";
             }
-            if (commandType == CommandEnum.GetPackages) {
+            if (commandType == CommandEnum.GetPackages || commandType == CommandEnum.Tcp || commandType == CommandEnum.PhoneIp)
+            {
                 command = $"adb -s {selectedDevice.DeviceId} {command} ";
             }
 
@@ -198,13 +205,13 @@ public static class AdbCmdService
 
     public async static Task<string> RunTCPPort(string port)
     {
-        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"adb tcpip {port}");
+        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"tcpip {port}");
         return result.Output.ToString();
     }
 
     public async static Task<string> RunPhoneIp(string ip)
     {
-        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"adb connect {ip}");
+        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"connect {ip}");
         return result.Output.ToString();
     }
 
@@ -227,25 +234,46 @@ public static class AdbCmdService
             };
 
             process.Start();
+
             while (!process.StandardOutput.EndOfStream)
             {
                 var line = process.StandardOutput.ReadLine();
-                if (!string.IsNullOrWhiteSpace(line) && line.Contains("device") && !line.StartsWith("List"))
-                {
-                    var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    var id = parts[0];
-                    var modelEntry = parts.FirstOrDefault(p => p.StartsWith("model:"));
-                    var model = modelEntry != null ? modelEntry.Split(':')[1] : "Unknown";
 
-                    list.Add(new ConnectedDevice($"{model}", model, id));
-                }
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("List"))
+                    continue;
+
+                var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 2)
+                    continue;
+
+                var id = parts[0];
+                var status = parts[1];
+
+                // Skip offline or unauthorized devices
+                if (status != "device")
+                    continue;
+
+                var modelEntry = parts.FirstOrDefault(p => p.StartsWith("model:"));
+                var model = modelEntry != null ? modelEntry.Split(':')[1] : "Unknown";
+
+                list.Add(new ConnectedDevice($"{model} - {id}", model, id));
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Error loading devices");
+            Debug.WriteLine($"Error loading devices: {ex.Message}");
         }
 
         return list;
+    }
+
+    public static async Task<string> GetPhoneIp()
+    {
+        // This assumes you're using a shell command like: adb shell ip -f inet addr show wlan0
+        var output = await RunAdbCommandAsync(CommandEnum.PhoneIp, "shell ip -f inet addr show wlan0");
+
+        // Parse the IP address from output (only get the actual IP)
+        var match = Regex.Match(output.Output, @"inet\s+(\d+\.\d+\.\d+\.\d+)");
+        return match.Success ? match.Groups[1].Value : string.Empty;
     }
 }

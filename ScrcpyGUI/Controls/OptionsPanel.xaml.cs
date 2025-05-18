@@ -10,7 +10,7 @@ public partial class OptionsPanel : ContentView
     public event EventHandler<string> ScrcpyCommandChanged;
     public event EventHandler PageRefreshed;
 
-    const string baseScrcpyCommand = " --pause-on-exit=if-error";
+    const string baseScrcpyCommand = "scrcpy.exe --pause-on-exit=if-error";
     private string settingSelectedPackage = "";
     private string recordingCommandPart;
     private string generalCommandPart;
@@ -96,7 +96,6 @@ public partial class OptionsPanel : ContentView
         fullCommand += recordingCommandPart;
 
         ScrcpyCommandChanged?.Invoke(this, fullCommand);
-        Debug.WriteLine($"ScrcpyCommandChanged Invoked with {fullCommand}");
         return fullCommand;
     }
 

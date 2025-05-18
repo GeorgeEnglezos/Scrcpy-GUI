@@ -23,8 +23,9 @@ public partial class FixedHeader : ContentView
         Dispatcher.StartTimer(TimeSpan.FromSeconds(5), () =>
         {
             List<ConnectedDevice> currentDevices = AdbCmdService.GetAdbDevices();
+            bool newDeviceDetected = !currentDevices.SequenceEqual(_lastDevices);
 
-            if (!currentDevices.SequenceEqual(_lastDevices))
+            if (newDeviceDetected)
             {
                 _lastDevices = currentDevices;
 
