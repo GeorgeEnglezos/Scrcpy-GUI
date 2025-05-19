@@ -6,10 +6,12 @@ With Scrcpy-GUI, you can:
 - Easily generate more complex scrcpy command-line arguments
 - Get full control of the Virtual displays and the ability to launch apps in there like launchers or gaming frontends
 
-![Main Menu](https://github.com/user-attachments/assets/f6964a11-e912-4dc5-9690-d9de11464bf3)
-![Screenshot_6](https://github.com/user-attachments/assets/f77cb1d8-ed6c-4a16-b591-19636a4e19aa)
-![Daijisho - eden](https://github.com/user-attachments/assets/9acc6fb3-6b48-4f30-82e6-0a865bf540c3)
-![image](https://github.com/user-attachments/assets/bb2e60c2-f443-40ce-a749-52af4fb9622f)
+<img src="https://github.com/user-attachments/assets/b8c39a27-ad50-4448-b6f5-848c7c3ee562" width="40%" />
+<img src="https://github.com/user-attachments/assets/bceb0eb0-8eae-42af-a0ff-48ccad6600e8" width="40%" />
+<img src="https://github.com/user-attachments/assets/02a241a7-2777-460d-bba0-28735659fa01" width="40%" />
+<img src="https://github.com/user-attachments/assets/5c41fb03-2f37-4046-9944-a0e1a2dbbd6e" width="40%" />
+<img src="https://github.com/user-attachments/assets/ff5f60e9-5356-4a19-9c17-5b74cccfb973" width="40%" />
+<img src="https://github.com/user-attachments/assets/8ad9d747-f3a8-4706-a11b-7d8171418fef" width="40%" />
 
 
 <h2>🛠️ Installation Steps (for windows):</h2>
@@ -27,6 +29,3 @@ With Scrcpy-GUI, you can:
 
 # ✅ TODO
 - Improve error handling and user feedback
-
-# 🐞 Known Issues
--
