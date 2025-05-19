@@ -19,6 +19,7 @@
         <CheckBox IsChecked="{Binding IsChecked, Source={x:Reference Root}}"
                   VerticalOptions="Center"
                   HorizontalOptions="Center"
-                  CheckedChanged="CheckBox_CheckedChanged"/>
+                  CheckedChanged="CheckBox_CheckedChanged"
+                  BackgroundColor="{StaticResource BackGroundGrey}"/>
     </HorizontalStackLayout>
 </ContentView>
