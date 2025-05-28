@@ -5,7 +5,7 @@ Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting 
 ## With Scrcpy-GUI, you can:
 - Easily generate complex scrcpy command-line arguments without wasting time digging through the official documentation.
 - Take full control of virtual displays, including the ability to launch apps like launchers or gaming frontends.
-Save and manage shortcuts for your favorite commands, with the option to download them locally to your PC.
+- Save and manage shortcuts for your favorite commands, with the option to download them locally to your PC.
 - Connect wirelessly with a single click—no hassle.
 - Stream from multiple Android devices at the same time effortlessly.
 
