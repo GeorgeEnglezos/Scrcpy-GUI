@@ -1,33 +1,33 @@
-## ⚠️ Version 1.4 had some app-breaking bugs, so I removed it for now. I will upload it again later with fixes and an updated UI once they are complete. ⚠️
-
 # 📱 Scrcpy-GUI
 
 Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting with [scrcpy v3.2](https://github.com/Genymobile/scrcpy) — one of my favorite and most used open-source tools. Scrcpy by itself is a command-line project that allows you to stream and control your **Android** device on your PC in several powerful ways. This app was created both as an experiment to explore .NET MAUI and to make scrcpy more user-friendly.
 
-With Scrcpy-GUI, you can:
-- Easily generate more complex scrcpy command-line arguments
-- Get full control of the Virtual displays and the ability to launch apps in there like launchers or gaming frontends
+## With Scrcpy-GUI, you can:
+- Easily generate complex scrcpy command-line arguments without wasting time digging through the official documentation.
+- Take full control of virtual displays, including the ability to launch apps like launchers or gaming frontends.
+Save and manage shortcuts for your favorite commands, with the option to download them locally to your PC.
+- Connect wirelessly with a single click—no hassle.
+- Stream from multiple Android devices at the same time effortlessly.
 
-<img src="https://github.com/user-attachments/assets/b8c39a27-ad50-4448-b6f5-848c7c3ee562" width="40%" />
-<img src="https://github.com/user-attachments/assets/bceb0eb0-8eae-42af-a0ff-48ccad6600e8" width="40%" />
-<img src="https://github.com/user-attachments/assets/02a241a7-2777-460d-bba0-28735659fa01" width="40%" />
-<img src="https://github.com/user-attachments/assets/5c41fb03-2f37-4046-9944-a0e1a2dbbd6e" width="40%" />
-<img src="https://github.com/user-attachments/assets/ff5f60e9-5356-4a19-9c17-5b74cccfb973" width="40%" />
-<img src="https://github.com/user-attachments/assets/8ad9d747-f3a8-4706-a11b-7d8171418fef" width="40%" />
+## Screenshots:
+<img src="https://github.com/user-attachments/assets/96579965-39eb-431d-865b-bf0d0db4d130" alt="Main Screen 1" width="50%">
+<img src="https://github.com/user-attachments/assets/81574934-1540-41a9-b192-aaeae2fbe59e" alt="Main Screen 2 (Opened Daijishou)" width="45%">
+<img src="https://github.com/user-attachments/assets/5aaa3351-c1e7-4627-b8cb-e19eefe4fd94" alt="Main Screen 3 (Opened Daijishou and Sudachi)" width="45%">
+<img src="https://github.com/user-attachments/assets/dbcc9186-c506-441b-bc3f-5cb37014455d" alt="Favorites" width="45%">
+<img src="https://github.com/user-attachments/assets/5d331cae-69c6-4bf6-824b-5b067f428da1" alt="Resources" width="45%">
+<img src="https://github.com/user-attachments/assets/ab46a4d3-dfb1-4e91-b1f3-d2d77e2fbec9" alt="Settings" width="45%">
 
+# 🛠️ Installation Steps (for windows):</h2>
 
-<h2>🛠️ Installation Steps (for windows):</h2>
+<p>You can also find the commands inside the application the Resources Tab.</p>
 
-### 1. Install Scrcpy</ul>
+## 1. Install Scrcpy</ul>
   ```
   winget install --exact Genymobile.scrcpy
   ```
-### 2. Install ADB</ul>
+## 2. Install ADB</ul>
   ```
   winget install --exact "Android SDK Platform-Tools"
   ```
-### 3. In your Android device enable USB Debugging from Developer Options</ul>
-### 4. Download and run the latest [release](https://github.com/GeorgeEnglezos/Scrcpy-GUI/releases/latest) from my repo</ul>
-
-# ✅ TODO
-- Improve error handling and user feedback
+## 3. In your Android device enable USB Debugging from Developer Options</ul>
+## 4. Download and run the latest [release](https://github.com/GeorgeEnglezos/Scrcpy-GUI/releases/latest) from my repo</ul>
