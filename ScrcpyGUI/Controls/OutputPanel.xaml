@@ -40,7 +40,7 @@
                 <Border Stroke="{StaticResource PrimaryPurple}" Grid.Row="2" Grid.Column="0" StrokeThickness="2"  StrokeShape="RoundRectangle 10">
                     <Editor x:Name="FinalCommandPreview"
                             Text="Default command: scrcpy.exe --pause-on-exit=if-error"                       
-                            HeightRequest="80"
+                            MinimumHeightRequest="80"
                             AutoSize="TextChanges"
                             FontSize="16"
                             VerticalTextAlignment="Start"

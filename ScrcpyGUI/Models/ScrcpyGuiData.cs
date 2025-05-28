@@ -202,16 +202,16 @@ namespace ScrcpyGUI.Models
             try
             {
                 string fullCommand = " ";
-                fullCommand += Fullscreen ? " --fullscreen" : "";
-                fullCommand += TurnScreenOff ? " --turn-screen-off" : "";
-                fullCommand += !string.IsNullOrEmpty(Crop) ? $" --crop={Crop}" : "";
-                fullCommand += !string.IsNullOrEmpty(VideoOrientation) ? $" --capture-orientation={VideoOrientation}" : "";
+                fullCommand += Fullscreen ? " --fullscreen " : "";
+                fullCommand += TurnScreenOff ? " --turn-screen-off " : "";
+                fullCommand += !string.IsNullOrEmpty(Crop) ? $" --crop={Crop} " : "";
+                fullCommand += !string.IsNullOrEmpty(VideoOrientation) ? $" --capture-orientation={VideoOrientation} " : "";
                 fullCommand += StayAwake ? " --stay-awake" : "";
-                fullCommand += !string.IsNullOrEmpty(WindowTitle) ? $" --window-title={WindowTitle}" : "";
-                fullCommand += WindowBorderless ? " --window-borderless" : "";
-                fullCommand += WindowAlwaysOnTop ? " --always-on-top" : "";
-                fullCommand += !string.IsNullOrEmpty(VideoCodecEncoderPair) ? VideoCodecEncoderPair : "";
-                fullCommand += !string.IsNullOrEmpty(ExtraParameters) ? ExtraParameters : "";
+                fullCommand += !string.IsNullOrEmpty(WindowTitle) ? $" --window-title={WindowTitle} " : "";
+                fullCommand += WindowBorderless ? " --window-borderless " : "";
+                fullCommand += WindowAlwaysOnTop ? " --always-on-top " : "";
+                fullCommand += !string.IsNullOrEmpty(VideoCodecEncoderPair) ? $" {VideoCodecEncoderPair} " : "";
+                fullCommand += !string.IsNullOrEmpty(ExtraParameters) ? $" {ExtraParameters} ": "";
                 //fullCommand += !string.IsNullOrEmpty(WindowPosition) ? $" --window-x={WindowPosition.Split(',')[0]} --window-y={WindowPosition.Split(',')[1]}" : "";
                 //fullCommand += !string.IsNullOrEmpty(WindowSize) ? $" --window-width={WindowSize.Split('x')[0]} --window-height={WindowSize.Split('x')[1]}" : "";
                 fullCommand += DisableScreensaver ? " --disable-screensaver" : "";
