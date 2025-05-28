@@ -10,7 +10,7 @@ Save and manage shortcuts for your favorite commands, with the option to downloa
 - Stream from multiple Android devices at the same time effortlessly.
 
 ## Screenshots:
-<img src="https://github.com/user-attachments/assets/96579965-39eb-431d-865b-bf0d0db4d130" alt="Main Screen 1" width="50%">
+<img src="https://github.com/user-attachments/assets/96579965-39eb-431d-865b-bf0d0db4d130" alt="Main Screen 1" width="45%">
 <img src="https://github.com/user-attachments/assets/81574934-1540-41a9-b192-aaeae2fbe59e" alt="Main Screen 2 (Opened Daijishou)" width="45%">
 <img src="https://github.com/user-attachments/assets/5aaa3351-c1e7-4627-b8cb-e19eefe4fd94" alt="Main Screen 3 (Opened Daijishou and Sudachi)" width="45%">
 <img src="https://github.com/user-attachments/assets/dbcc9186-c506-441b-bc3f-5cb37014455d" alt="Favorites" width="45%">
