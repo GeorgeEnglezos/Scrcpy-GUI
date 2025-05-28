@@ -4,6 +4,8 @@
              xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="ScrcpyGUI.Controls.OutputPanel"             
+             xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
+             xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
              SizeChanged="OnSizeChanged">
     
     <!-- Settings Panel -->
@@ -30,12 +32,12 @@
 
                 <!-- Responsive Grid for Panels -->
                 <Grid x:Name="ResponsiveGrid" Grid.Row="0" Grid.ColumnSpan="3" RowDefinitions="Auto, Auto" ColumnDefinitions="*, *">
-                    <controls:ChecksPanel x:Name="ChecksPanel" Grid.Row="0" Grid.Column="0" Margin="0, 20, 0, 20"/>
-                    <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" Grid.Row="0" Grid.Column="1" Margin="0, 20"/>
+                    <controls:ChecksPanel x:Name="ChecksPanel" Grid.Row="0" Grid.Column="0" Margin="2, 20"/>
+                    <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" Grid.Row="0" Grid.Column="1" Margin="2, 20"/>
                 </Grid>
 
 
-                <Border Stroke="{StaticResource Purple2}" Grid.Row="2" Grid.Column="0" StrokeThickness="2">
+                <Border Stroke="{StaticResource PrimaryPurple}" Grid.Row="2" Grid.Column="0" StrokeThickness="2"  StrokeShape="RoundRectangle 10">
                     <Editor x:Name="FinalCommandPreview"
                             Text="Default command: scrcpy.exe --pause-on-exit=if-error"                       
                             HeightRequest="80"
@@ -56,11 +58,11 @@
                     Margin="5">
                                         
                     <ImageButton.Source>
-                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource Buttons}" Size="50"/>
+                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource ButtonColor}" Size="50"/>
                     </ImageButton.Source>
                 </ImageButton>
 
-                <ImageButton Grid.Row="2" Grid.Column="2" ToolTipProperties.Text="Save Command in Favorites Tab"
+                <ImageButton Grid.Row="2" Grid.Column="2" StyleClass="FilledTonalButton" 
                     x:Name="SaveCommand"
                     Clicked="OnSaveGeneratedCommand"
                     HeightRequest="50"
@@ -68,15 +70,15 @@
                     BackgroundColor="Transparent"
                     Margin="5">
                     <ImageButton.Source>
-                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf004;" Color="{StaticResource Buttons}" Size="50"/>
+                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf004;" Color="{StaticResource ButtonColor}" Size="50"/>
                     </ImageButton.Source>
                 </ImageButton>
 
-                <Border x:Name="AdbOutputLabelBorder" 
+                <Border x:Name="AdbOutputLabelBorder" StrokeShape="RoundRectangle 10"
                         Grid.Row="3" 
                         Grid.ColumnSpan="3"                             
                         StrokeThickness="3" 
-                        Stroke="{StaticResource Purple2}">
+                        Stroke="{StaticResource PrimaryPurple}">
 
                     <Editor x:Name="AdbOutputLabel"
                             Text="Command Output"

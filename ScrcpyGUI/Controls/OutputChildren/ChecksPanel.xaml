@@ -7,7 +7,7 @@
     <Grid RowDefinitions="Auto, *">
 
         <!-- Border -->
-        <Border Grid.Row="1" Padding="0, 20" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
+        <Border Grid.Row="1" Padding="0, 20" StrokeThickness="2" Stroke="{StaticResource PrimaryPurple}" ZIndex="0"  StrokeShape="RoundRectangle 10">
             <VerticalStackLayout>
                 <FlexLayout
                     x:Name="OptionsContainer"
@@ -31,19 +31,19 @@
                         <Label x:Name="DeviceStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding DeviceStatusColor}"  FontAttributes="Bold" FontSize="18"/>
                     </HorizontalStackLayout>
                 </FlexLayout>
-                <Button Margin="0, 20"   Text="Status Check" Clicked="OnRefreshStatusClicked" MaximumWidthRequest="140"  BackgroundColor="{StaticResource Buttons}" TextColor="White" FontAttributes="Bold" FontSize="16"/>
+                <Button StyleClass="FilledTonalButton" BackgroundColor="{StaticResource ButtonColor}" TextColor="White"  Margin="0, 20" Text="Status Check" Clicked="OnRefreshStatusClicked" MaximumWidthRequest="170" FontAttributes="Bold" FontSize="16"/>
             </VerticalStackLayout>
         </Border>
 
         <!-- Label and Checkbox -->
         <FlexLayout Grid.RowSpan="2"
-                    BackgroundColor="#1f1f1f"
+                    BackgroundColor="{DynamicResource BackGroundGrey}"
                     VerticalOptions="Start"
                     HorizontalOptions="Center"
                     ZIndex="1"
                     TranslationY="-15">
             <Label Text="ADB and Scrcpy Status"
-                   TextColor="{StaticResource Purple2}"
+                   TextColor="{StaticResource PrimaryPurple}"
                    FontSize="22"
                    FontAttributes="Bold"
                    Padding="10, 0"

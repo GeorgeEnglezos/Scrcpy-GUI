@@ -1,6 +1,8 @@
-using System.Data;
-using System.Diagnostics;
 using ScrcpyGUI.Models;
+using System.ComponentModel;
+using System.Diagnostics;
+using UraniumUI.Material.Controls;
+
 
 namespace ScrcpyGUI.Controls
 {
@@ -8,18 +10,28 @@ namespace ScrcpyGUI.Controls
     {
         public event EventHandler<string> AudioSettingsChanged;
         private AudioOptions audioSettings = new AudioOptions();
+        
         public OptionsAudioPanel()
         {
             InitializeComponent();
             LoadAudioOptions();
+            AudioCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.AudioCodecEncoderPairs;
+            AudioCodecEncoderPicker.PropertyChanged += OnAudioCodecChanged;
         }
+
+        private void OnAudioCodecChanged(object sender, PropertyChangedEventArgs e)
+        {            
+            audioSettings.AudioCodecEncoderPair = AudioCodecEncoderPicker.SelectedItem?.ToString() ?? "";
+            OnAudioSettings_Changed();
+        }
+
 
         private void LoadAudioOptions()
         {
             AudioBitRateEntry.Text = audioSettings.AudioBitRate;
             AudioBufferEntry.Text = audioSettings.AudioBuffer;
             AudioDupCheckBox.IsChecked = audioSettings.AudioDup;
-            AudioCodecPicker.SelectedItem = audioSettings.AudioCodec;
+            AudioCodecEncoderPicker.SelectedItem = audioSettings.AudioCodecEncoderPair;
             AudioCodecOptionsEntry.Text = audioSettings.AudioCodecOptions;
             NoAudioCheckBox.IsChecked = audioSettings.NoAudio;
         }
@@ -27,43 +39,47 @@ namespace ScrcpyGUI.Controls
         private void OnAudioBitRateChanged(object sender, TextChangedEventArgs e)
         {
             audioSettings.AudioBitRate = e.NewTextValue;
-            RaiseAudioSettingsChanged();
+            OnAudioSettings_Changed();
         }
 
         private void OnAudioBufferChanged(object sender, TextChangedEventArgs e)
         {
             audioSettings.AudioBuffer = e.NewTextValue;
-            RaiseAudioSettingsChanged();
+            OnAudioSettings_Changed();
         }
 
-        private void OnAudioDupChanged(object sender, CheckedChangedEventArgs e)
+        #region CheckBoxes
+        private void OnAudioDupChanged(object sender, EventArgs e)
         {
-            audioSettings.AudioDup = e.Value;
-            RaiseAudioSettingsChanged();
+            var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+            audioSettings.AudioDup = checkBox?.IsChecked ?? false;
+            OnAudioSettings_Changed();
         }
         
-        private void OnNoAudioChanged(object sender, CheckedChangedEventArgs e)
+        private void OnNoAudioChanged(object sender, EventArgs e)
         {
-            audioSettings.NoAudio = e.Value;
-            RaiseAudioSettingsChanged();
+            var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+            audioSettings.NoAudio = checkBox?.IsChecked ?? false;
+            OnAudioSettings_Changed();
         }
+        #endregion
 
         private void OnAudioCodecChanged(object sender, EventArgs e)
         {
-            if (AudioCodecPicker.SelectedItem is string selectedCodec)
+            if (AudioCodecEncoderPicker.SelectedItem is string selectedCodec)
             {
-                audioSettings.AudioCodec = selectedCodec;
-                RaiseAudioSettingsChanged();
+                audioSettings.AudioCodecEncoderPair = selectedCodec;
+                OnAudioSettings_Changed();
             }
         }
 
         private void OnAudioCodecOptionsChanged(object sender, TextChangedEventArgs e)
         {
             audioSettings.AudioCodecOptions = e.NewTextValue;
-            RaiseAudioSettingsChanged();
+            OnAudioSettings_Changed();
         }
 
-        private void RaiseAudioSettingsChanged()
+        private void OnAudioSettings_Changed()
         {
             AudioSettingsChanged?.Invoke(this, audioSettings.GenerateCommandPart());
         }
@@ -88,7 +104,8 @@ namespace ScrcpyGUI.Controls
             NoAudioCheckBox.IsChecked = false;
 
             // Reset Picker
-            AudioCodecPicker.SelectedIndex = -1;
+            AudioCodecEncoderPicker.SelectedIndex = -1;
+            audioSettings.AudioCodecEncoderPair = "";
         }
     }
 }

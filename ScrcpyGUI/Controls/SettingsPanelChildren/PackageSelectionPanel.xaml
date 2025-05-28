@@ -1,68 +1,79 @@
-<?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
              x:Class="ScrcpyGUI.Controls.OptionsPackageSelectionPanel">
     <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="*, Auto, Auto,Auto">
 
-        <Entry
-        x:Name="PackageSearchEntry"
-        Placeholder="Search Package..."
-        TextChanged="PackageSearchEntry_TextChanged"
-        TextColor="{StaticResource Purple2}"
-        PlaceholderColor="{Binding PackageTextColor}"
-        Grid.Row="0"
-        Grid.Column="0" />
+        <!--Converted-->
+        <ur:TextField
+            x:Name="PackageSearchEntry"
+            Title="Search Package..."
+            TextChanged="PackageSearchEntry_TextChanged"
+            AccentColor="{StaticResource PrimaryPurple}"
+            Grid.Row="0"
+            Grid.Column="0"
+            Grid.ColumnSpan="1"
+            CornerRadius="0"/>
 
-        <HorizontalStackLayout 
-            Padding="20, 0, 0, 0"         
+        <!--Converted-->
+        <HorizontalStackLayout
+            Padding="20, 0, 0, 0"
             Grid.Row="0"
             Grid.Column="1">
-            <Label Text="System Apps" VerticalTextAlignment="Center" FontSize="16"/>
-            <CheckBox x:Name="SystemAppsCheckbox" CheckedChanged="SystemAppsCheckbox_CheckedChanged"/>
+            <Label Text="System Apps" VerticalTextAlignment="Center" FontSize="16" Padding="0, 0, 10, 0"/>
+            <ur:CheckBox CheckChanged="SystemAppsCheckboxChanged" />
         </HorizontalStackLayout>
-        
+
         <ImageButton
-        ToolTipProperties.Text="Clear Selected Package"
-        Clicked="CleanPackageSelection"
-        HeightRequest="30"
-        WidthRequest="30"
-        BackgroundColor="Transparent"
-        Margin="0"
-        Padding="0"
-        Grid.Row="0"
-        Grid.Column="3"
-        HorizontalOptions="End"
-        VerticalOptions="Center">
-        <ImageButton.Source>
-                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Buttons}" Size="20"/>
+            ToolTipProperties.Text="Refresh Packages"
+            Clicked="RefreshPackages"
+            HeightRequest="30"
+            WidthRequest="30"
+            BackgroundColor="Transparent"
+            Margin="0"
+            Padding="0"
+            Grid.Row="0"
+            Grid.Column="2"
+            HorizontalOptions="End"
+            VerticalOptions="Center">
+            <ImageButton.Source>
+                <FontImageSource
+                    FontFamily="FontAwesome" 
+                    Glyph="&#xf021;"
+                    Color="{StaticResource ButtonColor}"
+                    Size="25" />
             </ImageButton.Source>
         </ImageButton>
-        
+
         <ImageButton
-        ToolTipProperties.Text="Refresh Packages"
-        Clicked="RefreshPackages"            
-        HeightRequest="30"
-        WidthRequest="30"
-        BackgroundColor="Transparent"
-        Margin="0"
-        Padding="0"
-        Grid.Row="0"
-        Grid.Column="2"
-        HorizontalOptions="End"
-        VerticalOptions="Center">
-        <ImageButton.Source>
-                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf021;" Color="{StaticResource Buttons}" Size="20"/>
+            ToolTipProperties.Text="Clear Selected Package"
+            Clicked="CleanPackageSelection"
+            HeightRequest="30"
+            WidthRequest="30"
+            BackgroundColor="Transparent"
+            Margin="0"
+            Padding="0"
+            Grid.Row="0"
+            Grid.Column="3"
+            HorizontalOptions="End"
+            VerticalOptions="Center">
+            <ImageButton.Source>
+                <FontImageSource
+                    FontFamily="FontAwesome" 
+                    Glyph="&#xf12d;"
+                    Color="{StaticResource ButtonColor}"
+                    Size="25" />
             </ImageButton.Source>
         </ImageButton>
 
         <CollectionView
-        x:Name="PackageSuggestionsCollectionView"
-        IsVisible="False"
-        SelectionMode="Single"
-        SelectionChanged="PackageSuggestionsCollectionView_SelectionChanged"
-        BackgroundColor="DarkSlateGray"
-        Grid.Row="1"
-        Grid.ColumnSpan="2">
+            x:Name="PackageSuggestionsCollectionView"
+            IsVisible="False"
+            SelectionMode="Single"
+            SelectionChanged="PackageSuggestionsCollectionView_SelectionChanged"
+            BackgroundColor="{StaticResource PrimaryPurple}"
+            Grid.Row="1"
+            Grid.Column="0">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="x:String">
                     <Label Text="{Binding .}" Padding="10"/>
@@ -70,5 +81,5 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
     </Grid>
-
 </ContentView>
+    

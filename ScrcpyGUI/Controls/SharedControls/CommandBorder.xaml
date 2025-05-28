@@ -27,7 +27,7 @@
                 <ImageButton.Source>
                     <FontImageSource FontFamily="FontAwesome" 
                                      Glyph="&#xf05a;" 
-                                     Color="{StaticResource Buttons}" 
+                                     Color="{StaticResource ButtonColor}" 
                                      Size="25"/>
                 </ImageButton.Source>
             </ImageButton>
@@ -41,7 +41,7 @@
                 <ImageButton.Source>
                     <FontImageSource FontFamily="FontAwesome" 
                                      Glyph="&#xf0c5;" 
-                                     Color="{StaticResource Buttons}" 
+                                     Color="{StaticResource ButtonColor}" 
                                      Size="25"/>
                 </ImageButton.Source>
             </ImageButton>

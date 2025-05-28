@@ -1,5 +1,7 @@
 using ScrcpyGUI.Models;
+using System.ComponentModel;
 using System.Diagnostics;
+using UraniumUI.Material.Controls;
 
 namespace ScrcpyGUI.Controls;
 
@@ -12,65 +14,86 @@ public partial class OptionsGeneralPanel : ContentView
     public OptionsGeneralPanel()
     {
         InitializeComponent();
+        VideoOrientationPicker.PropertyChanged += OnVideoOrientationChanged;
+        VideoCodecEncoderPicker.PropertyChanged += OnVideoCodecEncoderChanged;
+        VideoCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.VideoCodecEncoderPairs;
     }
 
-    private void OnFullscreenCheckedChanged(object sender, CheckedChangedEventArgs e)
+    private void OnVideoOrientationChanged(object sender, PropertyChangedEventArgs e)
     {
-        generalSettings.Fullscreen = e.Value;
-        OnWindowsCastSettings_Changed();
+        generalSettings.VideoOrientation = VideoOrientationPicker.SelectedItem?.ToString() ?? "";
+        OnGenericSettings_Changed();
+    }
+    
+    private void OnVideoCodecEncoderChanged(object sender, PropertyChangedEventArgs e)
+    {
+        generalSettings.VideoCodecEncoderPair = VideoCodecEncoderPicker.SelectedItem?.ToString() ?? "";
+        OnGenericSettings_Changed();
     }
 
-    private void OnScreenOffCheckedChanged(object sender, CheckedChangedEventArgs e)
+    //Checkboxes
+    #region checkboxes
+    private void OnFullscreenCheckboxChanged(object sender, EventArgs e)
     {
-        generalSettings.TurnScreenOff = e.Value;
-        OnWindowsCastSettings_Changed();
+        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+        generalSettings.Fullscreen = checkBox?.IsChecked ?? false;
+        OnGenericSettings_Changed();
     }
+
+    private void OnScreenOffCheckboxChanged(object sender, EventArgs e)
+    {
+        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+        generalSettings.TurnScreenOff = checkBox?.IsChecked ?? false;
+        OnGenericSettings_Changed();
+    }
+    private void OnStayAwakeCheckboxChanged(object sender, EventArgs e)
+    {
+        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+        generalSettings.StayAwake = checkBox?.IsChecked ?? false;
+        OnGenericSettings_Changed();
+    }
+    private void OnBorderlessCheckboxChanged(object sender, EventArgs e)
+    {
+        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+        generalSettings.WindowBorderless = checkBox?.IsChecked ?? false;
+        OnGenericSettings_Changed();
+    }
+
+    private void OnWindowAlwaysOnTopCheckboxChanged(object sender, EventArgs e)
+    {
+        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+        generalSettings.WindowAlwaysOnTop = checkBox?.IsChecked ?? false;
+        OnGenericSettings_Changed();
+    }
+
+    private void OnDisableScreensaverCheckboxChanged(object sender, EventArgs e)
+    {
+        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+        generalSettings.DisableScreensaver = checkBox?.IsChecked ?? false;
+        OnGenericSettings_Changed();
+    }
+
+    #endregion
 
     private void OnCropEntryTextChanged(object sender, TextChangedEventArgs e)
     {
         generalSettings.Crop = e.NewTextValue;
-        OnWindowsCastSettings_Changed();
+        OnGenericSettings_Changed();
     }
-    private void OnVideoOrientationChanged(object sender, EventArgs e)
+    
+    private void OnExtraParametersEntryTextChanged(object sender, TextChangedEventArgs e)
     {
-        if (VideoOrientationPicker.SelectedItem != null)
-        {
-            generalSettings.VideoOrientation = VideoOrientationPicker.SelectedItem.ToString();
-            OnWindowsCastSettings_Changed();
-        }
-    }
-
-    private void OnStayAwakeCheckedChanged(object sender, CheckedChangedEventArgs e)
-    {
-        generalSettings.StayAwake = e.Value;
-        OnWindowsCastSettings_Changed();
+        generalSettings.ExtraParameters = e.NewTextValue;
+        OnGenericSettings_Changed();
     }
 
     private void OnWindowTitleEntryTextChanged(object sender, TextChangedEventArgs e)
     {
         generalSettings.WindowTitle = e.NewTextValue;
-        OnWindowsCastSettings_Changed();
+        OnGenericSettings_Changed();
     }
 
-    private void OnWindowBorderlessCheckedChanged(object sender, CheckedChangedEventArgs e)
-    {
-        generalSettings.WindowBorderless = e.Value;
-        OnWindowsCastSettings_Changed();
-    }
-
-    private void OnWindowAlwaysOnTopCheckedChanged(object sender, CheckedChangedEventArgs e)
-    {
-        generalSettings.WindowAlwaysOnTop = e.Value;
-        OnWindowsCastSettings_Changed();
-    }
-
-    private void OnDisableScreensaverCheckedChanged(object sender, CheckedChangedEventArgs e)
-    {
-        generalSettings.DisableScreensaver = e.Value;
-        OnWindowsCastSettings_Changed();
-    }
-
-    private void OnWindowsCastSettings_Changed()
+    private void OnGenericSettings_Changed()
     {
         GeneralOptionsChanged?.Invoke(this, generalSettings.GenerateCommandPart());
     }
@@ -95,8 +118,12 @@ public partial class OptionsGeneralPanel : ContentView
         // Reset Entries
         CropEntry.Text = string.Empty;
         WindowTitleEntry.Text = string.Empty;
+        ExtraParameterEntry.Text = string.Empty;
 
         // Reset Picker
         VideoOrientationPicker.SelectedIndex = -1; // This sets it to no selection
+        generalSettings.VideoOrientation = "";
+        VideoCodecEncoderPicker.SelectedIndex = -1; // This sets it to no selection
+        generalSettings.VideoCodecEncoderPair = "";
     }
 }

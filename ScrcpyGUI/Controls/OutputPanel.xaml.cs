@@ -15,6 +15,7 @@ public partial class OutputPanel : ContentView
     {
         InitializeComponent();
         BindingContext = this;
+        SaveCommand.SetValue(ToolTipProperties.TextProperty, $"Settings and Commands are saved in\n\n{DataStorage.filePath}");
         ChecksPanel.StatusRefreshed += OnRefreshPage;
         FinalCommandPreview.Text = "Default Command: "+ baseScrcpyCommand;
         command = baseScrcpyCommand;

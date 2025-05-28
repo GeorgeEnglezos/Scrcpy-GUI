@@ -8,10 +8,10 @@ public partial class SettingsPage : ContentPage
 {
     ScrcpyGuiData scrcpyData = new ScrcpyGuiData();
     AppSettings settings = new AppSettings();
-
     public SettingsPage()
     {
         InitializeComponent();
+        SaveCommand.SetValue(ToolTipProperties.TextProperty, $"Settings and Commands are saved in\n\n{DataStorage.filePath}");
         scrcpyData = DataStorage.LoadData();
         settings = scrcpyData.AppSettings;
         InitializeCheckboxValues();
@@ -62,6 +62,6 @@ public partial class SettingsPage : ContentPage
         scrcpyData = DataStorage.LoadData();
         scrcpyData.AppSettings = settings;
         DataStorage.SaveData(scrcpyData);
-        DisplayAlert("Info", "Changes Saved", "OK");
+        DisplayAlert("Info", $"Changes Saved", "OK");
     }
 }

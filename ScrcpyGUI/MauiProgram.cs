@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Maui.LifecycleEvents;
 using CommunityToolkit.Maui;
-
+using UraniumUI;
+using UraniumUI.Material;
 #if WINDOWS
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -25,7 +26,17 @@ namespace ScrcpyGUI
                     fonts.AddFont("FontAwesomeFree-Solid-900.otf", "FontAwesome");
                     fonts.AddFont("Font Awesome 6 Free-Regular-400.otf", "FontAwesomeFreeRegular");
                     fonts.AddFont("Font Awesome 6 Brands-Regular-400.otf", "FontAwesomeBrandsRegular");
+                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                    fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialRegular");
+                    fonts.AddMaterialIconFonts(); // For Material Icons
                 })
+                .ConfigureMauiHandlers(handlers =>
+                {
+                    handlers.AddUraniumUIHandlers(); // Enable Uranium UI
+                })
+                .UseUraniumUI()
+                .UseUraniumUIMaterial()
                 .UseMauiCommunityToolkit();
 
 #if WINDOWS

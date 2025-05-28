@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
+             xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              x:Class="ScrcpyGUI.Controls.OptionsGeneralPanel">
 
-        <!-- Main Grid -->
+    <ContentView.Resources>
+        <x:Array x:Key="VideoOrientations" Type="{x:Type x:String}">
+            <x:String>0</x:String>
+            <x:String>90</x:String>
+            <x:String>160</x:String>
+            <x:String>270</x:String>
+        </x:Array>
+    </ContentView.Resources>
+
+    <!-- Main Grid -->
         <Grid RowDefinitions="Auto, *"  Padding="0, 30">
             <!-- Border -->
-        <Border Grid.Row="1" Padding="20, 30" StrokeThickness="2" Stroke="{StaticResource Purple2}" ZIndex="0">
+        <Border Grid.Row="1" Padding="20, 30" StrokeThickness="2" Stroke="{StaticResource PrimaryPurple}" ZIndex="0" StrokeShape="RoundRectangle 10">
             <FlexLayout x:Name="OptionsContainer"
                 Direction="Row"
                 Wrap="Wrap"
@@ -14,84 +26,81 @@
                 AlignItems="Center"
                 AlignContent="Start">
 
-                <!--Row 1-->
-                    <!-- Window Title -->
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                        <Label Text="Window Title" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
-                        <Entry x:Name="WindowTitleEntry" Placeholder="e.g., My Device" TextChanged="OnWindowTitleEntryTextChanged" VerticalOptions="Center"/>
-                    </HorizontalStackLayout>
+                <!-- Window Title -->
+                <AbsoluteLayout>
+                    <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="WindowTitleEntry" Title="Window Title" FontSize="16" TextChanged="OnWindowTitleEntryTextChanged"/>
+                    <Image WidthRequest="20" HeightRequest="20" ToolTipProperties.Text="Gives a simple name to the opened scrcpy window." VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
+                </AbsoluteLayout>
+                
+                <!-- Fullscreen -->
+                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10" >
+                    <Label Text="Fullscreen" WidthRequest="185" VerticalTextAlignment="Center" FontSize="16" FontAttributes="Bold" />
+                    <ur:CheckBox CheckChanged="OnFullscreenCheckboxChanged" x:Name="FullscreenCheck" />
+                 </HorizontalStackLayout>
 
-                    <!-- Fullscreen -->
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                        <Label Text="Fullscreen" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180" FontAttributes="Bold"/>
-                        <CheckBox x:Name="FullscreenCheck" CheckedChanged="OnFullscreenCheckedChanged" VerticalOptions="Center"/>
-                    </HorizontalStackLayout>
-
-                <!--Row 2-->
                 <!-- Screen off -->
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="Screen off" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"  FontAttributes="Bold"/>
-                    <CheckBox x:Name="TurnScreenOffCheck" CheckedChanged="OnScreenOffCheckedChanged" VerticalOptions="Center"/>
+                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10">
+                    <Label Text="Screen off" WidthRequest="185" VerticalTextAlignment="Center" FontSize="16" FontAttributes="Bold"/>
+                    <ur:CheckBox CheckChanged="OnScreenOffCheckboxChanged" x:Name="TurnScreenOffCheck"/>
                 </HorizontalStackLayout>
 
                 <!-- Stay Awake -->
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="Stay Awake" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
-                    <CheckBox x:Name="StayAwakeCheck" CheckedChanged="OnStayAwakeCheckedChanged" VerticalOptions="Center"/>
+                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10">
+                    <Label Text="Stay Awake" WidthRequest="185" VerticalTextAlignment="Center" FontSize="16"/>
+                    <ur:CheckBox CheckChanged="OnStayAwakeCheckboxChanged" x:Name="StayAwakeCheck" />
                 </HorizontalStackLayout>
-
-                <!--Row 3-->
+                
                 <!-- Crop Entry -->
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="Crop Screen (W:H:X:Y)" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
-                    <Entry x:Name="CropEntry" Placeholder="e.g., 900:1170:0:120" TextChanged="OnCropEntryTextChanged" VerticalOptions="Center"/>
-                </HorizontalStackLayout>
+                <ur:TextField  WidthRequest="210" Margin="5, 10, 0, 10" Title="Crop Screen (W:H:X:Y)" FontSize="16" x:Name="CropEntry" TextChanged="OnCropEntryTextChanged"></ur:TextField>
 
                 <!-- Screen Orientation -->
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="Screen Orientation" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
-                    <Picker x:Name="VideoOrientationPicker" SelectedIndexChanged="OnVideoOrientationChanged" VerticalOptions="Center">
-                        <Picker.ItemsSource>
-                            <x:Array Type="{x:Type x:String}">
-                                <x:String>0</x:String>
-                                <x:String>90</x:String>
-                                <x:String>180</x:String>
-                                <x:String>270</x:String>
-                            </x:Array>
-                        </Picker.ItemsSource>
-                    </Picker>
-                </HorizontalStackLayout>
+                <ur:PickerField WidthRequest="210" Margin="5, 10, 0, 10"
+                    x:Name="VideoOrientationPicker"
+                    Title="Video Orientation"
+                    ItemsSource="{StaticResource VideoOrientations}" 
+                    Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Expand_circle_down}}" />
 
                 <!-- Window Borderless -->
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="Window Borderless" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
-                    <CheckBox x:Name="WindowBorderlessCheck" CheckedChanged="OnWindowBorderlessCheckedChanged" VerticalOptions="Center"/>
+                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10" >
+                    <Label Text="Window Borderless" VerticalTextAlignment="Center" FontSize="16" WidthRequest="185"/>
+                    <ur:CheckBox CheckChanged="OnBorderlessCheckboxChanged" x:Name="WindowBorderlessCheck" />
                 </HorizontalStackLayout>
 
                 <!-- Always on Top -->
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="Window Always on Top" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
-                    <CheckBox x:Name="WindowAlwaysOnTopCheck" CheckedChanged="OnWindowAlwaysOnTopCheckedChanged" VerticalOptions="Center"/>
-                </HorizontalStackLayout>
+                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10" >
+                    <Label Text="Window Always on Top" VerticalTextAlignment="Center" FontSize="16" WidthRequest="185" Margin="0, 10"/>
+                    <ur:CheckBox CheckChanged="OnWindowAlwaysOnTopCheckboxChanged" x:Name="WindowAlwaysOnTopCheck"/>
+                </HorizontalStackLayout>    
 
                 <!-- Disable Screensaver -->
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="Disable Screensaver" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
-                    <CheckBox x:Name="DisableScreensaverCheck" CheckedChanged="OnDisableScreensaverCheckedChanged" VerticalOptions="Center"/>
+                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10" >
+                    <Label Text="Disable Screensaver" WidthRequest="185" VerticalTextAlignment="Center" FontSize="16" Margin="0, 10"/>
+                    <ur:CheckBox CheckChanged="OnDisableScreensaverCheckboxChanged" x:Name="DisableScreensaverCheck"/>
                 </HorizontalStackLayout>
-                               
+
+                <!-- Video Codec-Encoder Pair-->
+                <ur:PickerField WidthRequest="210" Margin="5, 10, 0, 10"
+                    x:Name="VideoCodecEncoderPicker"
+                    Title="Video Codec - Encoder"
+                    Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Expand_circle_down}}" />
+
+                <AbsoluteLayout>
+                    <!--Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}}">-->
+                    <ur:TextField WidthRequest="470" Margin="5, 10, 0, 10" x:Name="ExtraParameterEntry" Title="Extra Parameters" FontSize="16" TextChanged="OnExtraParametersEntryTextChanged"/>
+                    <Image WidthRequest="20" HeightRequest="20" ToolTipProperties.Text="Add missing parameters manually!" VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
+                </AbsoluteLayout>
                 <!-- no-window -->
                 <!--
                 <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="No Window" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
-                    <CheckBox x:Name="NoWindowCheck" CheckedChanged="OnNoWindowCheckedChanged" VerticalOptions="Center"/>
+                    <Label Text="No Window" VerticalTextAlignment="Center" FontSize="16" WidthRequest="160" Margin="0, 10"/>
+                    <CheckBox x:Name="NoWindowCheck" CheckboxChanged="OnNoWindowCheckboxChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
                 -->
                 <!-- no-control -->
                 <!--
                 <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="No Control" VerticalTextAlignment="Center" FontSize="16" WidthRequest="180"/>
-                    <CheckBox x:Name="NoControlCheck" CheckedChanged="OnNoControlCheckedChanged" VerticalOptions="Center"/>
+                    <Label Text="No Control" VerticalTextAlignment="Center" FontSize="16" WidthRequest="160" Margin="0, 10"/>
+                    <CheckBox x:Name="NoControlCheck" CheckboxChanged="OnNoControlCheckboxChanged" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
                 -->
 
@@ -100,13 +109,13 @@
 
         <!-- Label and Checkbox -->
             <FlexLayout Grid.RowSpan="2" 
-                BackgroundColor="#1f1f1f"
+                BackgroundColor="{DynamicResource BackGroundGrey}"
                 VerticalOptions="Start"
                 HorizontalOptions="Center"
                 ZIndex="1"
                 TranslationY="-25">
                 <Label Text="General"
-                   TextColor="{StaticResource Purple2}"
+                   TextColor="{StaticResource PrimaryPurple}"
                    FontSize="22"
                    FontAttributes="Bold"
                    Padding="10,0,0,0"
@@ -123,7 +132,7 @@
                     HorizontalOptions="Center"
                     VerticalOptions="Center">
                     <ImageButton.Source>
-                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource Buttons}" Size="20"/>
+                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource ButtonColor}" Size="20"/>
                     </ImageButton.Source>
                 </ImageButton>
         </FlexLayout>

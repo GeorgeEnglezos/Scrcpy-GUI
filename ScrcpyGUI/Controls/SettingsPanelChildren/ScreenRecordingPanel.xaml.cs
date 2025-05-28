@@ -12,6 +12,7 @@ public partial class OptionsScreenRecordingPanel : ContentView
         public OptionsScreenRecordingPanel()
         {
             InitializeComponent();
+        OutputFormatPicker.PropertyChanged += OnOutputFormatChanged;
         }
 
         private void OnEnableRecordingCheckedChanged(object sender, CheckedChangedEventArgs e)

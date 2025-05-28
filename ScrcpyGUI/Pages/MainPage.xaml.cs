@@ -37,7 +37,7 @@ namespace ScrcpyGUI
 
         private void OnSizeChanged(object sender, EventArgs e)
         {
-            if (Width < 1000) // Example threshold for switching layout
+            if (Width < 1250) // Example threshold for switching layout
             {
                 // Switch to 1 column, 2 rows
                 MainGrid.ColumnDefinitions.Clear();

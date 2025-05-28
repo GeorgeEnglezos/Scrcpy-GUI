@@ -133,7 +133,7 @@ namespace ScrcpyGUI.Models
         public bool AudioDup { get; set; } // (Android 13+)
         public bool NoAudio{ get; set; }
         public string AudioCodecOptions { get; set; }
-        public string AudioCodec { get; set; }
+        public string AudioCodecEncoderPair { get; set; }
 
         public AudioOptions()
         {
@@ -141,7 +141,7 @@ namespace ScrcpyGUI.Models
             AudioBuffer = "";
             AudioDup = false;
             AudioCodecOptions = "";
-            AudioCodec = "";
+            AudioCodecEncoderPair = "";
             NoAudio = false;
         }
 
@@ -152,7 +152,7 @@ namespace ScrcpyGUI.Models
                 string fullCommand = " ";
                 fullCommand += !string.IsNullOrEmpty(AudioBitRate) ? $" --audio-bit-rate={AudioBitRate}" : "";
                 fullCommand += !string.IsNullOrEmpty(AudioBuffer) ? $" --audio-buffer={AudioBuffer}" : "";
-                fullCommand += !string.IsNullOrEmpty(AudioCodec) ? $" --audio-codec={AudioCodec}" : "";
+                fullCommand += !string.IsNullOrEmpty(AudioCodecEncoderPair) ? $" --audio-codec={AudioCodecEncoderPair}" : "";
                 fullCommand += !string.IsNullOrEmpty(AudioCodecOptions) ? $" --audio-codec-options={AudioCodecOptions}" : "";
                 fullCommand += AudioDup ? $" --audio-dup" : "";
                 fullCommand += NoAudio ? $" --no-audio" : "";
@@ -174,7 +174,9 @@ namespace ScrcpyGUI.Models
         public bool TurnScreenOff { get; set; }
         public string WindowTitle { get; set; }
         public string Crop { get; set; }
+        public string ExtraParameters { get; set; }
         public string VideoOrientation { get; set; }
+        public string VideoCodecEncoderPair { get; set; }
         public bool StayAwake { get; set; }
         public bool WindowBorderless { get; set; }
         public bool WindowAlwaysOnTop { get; set; }
@@ -187,6 +189,8 @@ namespace ScrcpyGUI.Models
             WindowTitle = string.Empty;
             Crop = string.Empty;
             VideoOrientation = "";
+            VideoCodecEncoderPair = "";
+            ExtraParameters = "";
             StayAwake = false;
             WindowBorderless = false;
             WindowAlwaysOnTop = false;
@@ -206,6 +210,8 @@ namespace ScrcpyGUI.Models
                 fullCommand += !string.IsNullOrEmpty(WindowTitle) ? $" --window-title={WindowTitle}" : "";
                 fullCommand += WindowBorderless ? " --window-borderless" : "";
                 fullCommand += WindowAlwaysOnTop ? " --always-on-top" : "";
+                fullCommand += !string.IsNullOrEmpty(VideoCodecEncoderPair) ? VideoCodecEncoderPair : "";
+                fullCommand += !string.IsNullOrEmpty(ExtraParameters) ? ExtraParameters : "";
                 //fullCommand += !string.IsNullOrEmpty(WindowPosition) ? $" --window-x={WindowPosition.Split(',')[0]} --window-y={WindowPosition.Split(',')[1]}" : "";
                 //fullCommand += !string.IsNullOrEmpty(WindowSize) ? $" --window-width={WindowSize.Split('x')[0]} --window-height={WindowSize.Split('x')[1]}" : "";
                 fullCommand += DisableScreensaver ? " --disable-screensaver" : "";
@@ -225,6 +231,11 @@ namespace ScrcpyGUI.Models
         public string CombinedName { get; set; }
         public string DeviceName { get; set; }
         public string DeviceId { get; set; }
+        public List<string> AudioCodecEncoderPairs { get; set; }
+        public List<string> VideoCodecEncoderPairs { get; set; }
+        //public List<string> AudioCodecs { get; set; }
+        //public List<string> VideoEncoders { get; set; }
+        //public List<string> VideoCodecs { get; set; }
 
         public ConnectedDevice(){
             CombinedName = "";
@@ -248,6 +259,13 @@ namespace ScrcpyGUI.Models
                         DeviceId.Equals(other.DeviceId);
             }
             return false;
+        }
+
+        static public bool AreDeviceListsEqual(List<ConnectedDevice> a, List<ConnectedDevice> b)
+        {
+            var aSet = new HashSet<string>(a.Select(d => d.DeviceId));
+            var bSet = new HashSet<string>(b.Select(d => d.DeviceId));
+            return aSet.SetEquals(bSet);
         }
 
         public override int GetHashCode()
