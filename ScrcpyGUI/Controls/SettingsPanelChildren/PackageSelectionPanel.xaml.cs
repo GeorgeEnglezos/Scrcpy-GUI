@@ -95,6 +95,8 @@ namespace ScrcpyGUI.Controls
 
         private void SystemAppsCheckboxChanged(object sender, EventArgs e)
         {
+            var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+            IncludeSystemApps = checkBox?.IsChecked ?? false;
             FilterPackageList();
         }
 
