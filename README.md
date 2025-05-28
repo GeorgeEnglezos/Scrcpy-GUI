@@ -19,7 +19,7 @@ Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting 
 
 # 🛠️ Installation Steps (for windows):</h2>
 
-<p>You can also find the commands inside the application the Resources Tab.</p>
+<p>You can also find the commands inside the application in the Resources Tab.</p>
 
 ## 1. Install Scrcpy</ul>
   ```
