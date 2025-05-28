@@ -152,7 +152,7 @@ namespace ScrcpyGUI.Models
                 string fullCommand = " ";
                 fullCommand += !string.IsNullOrEmpty(AudioBitRate) ? $" --audio-bit-rate={AudioBitRate}" : "";
                 fullCommand += !string.IsNullOrEmpty(AudioBuffer) ? $" --audio-buffer={AudioBuffer}" : "";
-                fullCommand += !string.IsNullOrEmpty(AudioCodecEncoderPair) ? $" --audio-codec={AudioCodecEncoderPair}" : "";
+                fullCommand += !string.IsNullOrEmpty(AudioCodecEncoderPair) ? $" {AudioCodecEncoderPair}" : "";
                 fullCommand += !string.IsNullOrEmpty(AudioCodecOptions) ? $" --audio-codec-options={AudioCodecOptions}" : "";
                 fullCommand += AudioDup ? $" --audio-dup" : "";
                 fullCommand += NoAudio ? $" --no-audio" : "";
