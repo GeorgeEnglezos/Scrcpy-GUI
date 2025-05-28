@@ -10,7 +10,7 @@
         <x:Array x:Key="VideoOrientations" Type="{x:Type x:String}">
             <x:String>0</x:String>
             <x:String>90</x:String>
-            <x:String>160</x:String>
+            <x:String>180</x:String>
             <x:String>270</x:String>
         </x:Array>
     </ContentView.Resources>
