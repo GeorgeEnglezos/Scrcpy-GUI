@@ -3,6 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
              x:Class="ScrcpyGUI.Controls.SettingsPageOptions"
+             xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
+             xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
              x:Name="Root">
 
     <HorizontalStackLayout WidthRequest="420" HorizontalOptions="Start">
@@ -12,14 +14,16 @@
                VerticalOptions="Center"
                Padding="0, 10"
                TextColor="White"
-               FontSize="16"
+               FontSize="18"
                FontAttributes="Bold"
                Text="{Binding LabelText, Source={x:Reference Root}}"/>
 
-        <CheckBox IsChecked="{Binding IsChecked, Source={x:Reference Root}}"
-                  VerticalOptions="Center"
-                  HorizontalOptions="Center"
-                  CheckedChanged="CheckBox_CheckedChanged"
-                  BackgroundColor="{StaticResource BackGroundGrey}"/>
+        <!--replace with this-->
+        <ur:CheckBox CheckChanged="CheckBox_CheckedChanged" 
+                     x:Name="CheckboxControl" 
+                     IsChecked="{Binding IsChecked, Source={x:Reference Root}}" 
+                     VerticalOptions="Center"
+                     HorizontalOptions="Center"/>
+
     </HorizontalStackLayout>
 </ContentView>

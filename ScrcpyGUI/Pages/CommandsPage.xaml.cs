@@ -108,5 +108,36 @@ namespace ScrcpyGUI
                 }
             }
         }
+        private void OnDownloadBat(object sender, EventArgs e)
+        {
+            if (sender is Button button && button.BindingContext is string commandText)
+            {
+                try
+                {
+                    string baseFileName = "SavedCommand";
+                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                    string fullPath = Path.Combine(desktopPath, baseFileName + ".bat");
+
+                    int counter = 1;
+                    while (File.Exists(fullPath))
+                    {
+                        fullPath = Path.Combine(desktopPath, $"{baseFileName} ({counter}).bat");
+                        counter++;
+                    }
+
+                    // Write the file
+                    File.WriteAllText(fullPath, commandText);
+
+                    // Optional: confirmation
+                    DisplayAlert("Success", $"Saved as:\n{Path.GetFileName(fullPath)}", "OK");
+                }
+                catch (Exception ex)
+                {
+                    DisplayAlert("Error", $"Couldn't save file: {ex.Message}", "OK");
+                }
+            }
+        }
+
+
     }
 }

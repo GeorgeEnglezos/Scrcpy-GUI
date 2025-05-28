@@ -212,9 +212,19 @@ public static class AdbCmdService
     public async static Task<string> RunPhoneIp(string ip)
     {
         var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"connect {ip}");
-        return result.Output.ToString();
-    }
 
+        // Mask all IPv4 addresses in the output
+        string maskedOutput = Regex.Replace(
+            result.Output.ToString(),
+            @"\b(?:\d{1,3}\.){3}\d{1,3}\b",
+            "***.***.***.***"
+        );
+
+        return maskedOutput;
+
+        //return result.Output.ToString();
+    }
+    
     public static List<ConnectedDevice> GetAdbDevices()
     {
         var list = new List<ConnectedDevice>();
@@ -256,7 +266,8 @@ public static class AdbCmdService
                 var modelEntry = parts.FirstOrDefault(p => p.StartsWith("model:"));
                 var model = modelEntry != null ? modelEntry.Split(':')[1] : "Unknown";
 
-                list.Add(new ConnectedDevice($"{model} - {id}", model, id));
+                string displayId = IsIpAddress(id) ? "Wireless" : id;
+                list.Add(new ConnectedDevice($"{model} - {displayId}", model, id));
             }
         }
         catch (Exception ex)
@@ -264,7 +275,97 @@ public static class AdbCmdService
             Debug.WriteLine($"Error loading devices: {ex.Message}");
         }
 
-        return list;
+        var completeList = GetCodecsEncodersForEachDevice(list);
+        return completeList;
+    }
+    private static List<ConnectedDevice> GetCodecsEncodersForEachDevice(List<ConnectedDevice> devices)
+    {
+        foreach (var device in devices)
+        {
+
+            device.VideoCodecEncoderPairs = new List<string>();
+            device.AudioCodecEncoderPairs = new List<string>();
+
+            try
+            {
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "scrcpy",
+                        Arguments = $"--list-encoders --serial {device.DeviceId}",
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+
+                bool parsingVideoEncoders = false;
+                bool parsingAudioEncoders = false;
+
+                while (!process.StandardOutput.EndOfStream)
+                {
+                    var line = process.StandardOutput.ReadLine();
+
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    string codec = null;
+                    string encoder = null;
+
+                    var pattern = @"(--(?:audio|video)-encoder=[^\s]+)";
+                    var match = Regex.Matches(line, pattern);
+
+                    if (match.Count > 0)
+                    {
+                        // Get last match and trim after its value
+                        var lastMatch = match[match.Count - 1];
+                        line = line.Substring(0, lastMatch.Index + lastMatch.Length).Trim();
+                    }
+
+                    if (line.Contains("--video-codec") || line.Contains("--video-encoder")) {
+                        device.VideoCodecEncoderPairs.Add(line);
+                        //foreach (var part in line.Split(' '))
+                        //{
+                        //    if (part.StartsWith("--video-codec="))
+                        //        codec = part.Substring("--video-codec=".Length);
+                        //    else if (part.StartsWith("--video-encoder="))
+                        //        encoder = part.Substring("--video-encoder=".Length);
+                        //}
+                        //device.VideoCodecs.Add(codec);
+                        //device.VideoEncoders.Add(encoder);
+                    }
+                    if (line.Contains("--audio-codec") || line.Contains("--audio-encoder"))
+                    {
+                        device.AudioCodecEncoderPairs.Add(line);
+                        //foreach (var part in line.Split(' '))
+                        //{
+                        //    if (part.StartsWith("--audio-codec="))
+                        //        codec = part.Substring("--audio-codec=".Length);
+                        //    else if (part.StartsWith("--audio-encoder="))
+                        //        encoder = part.Substring("--audio-encoder=".Length);
+                        //}
+                        //device.AudioCodecs.Add(codec);
+                        //device.AudioEncoders.Add(encoder);
+                    }
+                }
+                process.WaitForExit();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error getting codecs/encoders for device {device.DeviceId}: {ex.Message}");
+            }
+        }
+
+        return devices;
+    }
+
+
+    public static bool IsIpAddress(string input)
+    {
+        return Regex.IsMatch(input, @"\b(?:\d{1,3}\.){3}\d{1,3}\b");
     }
 
     public static async Task<string> GetPhoneIp()

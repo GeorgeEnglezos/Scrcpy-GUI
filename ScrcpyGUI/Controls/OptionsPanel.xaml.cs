@@ -26,6 +26,7 @@ public partial class OptionsPanel : ContentView
         OptionsGeneralPanel.GeneralOptionsChanged += OnGeneralOptionsChanged;
         OptionsVirtualDisplayPanel.VirtualDisplaySettingsChanged += OnVirtualDisplaySettingsChanged;
         OptionsAudioPanel.AudioSettingsChanged += OnAudioSettingsChanged;
+
     }
 
     public void ApplySavedVisibilitySettings()
@@ -38,7 +39,7 @@ public partial class OptionsPanel : ContentView
 
     public void SetOutputPanelReferenceFromMainPage(OutputPanel outputpanel)
     {
-        outputpanel.PageRefreshed += OnRefreshPage;
+        outputpanel.PageRefreshed += OnRefreshPage; // For PackageSelector
     }
 
     private void OnRefreshPage(object? sender, string e)

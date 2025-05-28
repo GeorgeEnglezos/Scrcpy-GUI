@@ -1,14 +1,19 @@
 using System.Data;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Windows.Input;
 
 namespace ScrcpyGUI.Controls
 {
-    public partial class OptionsPackageSelectionPanel : ContentView
+    public partial class OptionsPackageSelectionPanel : ContentView, INotifyPropertyChanged
     {
         public event EventHandler<string> PackageSelected;
+        public bool IncludeSystemApps = false;
+
         public List<string> installedPackageList { get; set; } = new List<string>();
         public List<string> allPackageList { get; set; } = new List<string>();
+
 
         private string _packageTextColor = "Black";
         public string PackageTextColor
@@ -36,7 +41,7 @@ namespace ScrcpyGUI.Controls
             get => installedPackageList;
             set => installedPackageList = value;
         }
-        
+
         public List<string> AllPackageList
         {
             get => allPackageList;
@@ -54,9 +59,9 @@ namespace ScrcpyGUI.Controls
         {
             var allPackagesResult = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.GetPackages, AdbCmdService.allPackagesCommand);
             var installedPackagesResult = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.GetPackages, AdbCmdService.installedPackagesCommand);
-            bool installedPackagesFound = installedPackagesResult.Output != null && installedPackagesResult.Output.Length > 0 && !installedPackagesResult.Output.Contains("no devices/emulators found");
-            bool allPackagesFound = allPackagesResult.Output != null && allPackagesResult.Output.Length > 0 && !allPackagesResult.Output.Contains("no devices/emulators found");
-            
+            bool installedPackagesFound = installedPackagesResult.Output != null && installedPackagesResult.Output.Length > 0 && !installedPackagesResult.Output.Contains("no devices/emulators found") && !installedPackagesResult.Output.Contains("adb.exe:");
+            bool allPackagesFound = allPackagesResult.Output != null && allPackagesResult.Output.Length > 0 && !allPackagesResult.Output.Contains("no devices/emulators found") && !allPackagesResult.Output.Contains("adb.exe:");
+
             if (!installedPackagesFound || !allPackagesFound)
             {
                 PackageSearchEntry.IsEnabled = false;
@@ -88,11 +93,27 @@ namespace ScrcpyGUI.Controls
             return packageNames;
         }
 
-        private void SystemAppsCheckbox_CheckedChanged(object sender, CheckedChangedEventArgs e)
+        private void SystemAppsCheckboxChanged(object sender, EventArgs e)
         {
-            // Simulate TextChanged event
-            var text = PackageSearchEntry.Text;
-            PackageSearchEntry_TextChanged(PackageSearchEntry, new TextChangedEventArgs(text, text));
+            FilterPackageList();
+        }
+
+        private void FilterPackageList()
+        {
+            string searchText = PackageSearchEntry.Text?.ToLower();
+            List<string> suggestions;
+
+            if (IncludeSystemApps)
+            {
+                suggestions = AllPackageList.Where(p => p.ToLower().Contains(searchText ?? "")).ToList();
+            }
+            else
+            {
+                suggestions = InstalledPackageList.Where(p => p.ToLower().Contains(searchText ?? "")).ToList();
+            }
+
+            PackageSuggestionsCollectionView.ItemsSource = suggestions;
+            PackageSuggestionsCollectionView.IsVisible = suggestions.Count > 0;
         }
 
         private void PackageSearchEntry_TextChanged(object sender, TextChangedEventArgs e)
@@ -100,28 +121,12 @@ namespace ScrcpyGUI.Controls
             string searchText = e.NewTextValue?.ToLower();
 
             if (string.IsNullOrEmpty(searchText) || settingSelectedPackage == searchText)
-                for (int i = 0; i < 5; i++)
-                {
-                    PackageSuggestionsCollectionView.IsVisible = false;
-                    return;
-                }
-
-
-            List<string> suggestions;
-
-            if (SystemAppsCheckbox.IsChecked == true) { suggestions = AllPackageList.Where(p => p.ToLower().Contains(searchText)).ToList(); }
-            else {suggestions = InstalledPackageList.Where(p => p.ToLower().Contains(searchText)).ToList();} 
-
-            if (suggestions.Count > 0)
             {
-                PackageSuggestionsCollectionView.ItemsSource = suggestions;
-                PackageSuggestionsCollectionView.IsVisible = true;
-            }
-            else
-            {
-                PackageSuggestionsCollectionView.ItemsSource = null;
                 PackageSuggestionsCollectionView.IsVisible = false;
+                return;
             }
+
+            FilterPackageList();
         }
 
         private void PackageSuggestionsCollectionView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -146,8 +151,16 @@ namespace ScrcpyGUI.Controls
             PackageSuggestionsCollectionView.IsVisible = false;
             PackageSelected?.Invoke(this, "");
         }
-        public void RefreshPackages(object sender, EventArgs e) {
+        public void RefreshPackages(object sender, EventArgs e)
+        {
             LoadPackages();
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

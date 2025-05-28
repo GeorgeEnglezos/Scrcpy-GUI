@@ -1,6 +1,7 @@
 ﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="ScrcpyGUI.CommandsPage"
+             BackgroundColor="{DynamicResource BackGroundGrey}"
              Shell.Title="">
     
     <ScrollView >
@@ -17,11 +18,11 @@
                    VerticalOptions="Start"
                    TranslationY="-20"
                    BackgroundColor="#1f1f1f"
-                   TextColor="{StaticResource Purple2}"
+                   TextColor="{StaticResource PrimaryPurple}"
                    ZIndex="1"
                    Grid.Column="0" />
 
-                <Border Padding="20"  Grid.Column="0" Stroke="{StaticResource Purple2}" StrokeThickness="2" > 
+                <Border Padding="20"  Grid.Column="0" Stroke="{StaticResource PrimaryPurple}" StrokeThickness="2" > 
                         <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnRecentCommandTapped" />
                         </Border.GestureRecognizers>
@@ -43,7 +44,7 @@
                                 WidthRequest="40"
                                 Grid.Column="1">
                             <ImageButton.Source>
-                                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource Buttons}" Size="30"/>
+                                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource ButtonColor}" Size="30"/>
                             </ImageButton.Source>
                         </ImageButton>
                     </Grid>
@@ -61,16 +62,16 @@
                            VerticalOptions="Start"
                            TranslationY="-20"
                            BackgroundColor="#1f1f1f"
-                           TextColor="{StaticResource Purple2}"
+                           TextColor="{StaticResource PrimaryPurple}"
                            ZIndex="1"/>
-                <Border Padding="30" StrokeThickness="2" Stroke="{StaticResource Purple2}">
+                <Border Padding="30" StrokeThickness="2" Stroke="{StaticResource PrimaryPurple}">
 
                     <ListView ItemsSource="{Binding SavedCommandsList}">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <ViewCell>
                                     <Border Stroke="Gray" StrokeThickness="1" Margin="5">
-                                        <Grid Padding="10" ColumnDefinitions="*, Auto, Auto">
+                                        <Grid Padding="10" ColumnDefinitions="*, Auto, Auto, Auto">
                                             <Grid.GestureRecognizers>
                                                 <TapGestureRecognizer Tapped="OnCommandTapped" />
                                             </Grid.GestureRecognizers>
@@ -81,10 +82,10 @@
                                                     BackgroundColor="Transparent"
                                                     HeightRequest="25"
                                                     WidthRequest="25"
-                                                    Grid.Column="1"
+                                                    Grid.Column="2"
                                                     BindingContext="{Binding .}">
                                                 <ImageButton.Source>
-                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource Buttons}" Size="25"/>
+                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource ButtonColor}" Size="25"/>
                                                 </ImageButton.Source>
                                             </ImageButton>
                                             <ImageButton Margin="10, 0, 10, 0"
@@ -93,12 +94,14 @@
                                                     Clicked="OnDeleteCommand"
                                                     HeightRequest="25"
                                                     WidthRequest="25"
-                                                    Grid.Column="2"
+                                                    Grid.Column="3"
                                                     BindingContext="{Binding .}">
                                                 <ImageButton.Source>
-                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf2ed;" Color="{StaticResource Buttons}" Size="25"/>
+                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf2ed;" Color="{StaticResource ButtonColor}" Size="25"/>
                                                 </ImageButton.Source>
                                             </ImageButton>
+
+                                            <Button StyleClass="FilledTonalButton" BackgroundColor="{StaticResource ButtonColor}" TextColor="White"  Text=".bat" Clicked="OnDownloadBat" ToolTipProperties.Text="Create an execurable .bat file" FontSize="18" Grid.Column="1"/>
                                         </Grid>
                                     </Border>
                                 </ViewCell>

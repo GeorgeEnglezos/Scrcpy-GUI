@@ -80,6 +80,9 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="9.0.60" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.4" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="UraniumUI.Icons.FontAwesome" Version="2.12.1" />
+		<PackageReference Include="UraniumUI.Icons.MaterialIcons" Version="2.12.1" />
+		<PackageReference Include="UraniumUI.Material" Version="2.12.1" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -12,7 +12,8 @@ public partial class OptionsVirtualDisplayPanel : ContentView
     public OptionsVirtualDisplayPanel()
     {
         InitializeComponent();
-
+        ResetAllControls();
+        ResolutionContainer.PropertyChanged += OnResolutionSelected;
         BindingContext = virtualDisplaySettings;
     }
 
@@ -21,26 +22,19 @@ public partial class OptionsVirtualDisplayPanel : ContentView
         VirtualDisplaySettingsChanged?.Invoke(this, virtualDisplaySettings.GenerateCommandPart());
     }
 
-    private void OnNewDisplayCheckedChanged(object sender, CheckedChangedEventArgs e)
+    private void OnNewDisplayCheckedChanged(object sender, EventArgs e)
     {
-        virtualDisplaySettings.NewDisplay = e.Value;
-        ResolutionContainer.IsVisible = e.Value; // Toggle visibility of Resolution dropdown
-        OnVirtualDisplaySettings_Changed();
-    }
-
-    private void OnResolutionTextChanged(object sender, TextChangedEventArgs e)
-    {
-        virtualDisplaySettings.Resolution = e.NewTextValue;
+        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+        ResolutionContainer.IsVisible = checkBox?.IsChecked ?? false;
+        DpiEntry.IsVisible = checkBox?.IsChecked ?? false;
+        virtualDisplaySettings.NewDisplay = checkBox?.IsChecked ?? false;
         OnVirtualDisplaySettings_Changed();
     }
 
     private void OnResolutionSelected(object sender, EventArgs e)
     {
-        if (ResolutionPicker.SelectedItem != null)
-        {
-            virtualDisplaySettings.Resolution = ResolutionPicker.SelectedItem.ToString();
-            OnVirtualDisplaySettings_Changed();
-        }
+        virtualDisplaySettings.Resolution = ResolutionContainer.SelectedItem?.ToString() ?? "";
+        OnVirtualDisplaySettings_Changed();
     }
 
     private void OnDpiTextChanged(object sender, TextChangedEventArgs e)
@@ -49,15 +43,19 @@ public partial class OptionsVirtualDisplayPanel : ContentView
         OnVirtualDisplaySettings_Changed();
     }
 
-    private void OnNoVdDestroyContentCheckedChanged(object sender, CheckedChangedEventArgs e)
+    private void OnNoVdDestroyContentCheckedChanged(object sender, EventArgs e)
     {
-        virtualDisplaySettings.NoVdDestroyContent = e.Value;
+        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+
+        virtualDisplaySettings.NoVdDestroyContent = checkBox?.IsChecked ?? false;
         OnVirtualDisplaySettings_Changed();
     }
 
-    private void OnNoVdSystemDecorationsCheckedChanged(object sender, CheckedChangedEventArgs e)
+    private void OnNoVdSystemDecorationsCheckedChanged(object sender, EventArgs e)
     {
-        virtualDisplaySettings.NoVdSystemDecorations = e.Value;
+        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+
+        virtualDisplaySettings.NoVdSystemDecorations = checkBox?.IsChecked ?? false;
         OnVirtualDisplaySettings_Changed();
     }
 
@@ -76,13 +74,15 @@ public partial class OptionsVirtualDisplayPanel : ContentView
         NoVdSystemDecorations.IsChecked = false;
 
         // Reset Picker
-        ResolutionPicker.SelectedIndex = -1;
+        ResolutionContainer.SelectedIndex = -1;
+        virtualDisplaySettings.Resolution = "";
 
         // Reset Entry
         DpiEntry.Text = string.Empty;
 
         // Optionally hide resolution container if logic depends on it
         ResolutionContainer.IsVisible = false;
+        DpiEntry.IsVisible = false;
     }
 
 }

@@ -23,7 +23,7 @@ public partial class FixedHeader : ContentView
         Dispatcher.StartTimer(TimeSpan.FromSeconds(5), () =>
         {
             List<ConnectedDevice> currentDevices = AdbCmdService.GetAdbDevices();
-            bool newDeviceDetected = !currentDevices.SequenceEqual(_lastDevices);
+            bool newDeviceDetected = ! ConnectedDevice.AreDeviceListsEqual(currentDevices, _lastDevices);
 
             if (newDeviceDetected)
             {
@@ -42,23 +42,22 @@ public partial class FixedHeader : ContentView
     private void LoadDevices(bool initial)
     {
         var devices = AdbCmdService.GetAdbDevices();
+        DevicePicker.ItemsSource = null; // Force refresh
         DevicePicker.ItemsSource = devices;
 
         if (devices.Count > 0)
         {
-            if (initial) DevicePicker.SelectedIndex = 0;
-            if (devices.Count == 1)
-            {
-                DevicePicker.IsEnabled = false;
-                DevicePicker.TextColor = Colors.White;
-            }
-            else
-            {
-                DevicePicker.IsEnabled = true;
-            }
+            if (initial || DevicePicker.SelectedIndex == -1)
+                DevicePicker.SelectedIndex = 0;
+
+            DevicePicker.IsEnabled = devices.Count > 1;
+            DevicePicker.TextColor = Colors.White;
+        }
+        else
+        {
+            DevicePicker.IsEnabled = false;
         }
     }
-
 
     private void OnDevicePickerIndexChanged(object sender, EventArgs e)
     {

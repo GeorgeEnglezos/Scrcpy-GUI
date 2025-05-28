@@ -15,8 +15,11 @@ namespace ScrcpyGUI.Controls
 
         private async void OnResetToUsb(object sender, EventArgs e)
         {
-            var result = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.Tcp, "usb");
-            await ShowDialog("Stop Connection", result.Output);
+            string tcpResult = ( await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.Tcp, "usb")).Output;
+            string IpResult = (await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.Tcp, "disconnect")).Output;
+            if (IpResult.ToString().Contains("disconnected")) IpResult = "Disconnected wireless device";
+
+            await ShowDialog($"Stop Connection", $"{tcpResult}\n{IpResult}");
         }
 
         private async void OnAutoStartConnection(object sender, EventArgs e)
@@ -35,7 +38,7 @@ namespace ScrcpyGUI.Controls
             var portResult = await AdbCmdService.RunTCPPort(port);
             var ipResult = await AdbCmdService.RunPhoneIp(ip);
 
-            string summary = $"Auto-detected IP: {ip}\n\nTCP Result:\n{portResult}\n\nIP Result:\n{ipResult}";
+            string summary = $"\nTCP Result:\n{portResult}\n\nIP Result:\n{ipResult}";
             await ShowDialog("Auto Connection Status", summary);
         }
 

@@ -10,10 +10,10 @@
     #b08eff
     -->
     <Color x:Key="Purple1">#9880e5</Color>
-    <Color x:Key="Purple2">#7b63b2</Color>
+    <Color x:Key="PrimaryPurple">#7b63b2</Color>
     <Color x:Key="Purple3">#7b63b2</Color>
     <Color x:Key="Purple4">#333333</Color>
-    <Color x:Key="Buttons">#319795</Color>
+    <Color x:Key="ButtonColor">#9880e5</Color>
     <Color x:Key="BorderColor">#888888</Color>
 
     <Color x:Key="Primary">#6495ED</Color>
