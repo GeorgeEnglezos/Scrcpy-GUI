@@ -122,11 +122,11 @@
 	  <Compile Update="Pages\SettingsPage.xaml.cs">
 	    <DependentUpon>SettingsPage.xaml</DependentUpon>
 	  </Compile>
-	  <Compile Update="Pages\InfoPage.xaml.cs">
+	  <Compile Update="Pages\ResourcesPage.xaml.cs">
 	    <DependentUpon>InfoPage.xaml</DependentUpon>
 	  </Compile>
-	  <Compile Update="Pages\InfoPage.xaml.cs">
-	    <DependentUpon>InfoPage.xaml</DependentUpon>
+	  <Compile Update="Pages\ResourcesPage.xaml.cs">
+	    <DependentUpon>ResourcesPage.xaml</DependentUpon>
 	  </Compile>
 	</ItemGroup>
 

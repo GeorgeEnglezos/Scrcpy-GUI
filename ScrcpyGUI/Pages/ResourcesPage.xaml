@@ -1,7 +1,7 @@
 ﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
-             x:Class="ScrcpyGUI.InfoPage"
+             x:Class="ScrcpyGUI.ResourcesPage"
              BackgroundColor="{DynamicResource BackGroundGrey}"
              Shell.Title="">
              <!--xmlns:sharedControls="clr-namespace:ScrcpyGUI.Controls.SharedControls"-->
@@ -86,6 +86,24 @@
                         </VerticalStackLayout>
                     </Border>
 
+                    <Border BackgroundColor="Transparent"
+                       WidthRequest="300"
+                       Padding="15"
+                       Margin="5">
+                        <VerticalStackLayout>
+                            <Label Text="Scrcpy GUI Docs"
+                               FontSize="Subtitle"
+                               FontAttributes="Bold"
+                               Margin="0,0,0,5" />
+                            <Label Text="Visit the GUI's Documentation"
+                               FontSize="Body"
+                               TextColor="{StaticResource Secondary}"
+                               Margin="0,0,0,10" />
+                            <Button Text="Open GitHub"
+                                Clicked="OpenScrcpyGuiDocumentation" />
+                        </VerticalStackLayout>
+                    </Border>
+
                 </FlexLayout>
 
                 <!--Commands-->
@@ -100,10 +118,16 @@
                     <!--Command 1-->
                     <controls:CommandBorder CommandText="scrcpy --version" CommandTooltip="Check if scrcpy is installed and which version you have installed!"/>
                     <controls:CommandBorder CommandText="adb --version" CommandTooltip="Check if ADB is installed and which version you have installed!"/>
-                    <controls:CommandBorder CommandText="winget install --exact Genymobile.scrcpy" CommandTooltip="Install the latest Scrcpy version!" />
+                    
+                    <Label Margin="0,1"></Label>
+                    
+                    <controls:CommandBorder CommandText="winget install --exact Genymobile.scrcpy" CommandTooltip="Install the latest Scrcpy version!(Will install ADB as well)" />
+                    <controls:CommandBorder CommandText="winget install 'Android SDK Platform-Tools'" CommandTooltip="Install the latest ADB version!" />
+                    
+                    <Label Margin="0,1"></Label>
+
                     <controls:CommandBorder CommandText="winget uninstall --exact Genymobile.scrcpy" CommandTooltip="Uninstall Scrcpy from your machine!" />
-                    <controls:CommandBorder CommandText="winget uninstall 'Android SDK Platform-Tools'" CommandTooltip="Install the latest ADB version!" />
-                    <controls:CommandBorder CommandText="winget install 'Android SDK Platform-Tools'" CommandTooltip="Uninstall ADB from your machine!" />
+                    <controls:CommandBorder CommandText="winget uninstall 'Android SDK Platform-Tools'" CommandTooltip="Uninstall ADB from your machine!" />
 
                 </VerticalStackLayout>
             </VerticalStackLayout>

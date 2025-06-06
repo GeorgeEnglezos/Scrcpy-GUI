@@ -6,14 +6,15 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace ScrcpyGUI
 {
-    public partial class InfoPage : ContentPage
+    public partial class ResourcesPage : ContentPage
     {
         const string scrcpy_gui_url = "https://github.com/GeorgeEnglezos/Scrcpy-GUI";
+        const string scrcpy_gui_official_docs = "https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs";
         const string scrcpy_official = "https://github.com/Genymobile/scrcpy";
         const string scrcpy_official_docs = "https://github.com/Genymobile/scrcpy/tree/master/doc";
 
 
-        public InfoPage()
+        public ResourcesPage()
         {
             InitializeComponent();
         }
@@ -21,6 +22,10 @@ namespace ScrcpyGUI
         private async void OpenScrcpyGui(object sender, EventArgs e)
         {
             await Launcher.OpenAsync(scrcpy_gui_url);
+        }
+        private async void OpenScrcpyGuiDocumentation(object sender, EventArgs e)
+        {
+            await Launcher.OpenAsync(scrcpy_gui_official_docs);
         }
 
         private async void OpenScrcpyOfficial(object sender, EventArgs e)
@@ -32,6 +37,7 @@ namespace ScrcpyGUI
         {
             await Launcher.OpenAsync(scrcpy_official_docs);
         }
+
 
         private async void OnCopyCommand(object sender, EventArgs e)
         {
