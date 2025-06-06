@@ -29,8 +29,8 @@
 
     <ShellContent
         Title="Resources"
-        ContentTemplate="{DataTemplate local:ResourcesPage}"
-        Route="ResourcesPage">
+        ContentTemplate="{DataTemplate local:InfoPage}"
+        Route="InfoPage">
         <ShellContent.Icon>
             <FontImageSource FontFamily="FontAwesome" Glyph="&#xf05a;" Size="20" />
         </ShellContent.Icon>
