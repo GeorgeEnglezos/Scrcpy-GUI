@@ -6,6 +6,9 @@ using Microsoft.Maui.Controls;
 
 namespace ScrcpyGUI
 {
+    //To build the application run
+    //dotnet publish -c Release -f net9.0-windows10.0.19041.0 -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=true
+
     public partial class MainPage : ContentPage
     {
         public MainPage()
