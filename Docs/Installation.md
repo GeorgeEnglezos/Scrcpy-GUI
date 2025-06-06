@@ -1,6 +1,6 @@
 # 🛠️ Installation Steps (for Windows)
 
-## Scrcpy & ADB ([Scrcpy docs](https://github.com/Genymobile/scrcpy/blob/master/doc/windows.md))
+## 🪟 Scrcpy & ADB ([Scrcpy docs](https://github.com/Genymobile/scrcpy/blob/master/doc/windows.md))
 
 To use the Scrcpy-Gui application you'll need to install **ADB** (Android Debug Bridge) and **Scrcpy** on your Windows machine.
 
@@ -32,7 +32,11 @@ adb --version
 ```
 If the commands return version numbers, you're all set! If you see messages like "scrcpy is not recognized" or "adb is not recognized," try rebooting your Windows device and running the commands again. Another way to confirm if ADB and Scrcpy are working properly is to check the relevant panel within the Scrcpy-Gui application itself.
 
-(Insert image here)## Android - Developer Settings & USB Debugging
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/107d873e-0d28-4262-b4be-fa005504bd8e" width="50%" alt="image">
+</p>
+
+## 🤖 Android - Developer Settings & USB Debugging
 
 To allow your Windows device to recognize your Android device for development purposes, you need to enable USB debugging. These settings are essential for advanced functionalities like using ADB (Android Debug Bridge) for various development tasks or mirroring your device's screen with tools like Scrcpy.
 
@@ -60,9 +64,9 @@ Now, let's connect your Android device to your PC and verify it's recognized:
 
 1.  **Connect your phone with a USB cable.**
 2.  **Authorize Debugging**: On your Android device, you may see a pop-up asking to `Allow USB debugging?` with your computer's RSA key fingerprint. **Check** the "Always allow from this computer" box if it's a trusted computer, then tap `Allow`.
-
-    (Insert image here - An example image of the "Allow USB debugging?" prompt)
-
+<p align="center">
+<img src="https://github.com/user-attachments/assets/f17e2eb2-6cb0-4db1-8284-cd24cbdcdb93" width="20%" alt="image">
+</p>
 On your computer, open a command prompt or terminal and run the following command:
 
 ```bash
@@ -75,6 +79,10 @@ If your device is properly connected, you should see your device listed, usually
 List of devices attached
 XXXXXXXXXXXXXX	device
 ```
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/e862a35c-d26a-4a4b-913b-60750b0881e8" width="50%" alt="Developer options enabled notification">
+</p>
 
 If it shows "unauthorized," ensure you have authorized the connection on your phone as described in step 2. If no device is listed, ensure your USB cable is working and try restarting the ADB server with adb `kill-server` and then `adb devices` again.
 
