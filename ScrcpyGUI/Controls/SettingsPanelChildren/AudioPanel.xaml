@@ -5,15 +5,6 @@
              xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
              x:Class="ScrcpyGUI.Controls.OptionsAudioPanel">
 
-    <!--<ContentView.Resources>
-        <x:Array x:Key="AudioCodecArr" Type="{x:Type x:String}">
-            <x:String>opus</x:String>
-            <x:String>aac</x:String>
-            <x:String>flac</x:String>
-            <x:String>raw</x:String>
-        </x:Array>
-    </ContentView.Resources>-->
-
     <!-- Main Grid -->
     <Grid RowDefinitions="Auto, *"  Padding="0">
             <!-- Border -->
@@ -42,7 +33,7 @@
                 <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="AudioBitRateEntry" Title="Audio Bit Rate" FontSize="16" TextChanged="OnAudioBitRateChanged"></ur:TextField>
                 <Image WidthRequest="20"
                                HeightRequest="20"
-                               ToolTipProperties.Text="e.g., 64000 or 64K"
+                               ToolTipProperties.Text="(e.g., 128K, 256K). Higher values improve audio quality at the cost of bandwidth. Default is 128K."
                                VerticalOptions="Center"
                                Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}"
                                AbsoluteLayout.LayoutBounds="0.95,0.55,20,20"
@@ -54,7 +45,7 @@
                     <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="AudioBufferEntry" Title="Audio Buffer" FontSize="16" TextChanged="OnAudioBufferChanged"></ur:TextField>
                     <Image WidthRequest="20"
                                HeightRequest="20"
-                               ToolTipProperties.Text="e.g., 512"
+                               ToolTipProperties.Text="Sets the audio buffer size in milliseconds (e.g., 50). Lower values reduce latency but may cause audio glitches. Higher values improve stability at the cost of delay. Default is 200"
                                VerticalOptions="Center"
                                Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}"
                                AbsoluteLayout.LayoutBounds="0.95,0.55,20,20"
