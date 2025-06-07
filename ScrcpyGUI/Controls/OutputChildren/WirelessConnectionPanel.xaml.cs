@@ -15,11 +15,20 @@ namespace ScrcpyGUI.Controls
 
         private async void OnResetToUsb(object sender, EventArgs e)
         {
-            string tcpResult = ( await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.Tcp, "usb")).Output;
-            string IpResult = (await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.Tcp, "disconnect")).Output;
-            if (IpResult.ToString().Contains("disconnected")) IpResult = "Disconnected wireless device";
+            var tcpResponse = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.Tcp, "usb");
+            if (!string.IsNullOrEmpty(tcpResponse.RawError)) { 
+                await ShowDialog("Error", $"{tcpResponse.RawError}");
+                return;
+            }
 
-            await ShowDialog($"Stop Connection", $"{tcpResult}\n{IpResult}");
+            var ipResponse = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.Tcp, "disconnect");
+            if (!string.IsNullOrEmpty(ipResponse.RawError)) {
+                await ShowDialog("Error", $"{ipResponse.RawError}");
+                return;
+            }
+
+            if (ipResponse.Output.ToString().Contains("disconnected")) ipResponse.Output = "Disconnected wireless device";
+            await ShowDialog($"Stop Connection", $"{tcpResponse.Output}\n{ipResponse.Output}");
         }
 
         private async void OnAutoStartConnection(object sender, EventArgs e)
