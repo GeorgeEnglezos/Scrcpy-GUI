@@ -23,3 +23,4 @@ Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting 
 # 🛠️ Installation Steps (for windows):</h2>
 
 For the installation and setup of both your Windows and Android devices refer to the [Installation.md](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Installation.md)
+To explore the application without downloading it you can read the [Application Tour](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Application-Tour.md) Doc

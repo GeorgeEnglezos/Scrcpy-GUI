@@ -4,6 +4,9 @@ Let's take a quick walk through the Scrcpy-GUI application to get you familiar w
 
 # Home Tab
 
+![image](https://github.com/user-attachments/assets/adff9728-85de-4d52-a818-421591a0cde8)
+
+
 This is your main page, where you'll find all the options needed for interacting with your Android device.
 
 ### Scrcpy Settings
@@ -36,16 +39,20 @@ These sections allow you to fine-tune how Scrcpy interacts with your device.
     > Auto Start Connection: Connect your phone wirelessly with a single click – no need to manually type your IP or preferred TCP port.
     > Close Connection: Stop the active wireless connection. (This might take a few seconds.)
 
-9) Command Preview: See the Scrcpy command that's generated based on all your selected options.
+9) Command Preview: See the Scrcpy command that's generated based on all your selected options. Prss the Play button to run the scrcpy command or the heart icon to save your command in the commands page!
 
 10) Output Preview: View essential error messages from your Scrcpy commands. (To see the complete log, enable the related setting in the Settings Tab.)
 ```
 
-# Commands Tab
+# Favorites Tab
+
+![image](https://github.com/user-attachments/assets/60be2b49-4a0c-46f5-92a4-890d0c3e93af)
 
 Here you'll find all your saved commands. You can execute them with a simple click, or export them as executable .bat files for quick access.
 
 # Resources Tab
+
+![image](https://github.com/user-attachments/assets/a6579d83-aae7-41eb-acaf-fe4db297e1f9)
 
 This tab provides helpful information and links:
 
@@ -58,6 +65,8 @@ This tab provides helpful information and links:
 ```
 
 # Settings Tab
+
+![image](https://github.com/user-attachments/assets/1e251c56-129a-49e9-ade2-16ad8f47fee5)
 
 Adjust the application's behavior and user interface here:
 
