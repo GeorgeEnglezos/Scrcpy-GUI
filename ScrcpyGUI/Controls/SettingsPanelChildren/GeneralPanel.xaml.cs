@@ -16,7 +16,11 @@ public partial class OptionsGeneralPanel : ContentView
         InitializeComponent();
         VideoOrientationPicker.PropertyChanged += OnVideoOrientationChanged;
         VideoCodecEncoderPicker.PropertyChanged += OnVideoCodecEncoderChanged;
+
+        //Sets the initial values for Codecs-Encoders from the current selected device
         VideoCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.VideoCodecEncoderPairs;
+        BindingContext = this;
+
     }
 
     private void OnVideoOrientationChanged(object sender, PropertyChangedEventArgs e)
@@ -105,6 +109,12 @@ public partial class OptionsGeneralPanel : ContentView
         ResetAllControls();
     }
 
+        
+    //Sets the values for Codecs-Encoders from the current selected device
+    public void ReloadCodecsEncoders() {
+        VideoCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.VideoCodecEncoderPairs;
+    }
+
     private void ResetAllControls()
     {
         // Reset CheckBoxes
@@ -126,4 +136,5 @@ public partial class OptionsGeneralPanel : ContentView
         VideoCodecEncoderPicker.SelectedIndex = -1; // This sets it to no selection
         generalSettings.VideoCodecEncoderPair = "";
     }
+
 }

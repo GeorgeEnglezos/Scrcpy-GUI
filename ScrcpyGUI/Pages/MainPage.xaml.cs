@@ -69,9 +69,14 @@ namespace ScrcpyGUI
                 Grid.SetRow(OutputPanel, 0); // Assign OutputPanel to the first row
             }
         }
+
+
+        // Change the values for every value related to the device
         private async void OnDeviceChanged(object? sender, string e)
         {
             await OptionsPanel.PackageSelector.LoadPackages();
+            OptionsPanel.GeneralPanel.ReloadCodecsEncoders();
+            OptionsPanel.AudioPanel.ReloadCodecsEncoders();
         }
 
         //public async void ReloadPage() {
