@@ -327,28 +327,10 @@ public static class AdbCmdService
 
                     if (line.Contains("--video-codec") || line.Contains("--video-encoder")) {
                         device.VideoCodecEncoderPairs.Add(line);
-                        //foreach (var part in line.Split(' '))
-                        //{
-                        //    if (part.StartsWith("--video-codec="))
-                        //        codec = part.Substring("--video-codec=".Length);
-                        //    else if (part.StartsWith("--video-encoder="))
-                        //        encoder = part.Substring("--video-encoder=".Length);
-                        //}
-                        //device.VideoCodecs.Add(codec);
-                        //device.VideoEncoders.Add(encoder);
                     }
                     if (line.Contains("--audio-codec") || line.Contains("--audio-encoder"))
                     {
                         device.AudioCodecEncoderPairs.Add(line);
-                        //foreach (var part in line.Split(' '))
-                        //{
-                        //    if (part.StartsWith("--audio-codec="))
-                        //        codec = part.Substring("--audio-codec=".Length);
-                        //    else if (part.StartsWith("--audio-encoder="))
-                        //        encoder = part.Substring("--audio-encoder=".Length);
-                        //}
-                        //device.AudioCodecs.Add(codec);
-                        //device.AudioEncoders.Add(encoder);
                     }
                 }
                 process.WaitForExit();

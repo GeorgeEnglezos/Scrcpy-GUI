@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Bson;
 using ScrcpyGUI.Models;
 using System.Diagnostics;
 
@@ -7,6 +8,9 @@ public partial class OptionsPanel : ContentView
 {
 
     public OptionsPackageSelectionPanel PackageSelector => OptionsPackageSelectionPanel;
+    public OptionsGeneralPanel GeneralPanel => OptionsGeneralPanel;
+    public OptionsAudioPanel AudioPanel => OptionsAudioPanel;
+
     public event EventHandler<string> ScrcpyCommandChanged;
     public event EventHandler PageRefreshed;
 
@@ -20,13 +24,24 @@ public partial class OptionsPanel : ContentView
     public OptionsPanel()
     {
         InitializeComponent();
+    }
 
+    public void SubscribeToEvents()
+    {
         OptionsPackageSelectionPanel.PackageSelected += OnPackageSelected;
         OptionsScreenRecordingPanel.ScreenRecordingOptionsChanged += OnScreenRecordingOptionsChanged;
         OptionsGeneralPanel.GeneralOptionsChanged += OnGeneralOptionsChanged;
-        OptionsVirtualDisplayPanel.VirtualDisplaySettingsChanged += OnVirtualDisplaySettingsChanged;
         OptionsAudioPanel.AudioSettingsChanged += OnAudioSettingsChanged;
+        OptionsVirtualDisplayPanel.VirtualDisplaySettingsChanged += OnVirtualDisplaySettingsChanged;
+    }
 
+    public void UnsubscribeToEvents()
+    {
+        OptionsPackageSelectionPanel.PackageSelected -= OnPackageSelected;
+        OptionsScreenRecordingPanel.ScreenRecordingOptionsChanged -= OnScreenRecordingOptionsChanged;
+        OptionsGeneralPanel.GeneralOptionsChanged -= OnGeneralOptionsChanged;
+        OptionsAudioPanel.AudioSettingsChanged -= OnAudioSettingsChanged;
+        OptionsVirtualDisplayPanel.VirtualDisplaySettingsChanged -= OnVirtualDisplaySettingsChanged;
     }
 
     public void ApplySavedVisibilitySettings()
@@ -40,6 +55,11 @@ public partial class OptionsPanel : ContentView
     public void SetOutputPanelReferenceFromMainPage(OutputPanel outputpanel)
     {
         outputpanel.PageRefreshed += OnRefreshPage; // For PackageSelector
+    }
+
+    public void Unsubscribe_SetOutputPanelReferenceFromMainPage(OutputPanel outputpanel)
+    {
+        outputpanel.PageRefreshed -= OnRefreshPage; // For PackageSelector
     }
 
     private void OnRefreshPage(object? sender, string e)

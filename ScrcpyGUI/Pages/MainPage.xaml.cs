@@ -14,14 +14,46 @@ namespace ScrcpyGUI
         public MainPage()
         {
             InitializeComponent();
+        }
 
-            // Explicitly set the SettingsParentPanel for the OutputPanel
-            OutputPanel.SetOptionsPanelReferenceFromMainPage(OptionsPanel);
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+
+            OutputPanel.ApplySavedVisibilitySettings();
+            OptionsPanel.ApplySavedVisibilitySettings();
+            
+            SubscribeToEvents();
+            OptionsPanel.SubscribeToEvents();
+            OutputPanel.SubscribeToEvents();
+
             OptionsPanel.SetOutputPanelReferenceFromMainPage(OutputPanel);
+            OutputPanel.SetOptionsPanelReferenceFromMainPage(OptionsPanel);
+        }
+
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+
+            UnsubscribeToEvents();
+            OptionsPanel.UnsubscribeToEvents();
+            OutputPanel.UnsubscribeToEvents();
+
+            OptionsPanel.Unsubscribe_SetOutputPanelReferenceFromMainPage(OutputPanel);
+            OutputPanel.Unsubscribe_SetOptionsPanelReferenceFromMainPage(OptionsPanel);
+        }
+
+
+        private void SubscribeToEvents()
+        {
             //OutputPanel.PageRefreshed += OnRefreshPage;
             FixedHeader.DeviceChanged += OnDeviceChanged;
         }
 
+        private void UnsubscribeToEvents()
+        {
+            FixedHeader.DeviceChanged -= OnDeviceChanged;
+        }
 
 
         public event EventHandler AppRefreshed;
@@ -29,13 +61,6 @@ namespace ScrcpyGUI
         private async void OnRefreshPage(object? sender, string e)
         {
             AppRefreshed?.Invoke(this, EventArgs.Empty);
-        }
-
-        protected override void OnAppearing()
-        {
-            base.OnAppearing();
-            OutputPanel.ApplySavedVisibilitySettings();
-            OptionsPanel.ApplySavedVisibilitySettings();
         }
 
         private void OnSizeChanged(object sender, EventArgs e)
