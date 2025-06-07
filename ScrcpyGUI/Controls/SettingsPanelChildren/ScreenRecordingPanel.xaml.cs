@@ -5,69 +5,78 @@ namespace ScrcpyGUI.Controls;
 public partial class OptionsScreenRecordingPanel : ContentView
 {
 
-        public event EventHandler<string> ScreenRecordingOptionsChanged;
+    public event EventHandler<string> ScreenRecordingOptionsChanged;
 
-        private ScreenRecordingOptions screenRecordingOptions = new ScreenRecordingOptions();
+    private ScreenRecordingOptions screenRecordingOptions = new ScreenRecordingOptions();
 
-        public OptionsScreenRecordingPanel()
-        {
-            InitializeComponent();
+    public OptionsScreenRecordingPanel()
+    {
+        InitializeComponent();
+    }
+
+    public void SubscribeToEvents()
+    {
         OutputFormatPicker.PropertyChanged += OnOutputFormatChanged;
-        }
+    }
 
-        private void OnEnableRecordingCheckedChanged(object sender, CheckedChangedEventArgs e)
+    public void UnsubscribeToEvents()
         {
-            if (!e.Value)
-            {
-                ScreenRecordingOptions_Changed();
+        OutputFormatPicker.PropertyChanged -= OnOutputFormatChanged;
+    }
 
-                ResolutionEntry.Text = string.Empty;
-                BitrateEntry.Text = string.Empty;
-                FramerateEntry.Text = string.Empty;
-                OutputFormatPicker.SelectedItem = null;
-                screenRecordingOptions.OutputFormat = null;
-
-                OutputFileEntry.Text = string.Empty;
-            }
-        }
-
-        private void OnResolutionChanged(object sender, TextChangedEventArgs e)
+    private void OnEnableRecordingCheckedChanged(object sender, CheckedChangedEventArgs e)
+    {
+        if (!e.Value)
         {
-            screenRecordingOptions.MaxSize = e.NewTextValue;
+            ScreenRecordingOptions_Changed();
+
+            ResolutionEntry.Text = string.Empty;
+            BitrateEntry.Text = string.Empty;
+            FramerateEntry.Text = string.Empty;
+            OutputFormatPicker.SelectedItem = null;
+            screenRecordingOptions.OutputFormat = null;
+
+            OutputFileEntry.Text = string.Empty;
+        }
+    }
+
+    private void OnResolutionChanged(object sender, TextChangedEventArgs e)
+    {
+        screenRecordingOptions.MaxSize = e.NewTextValue;
+        ScreenRecordingOptions_Changed();
+    }
+
+    private void OnBitrateChanged(object sender, TextChangedEventArgs e)
+    {
+    screenRecordingOptions.Bitrate = e.NewTextValue;
+        ScreenRecordingOptions_Changed();
+    }
+
+    private void OnFramerateChanged(object sender, TextChangedEventArgs e)
+    {
+        screenRecordingOptions.Framerate = e.NewTextValue;
+        ScreenRecordingOptions_Changed();
+    }
+
+    private void OnOutputFormatChanged(object sender, EventArgs e)
+    {
+        if (OutputFormatPicker.SelectedItem != null)
+        {
+            screenRecordingOptions.OutputFormat = OutputFormatPicker.SelectedItem.ToString();
             ScreenRecordingOptions_Changed();
         }
+    }
 
-        private void OnBitrateChanged(object sender, TextChangedEventArgs e)
-        {
-        screenRecordingOptions.Bitrate = e.NewTextValue;
-            ScreenRecordingOptions_Changed();
-        }
+    private void OnOutputFileChanged(object sender, TextChangedEventArgs e)
+    {
+        screenRecordingOptions.OutputFile = e.NewTextValue;
+        ScreenRecordingOptions_Changed();
+    }
 
-        private void OnFramerateChanged(object sender, TextChangedEventArgs e)
-        {
-            screenRecordingOptions.Framerate = e.NewTextValue;
-            ScreenRecordingOptions_Changed();
-        }
-
-        private void OnOutputFormatChanged(object sender, EventArgs e)
-        {
-            if (OutputFormatPicker.SelectedItem != null)
-            {
-                screenRecordingOptions.OutputFormat = OutputFormatPicker.SelectedItem.ToString();
-                ScreenRecordingOptions_Changed();
-            }
-        }
-
-        private void OnOutputFileChanged(object sender, TextChangedEventArgs e)
-        {
-            screenRecordingOptions.OutputFile = e.NewTextValue;
-            ScreenRecordingOptions_Changed();
-        }
-
-        private void ScreenRecordingOptions_Changed()
-        {
-            ScreenRecordingOptionsChanged?.Invoke(this, screenRecordingOptions.GenerateCommandPart());
-        }
+    private void ScreenRecordingOptions_Changed()
+    {
+        ScreenRecordingOptionsChanged?.Invoke(this, screenRecordingOptions.GenerateCommandPart());
+    }
 
     public void CleanSettings(object sender, EventArgs e)
     {

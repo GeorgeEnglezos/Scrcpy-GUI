@@ -14,13 +14,20 @@ public partial class OptionsGeneralPanel : ContentView
     public OptionsGeneralPanel()
     {
         InitializeComponent();
-        VideoOrientationPicker.PropertyChanged += OnVideoOrientationChanged;
-        VideoCodecEncoderPicker.PropertyChanged += OnVideoCodecEncoderChanged;
 
         //Sets the initial values for Codecs-Encoders from the current selected device
         VideoCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.VideoCodecEncoderPairs;
         BindingContext = this;
+    }
 
+    public void SubscribeToEvents() {
+        VideoOrientationPicker.PropertyChanged += OnVideoOrientationChanged;
+        VideoCodecEncoderPicker.PropertyChanged += OnVideoCodecEncoderChanged;
+    }
+
+    public void UnsubscribeToEvents() {
+        VideoOrientationPicker.PropertyChanged -= OnVideoOrientationChanged;
+        VideoCodecEncoderPicker.PropertyChanged -= OnVideoCodecEncoderChanged;
     }
 
     private void OnVideoOrientationChanged(object sender, PropertyChangedEventArgs e)
@@ -85,6 +92,13 @@ public partial class OptionsGeneralPanel : ContentView
         OnGenericSettings_Changed();
     }
     
+
+    private void OnVideoBitRateTextChanged(object sender, TextChangedEventArgs e)
+    {
+        generalSettings.VideoBitRate = e.NewTextValue;
+        OnGenericSettings_Changed();
+    }
+    
     private void OnExtraParametersEntryTextChanged(object sender, TextChangedEventArgs e)
     {
         generalSettings.ExtraParameters = e.NewTextValue;
@@ -129,6 +143,7 @@ public partial class OptionsGeneralPanel : ContentView
         CropEntry.Text = string.Empty;
         WindowTitleEntry.Text = string.Empty;
         ExtraParameterEntry.Text = string.Empty;
+        VideoBitRate.Text = "";
 
         // Reset Picker
         VideoOrientationPicker.SelectedIndex = -1; // This sets it to no selection

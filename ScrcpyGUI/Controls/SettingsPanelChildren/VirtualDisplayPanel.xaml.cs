@@ -13,8 +13,17 @@ public partial class OptionsVirtualDisplayPanel : ContentView
     {
         InitializeComponent();
         ResetAllControls();
-        ResolutionContainer.PropertyChanged += OnResolutionSelected;
         BindingContext = virtualDisplaySettings;
+    }
+
+    public void SubscribeToEvents()
+    {
+        ResolutionContainer.PropertyChanged += OnResolutionSelected;
+    }
+
+    public void UnsubscribeToEvents()
+    {
+        ResolutionContainer.PropertyChanged -= OnResolutionSelected;
     }
 
     private void OnVirtualDisplaySettings_Changed()
