@@ -89,9 +89,12 @@
                     <ur:TextField WidthRequest="470" Margin="5, 10, 0, 10" x:Name="ExtraParameterEntry" Title="Extra Parameters" FontSize="16" TextChanged="OnExtraParametersEntryTextChanged"/>
                     <Image WidthRequest="20" HeightRequest="20" ToolTipProperties.Text="Add missing parameters manually!" VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
                 </AbsoluteLayout>
-
-                <ur:TextField  WidthRequest="210" Margin="5, 10, 0, 10" Title="Video Bit Rate" FontSize="16" x:Name="VideoBitRate" TextChanged="OnVideoBitRateTextChanged"> </ur:TextField>
-
+                
+                <AbsoluteLayout>
+                    <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" Title="Video Bit Rate" FontSize="16" x:Name="VideoBitRate" TextChanged="OnVideoBitRateTextChanged"> </ur:TextField>
+                    <Image WidthRequest="20" HeightRequest="20" 
+                           ToolTipProperties.Text="(e.g., 8M, 2M). Higher values improve quality but increase latency and bandwidth usage. Default is 8M." VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
+                </AbsoluteLayout>
                 <!-- no-window -->
                 <!--
                 <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
