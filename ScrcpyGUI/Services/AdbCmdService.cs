@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Controls.Internals;
+﻿using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Internals;
 using Microsoft.VisualBasic;
 using ScrcpyGUI.Models;
 using System;
@@ -14,6 +15,7 @@ public static class AdbCmdService
 {
     public const string allPackagesCommand = "shell pm list packages";
     public const string installedPackagesCommand = "shell pm list packages -3";
+    public static List<ConnectedDevice> connectedDeviceList = new List<ConnectedDevice>();
     public static ConnectedDevice selectedDevice = new ConnectedDevice();
     public enum CommandEnum
     {
@@ -33,8 +35,8 @@ public static class AdbCmdService
         TcpIp
     }
 
-    public static List<string> OutputHistory = new();  // Global list to track all outputs
-    public static List<string> ErrorHistory = new();   // Global list to track all error outputs
+    //public static List<string> OutputHistory = new();  // Global list to track all outputs
+    //public static List<string> ErrorHistory = new();   // Global list to track all error outputs
 
 
     public static async Task<CmdCommandResponse> RunAdbCommandAsync(CommandEnum commandType, string? command)
@@ -45,19 +47,29 @@ public static class AdbCmdService
 
         try
         {
-            if (command.Equals("usb") && !IPAddress.TryParse(selectedDevice.DeviceId, out _))
-            {
-                response.RawError = "Device isn't connected Wirelessly!";
-                return response;
-            }
+            //Scrcpy
             if (commandType == CommandEnum.RunScrcpy)
             {
+                if (string.IsNullOrEmpty(selectedDevice.DeviceId))
+                { //No device connected
+                    response.RawError = "No ADB device connected. \nMake sure USB debugging is enabled and try again!";
+                    return response;
+                }
+
                 command = command.Replace("scrcpy.exe", "");
                 command = $"scrcpy.exe -s {selectedDevice.DeviceId} {command} ";
             }
             if (commandType == CommandEnum.GetPackages || commandType == CommandEnum.Tcp || commandType == CommandEnum.PhoneIp)
             {
-                command = $"adb -s {selectedDevice.DeviceId} {command} ";
+                var deviceToUseForCommand = selectedDevice.DeviceId;
+                if (command.Equals("usb") || command.Equals("disconnect")) {
+                    deviceToUseForCommand = FindWirelessDeviceInList();
+                    if (string.IsNullOrEmpty(deviceToUseForCommand)) {
+                        response.RawError = "No Wireless device found!";
+                        return response;
+                    }
+                }
+                    command = $"adb -s {deviceToUseForCommand} {command} ";
             }
 
             ProcessStartInfo startInfo = new ProcessStartInfo
@@ -128,15 +140,15 @@ public static class AdbCmdService
                 var errorOutput = errorBuilder.ToString();
 
                 // Store all outputs in the global lists for history tracking
-                if (!string.IsNullOrEmpty(output))
-                {
-                    OutputHistory.Add(output);
-                }
+                //if (!string.IsNullOrEmpty(output))
+                //{
+                //    OutputHistory.Add(output);
+                //}
 
-                if (!string.IsNullOrEmpty(errorOutput))
-                {
-                    ErrorHistory.Add(errorOutput);
-                }
+                //if (!string.IsNullOrEmpty(errorOutput))
+                //{
+                //    ErrorHistory.Add(errorOutput);
+                //}
 
                 response.RawOutput = output;
                 response.RawError = errorOutput;
@@ -301,8 +313,9 @@ public static class AdbCmdService
             Debug.WriteLine($"Error loading devices: {ex.Message}");
         }
 
-        var completeList = GetCodecsEncodersForEachDevice(list);
-        return completeList;
+        if (connectedDeviceList.Count == 0) selectedDevice = new ConnectedDevice();
+        connectedDeviceList = GetCodecsEncodersForEachDevice(list);
+        return connectedDeviceList;
     }
     private static List<ConnectedDevice> GetCodecsEncodersForEachDevice(List<ConnectedDevice> devices)
     {
@@ -384,5 +397,25 @@ public static class AdbCmdService
         // Parse the IP address from output (only get the actual IP)
         var match = Regex.Match(output.Output, @"inet\s+(\d+\.\d+\.\d+\.\d+)");
         return match.Success ? match.Groups[1].Value : string.Empty;
+    }
+
+    private static string FindWirelessDeviceInList()
+    {
+        // If the currently selected device is already wireless, return its ID directly.
+        if (IsIpAddress(selectedDevice.DeviceId))
+        {
+            return selectedDevice.DeviceId;
+        }
+
+        // If not, search the list of connected devices for the first wireless one.
+        foreach (var device in connectedDeviceList)
+        {
+            if (IsIpAddress(device.DeviceId))
+            {
+                return device.DeviceId;
+            }
+        }
+
+        return null;
     }
 }
