@@ -16,9 +16,29 @@ public partial class OutputPanel : ContentView
         InitializeComponent();
         BindingContext = this;
         SaveCommand.SetValue(ToolTipProperties.TextProperty, $"Settings and Commands are saved in\n\n{DataStorage.filePath}");
-        ChecksPanel.StatusRefreshed += OnRefreshPage;
         FinalCommandPreview.Text = "Default Command: "+ baseScrcpyCommand;
         command = baseScrcpyCommand;
+
+    }
+
+    public void SubscribeToEvents()
+    {
+        ChecksPanel.StatusRefreshed += OnRefreshPage;
+    }
+
+    public void UnsubscribeToEvents()
+    {
+        ChecksPanel.StatusRefreshed -= OnRefreshPage;
+    }
+
+    public void SetOptionsPanelReferenceFromMainPage(OptionsPanel optionsPanel)
+    {
+        optionsPanel.ScrcpyCommandChanged += OnScrcpyCommandChanged;
+    }
+
+    public void Unsubscribe_SetOptionsPanelReferenceFromMainPage(OptionsPanel optionsPanel)
+    {
+        optionsPanel.ScrcpyCommandChanged += OnScrcpyCommandChanged;
     }
 
     public void ApplySavedVisibilitySettings()
@@ -47,10 +67,6 @@ public partial class OutputPanel : ContentView
         base.OnBindingContextChanged();
     }
 
-    public void SetOptionsPanelReferenceFromMainPage(OptionsPanel optionsPanel)
-    {
-        optionsPanel.ScrcpyCommandChanged += OnScrcpyCommandChanged;
-    }
 
     private void OnScrcpyCommandChanged(object? sender, string e)
     {

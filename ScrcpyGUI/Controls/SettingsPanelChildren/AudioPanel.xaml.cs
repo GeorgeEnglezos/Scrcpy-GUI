@@ -92,6 +92,13 @@ namespace ScrcpyGUI.Controls
             ResetAllControls();
         }
 
+
+        //Sets the values for Codecs-Encoders from the current selected device
+        public void ReloadCodecsEncoders()
+        {
+            AudioCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.VideoCodecEncoderPairs;
+        }
+
         private void ResetAllControls()
         {
             // Reset Entries
