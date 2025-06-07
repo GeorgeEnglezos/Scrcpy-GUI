@@ -7,6 +7,7 @@ namespace ScrcpyGUI.Controls;
 public partial class OptionsPanel : ContentView
 {
 
+    //To be able to access the child panels from parent
     public OptionsPackageSelectionPanel PackageSelector => OptionsPackageSelectionPanel;
     public OptionsGeneralPanel GeneralPanel => OptionsGeneralPanel;
     public OptionsAudioPanel AudioPanel => OptionsAudioPanel;
@@ -33,6 +34,11 @@ public partial class OptionsPanel : ContentView
         OptionsGeneralPanel.GeneralOptionsChanged += OnGeneralOptionsChanged;
         OptionsAudioPanel.AudioSettingsChanged += OnAudioSettingsChanged;
         OptionsVirtualDisplayPanel.VirtualDisplaySettingsChanged += OnVirtualDisplaySettingsChanged;
+
+        OptionsGeneralPanel.SubscribeToEvents();
+        OptionsAudioPanel.SubscribeToEvents();
+        OptionsVirtualDisplayPanel.SubscribeToEvents();
+        OptionsScreenRecordingPanel.SubscribeToEvents();
     }
 
     public void UnsubscribeToEvents()
@@ -42,6 +48,11 @@ public partial class OptionsPanel : ContentView
         OptionsGeneralPanel.GeneralOptionsChanged -= OnGeneralOptionsChanged;
         OptionsAudioPanel.AudioSettingsChanged -= OnAudioSettingsChanged;
         OptionsVirtualDisplayPanel.VirtualDisplaySettingsChanged -= OnVirtualDisplaySettingsChanged;
+
+        OptionsGeneralPanel.UnsubscribeToEvents();
+        OptionsAudioPanel.UnsubscribeToEvents();
+        OptionsVirtualDisplayPanel.UnsubscribeToEvents();
+
     }
 
     public void ApplySavedVisibilitySettings()

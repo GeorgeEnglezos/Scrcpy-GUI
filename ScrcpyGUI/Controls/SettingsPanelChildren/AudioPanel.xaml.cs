@@ -16,13 +16,24 @@ namespace ScrcpyGUI.Controls
             InitializeComponent();
             LoadAudioOptions();
             AudioCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.AudioCodecEncoderPairs;
-            AudioCodecEncoderPicker.PropertyChanged += OnAudioCodecChanged;
+            
         }
 
         private void OnAudioCodecChanged(object sender, PropertyChangedEventArgs e)
         {            
             audioSettings.AudioCodecEncoderPair = AudioCodecEncoderPicker.SelectedItem?.ToString() ?? "";
             OnAudioSettings_Changed();
+        }
+
+
+        public void SubscribeToEvents()
+        {
+            AudioCodecEncoderPicker.PropertyChanged += OnAudioCodecChanged;
+        }
+
+        public void UnsubscribeToEvents()
+        {
+            AudioCodecEncoderPicker.PropertyChanged -= OnAudioCodecChanged;
         }
 
 

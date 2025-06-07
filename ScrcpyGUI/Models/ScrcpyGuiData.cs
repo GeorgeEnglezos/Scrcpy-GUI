@@ -181,7 +181,7 @@ namespace ScrcpyGUI.Models
         public bool WindowBorderless { get; set; }
         public bool WindowAlwaysOnTop { get; set; }
         public bool DisableScreensaver { get; set; }
-
+        public string VideoBitRate { get; set; } //--video-bit-rate
         public GeneralCastOptions()
         {
             Fullscreen = false;
@@ -190,6 +190,7 @@ namespace ScrcpyGUI.Models
             Crop = string.Empty;
             VideoOrientation = "";
             VideoCodecEncoderPair = "";
+            VideoBitRate = "";
             ExtraParameters = "";
             StayAwake = false;
             WindowBorderless = false;
@@ -208,6 +209,7 @@ namespace ScrcpyGUI.Models
                 fullCommand += !string.IsNullOrEmpty(VideoOrientation) ? $" --capture-orientation={VideoOrientation} " : "";
                 fullCommand += StayAwake ? " --stay-awake" : "";
                 fullCommand += !string.IsNullOrEmpty(WindowTitle) ? $" --window-title={WindowTitle} " : "";
+                fullCommand += !string.IsNullOrEmpty(VideoBitRate) ? $" --video-bit-rate={VideoBitRate} " : "";
                 fullCommand += WindowBorderless ? " --window-borderless " : "";
                 fullCommand += WindowAlwaysOnTop ? " --always-on-top " : "";
                 fullCommand += !string.IsNullOrEmpty(VideoCodecEncoderPair) ? $" {VideoCodecEncoderPair} " : "";
