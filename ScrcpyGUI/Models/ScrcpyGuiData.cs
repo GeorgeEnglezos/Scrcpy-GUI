@@ -61,7 +61,7 @@ namespace ScrcpyGUI.Models
             {
                 string fullCommand = " ";
                 fullCommand += !string.IsNullOrEmpty(MaxSize) ? $" --max-size={MaxSize}" : "";
-                fullCommand += !string.IsNullOrEmpty(Bitrate) ? $" --bit-rate={Bitrate}" : "";
+                fullCommand += !string.IsNullOrEmpty(Bitrate) ? $" --video-bit-rate={Bitrate}" : "";
                 fullCommand += !string.IsNullOrEmpty(Framerate) ? $" --max-fps={Framerate}" : "";
                 fullCommand += !string.IsNullOrEmpty(OutputFormat) ? $" --record-format={OutputFormat}" : "";
                 fullCommand += !string.IsNullOrEmpty(OutputFile) ? $" --record={OutputFile}" : "";
