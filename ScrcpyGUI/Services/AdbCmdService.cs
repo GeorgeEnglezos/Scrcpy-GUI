@@ -36,6 +36,7 @@ public static class AdbCmdService
     public static List<string> OutputHistory = new();  // Global list to track all outputs
     public static List<string> ErrorHistory = new();   // Global list to track all error outputs
 
+
     public static async Task<CmdCommandResponse> RunAdbCommandAsync(CommandEnum commandType, string? command)
     {
         var response = new CmdCommandResponse();
@@ -44,10 +45,13 @@ public static class AdbCmdService
 
         try
         {
-            if (command.Equals("usb") && !IPAddress.TryParse(selectedDevice.DeviceId, out _)) {
+            if (command.Equals("usb") && !IPAddress.TryParse(selectedDevice.DeviceId, out _))
+            {
                 response.RawError = "Device isn't connected Wirelessly!";
+                return response;
             }
-            if (commandType == CommandEnum.RunScrcpy) {
+            if (commandType == CommandEnum.RunScrcpy)
+            {
                 command = command.Replace("scrcpy.exe", "");
                 command = $"scrcpy.exe -s {selectedDevice.DeviceId} {command} ";
             }
@@ -60,11 +64,11 @@ public static class AdbCmdService
             {
                 FileName = "cmd.exe",
                 Arguments = $"/c \"{command}\"",
-                WindowStyle = ProcessWindowStyle.Normal,
+                WindowStyle = showCmds ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden, // Set normal if showCmds, hidden otherwise
                 UseShellExecute = false,
                 RedirectStandardOutput = !showCmds,
                 RedirectStandardError = !showCmds,
-                CreateNoWindow = !showCmds // Hide the command window
+                CreateNoWindow = !showCmds // Hide the command window 
             };
 
             if (commandType == CommandEnum.RunScrcpy)
@@ -79,21 +83,25 @@ public static class AdbCmdService
             // Process event handlers for async reading output and error streams
             Process process = new Process { StartInfo = startInfo };
 
-            process.OutputDataReceived += (sender, e) =>
+            // Only attach handlers if redirection is enabled
+            if (!showCmds)
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                process.OutputDataReceived += (sender, e) =>
                 {
-                    outputBuilder.AppendLine(e.Data);
-                }
-            };
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        outputBuilder.AppendLine(e.Data);
+                    }
+                };
 
-            process.ErrorDataReceived += (sender, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
+                process.ErrorDataReceived += (sender, e) =>
                 {
-                    errorBuilder.AppendLine(e.Data);
-                }
-            };
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        errorBuilder.AppendLine(e.Data);
+                    }
+                };
+            }
 
             // Run the process in the background (non-blocking)
             await Task.Run(() =>
@@ -101,32 +109,48 @@ public static class AdbCmdService
                 process.Start();
                 Debug.WriteLine($"Process started with ID: {process.Id}");
 
-                // Begin asynchronous read of the output and error streams
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
+                // ONLY call BeginOutputReadLine and BeginErrorReadLine if streams are redirected
+                if (!showCmds)
+                {
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                }
 
                 // Wait for the process to exit
                 process.WaitForExit();
             });
 
             // Capture the output and error from the StringBuilder objects
-            var output = outputBuilder.ToString();
-            var errorOutput = errorBuilder.ToString();
-
-            // Store all outputs in the global lists for history tracking
-            if (!string.IsNullOrEmpty(output))
+            // Only if streams were redirected
+            if (!showCmds)
             {
-                OutputHistory.Add(output);
+                var output = outputBuilder.ToString();
+                var errorOutput = errorBuilder.ToString();
+
+                // Store all outputs in the global lists for history tracking
+                if (!string.IsNullOrEmpty(output))
+                {
+                    OutputHistory.Add(output);
+                }
+
+                if (!string.IsNullOrEmpty(errorOutput))
+                {
+                    ErrorHistory.Add(errorOutput);
+                }
+
+                response.RawOutput = output;
+                response.RawError = errorOutput;
+                response.Output = string.IsNullOrEmpty(errorOutput) ? output : errorOutput;
+            }
+            else
+            {
+                // If CMD window was shown, there's no captured output/error via redirection
+                // You might want to indicate this or handle it differently if needed.
+                // For now, it will just leave RawOutput/RawError empty.
+                response.RawOutput = "Command run in a separate CMD window. Output not captured.";
+                response.Output = response.RawOutput; // Set Output as well to reflect this
             }
 
-            if (!string.IsNullOrEmpty(errorOutput))
-            {
-                ErrorHistory.Add(errorOutput);
-            }
-
-            response.RawOutput = output;
-            response.RawError = errorOutput;
-            response.Output = string.IsNullOrEmpty(errorOutput) ? output : errorOutput;
 
             response.ExitCode = process.ExitCode;
 
@@ -136,9 +160,11 @@ public static class AdbCmdService
         {
             Debug.WriteLine($"Exception: {ex.Message}");
             response.Output = $"Error: {ex.Message}";
+            response.RawError = ex.ToString(); // Include full exception for debugging
             return response;
         }
     }
+
 
     public static async Task<bool> CheckIfAdbIsInstalled()
     {
