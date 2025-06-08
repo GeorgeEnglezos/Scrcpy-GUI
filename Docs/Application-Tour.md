@@ -33,9 +33,9 @@ These sections allow you to fine-tune how Scrcpy interacts with your device.
 7) **ADB & Scrcpy Installation Panel**: This panel confirms if Scrcpy and ADB are recognized by the application and whether a device is correctly connected.
 
 8) **Wireless Connection Panel**: Easily connect to your device wirelessly using its IP address and TCP.
-    > Start Manual Connection: Initiate a connection using the IP and port you've entered.
-    > Auto Start Connection: Connect your phone wirelessly with a single click – no need to manually type your IP or preferred TCP port.
-    > Close Connection: Stop the active wireless connection. (This might take a few seconds.)
+    - **Start Manual Connection**: Initiate a connection using the IP and port you've entered.
+    - **Auto Start Connection**: Connect your phone wirelessly with a single click – no need to manually type your IP or preferred TCP port.
+    - **Close Connection**: Stop the active wireless connection. (This might take a few seconds.)
 
 9) **Command Preview**: See the Scrcpy command that's generated based on all your selected options. Prss the Play button to run the scrcpy command or the heart icon to save your command in the commands page!
 
