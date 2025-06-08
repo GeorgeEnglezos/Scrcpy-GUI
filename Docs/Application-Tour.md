@@ -74,9 +74,12 @@ Adjust the application's behavior and user interface here:
 
 # **My most used commands, generated from Scrcpy Gui**
 - Cast your phone's screen on your computer. The phone's screen will turn off but the sound will keep playing from the phone.
-    scrcpy.exe --pause-on-exit=if-error --turn-screen-off --no-audio
-
+```
+scrcpy.exe --pause-on-exit=if-error --turn-screen-off --no-audio
+```
 - Open a new virtual display and open a launcher like nova launcher, lawnchair or daijishou to get full control of your device. Or directly launch an app like VLC or Youtube.
-    scrcpy.exe --pause-on-exit=if-error --start-app=ch.deletescape.lawnchair.dev --fullscreen --audio-codec=opus --audio-encoder=c2.android.opus.encoder --new-display=1920x1080
-    scrcpy.exe --pause-on-exit=if-error --start-app=com.magneticchen.daijishou --fullscreen --audio-codec=opus --audio-encoder=c2.android.opus.encoder --new-display=1920x1080
-    scrcpy.exe --pause-on-exit=if-error --start-app=org.videolan.vlc --fullscreen --audio-codec=opus --audio-encoder=c2.android.opus.encoder --new-display=1920x1080
+```
+scrcpy.exe --pause-on-exit=if-error --start-app=ch.deletescape.lawnchair.dev --fullscreen --audio-codec=opus --audio-encoder=c2.android.opus.encoder --new-display=1920x1080
+scrcpy.exe --pause-on-exit=if-error --start-app=com.magneticchen.daijishou --fullscreen --audio-codec=opus --audio-encoder=c2.android.opus.encoder --new-display=1920x1080
+scrcpy.exe --pause-on-exit=if-error --start-app=org.videolan.vlc --fullscreen --audio-codec=opus --audio-encoder=c2.android.opus.encoder --new-display=1920x1080
+```
