@@ -14,6 +14,12 @@
             <x:String>Important</x:String>
             <x:String>Complete</x:String>
         </x:Array>
+        <x:Array x:Key="FavoritesColorOptions" Type="{x:Type x:String}">
+            <x:String>None</x:String>
+            <x:String>Package Only</x:String>
+            <x:String>Important</x:String>
+            <x:String>Complete</x:String>
+        </x:Array>
     </ContentView.Resources>
     
     <Grid RowDefinitions="*, Auto">
@@ -71,20 +77,42 @@
 
                     <Grid RowDefinitions="*" ColumnDefinitions="Auto,*">
                         <Label Text="Color code command preview:"
-                               Grid.Row="0"
-                               Grid.Column="0"
-                               HorizontalOptions="Start"                               
-                               VerticalOptions="Center"
-                               Margin="0, 10"
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                HorizontalOptions="Start"                               
+                                VerticalOptions="Center"
+                                Margin="0, 10"
                                 TextColor="White"
                                 FontSize="18"
+                                LineBreakMode="WordWrap"
                                 FontAttributes="Bold"/>
-                        <Picker x:Name="CommandColorsPicker"
+                        <Picker x:Name="HomeCommandColorPicker"
                                 Grid.Column="1"
                                 Grid.Row="0"
-                                VerticalOptions="Start"
+                                VerticalOptions="Center"
                                 HorizontalOptions="End"
                                 ItemsSource="{StaticResource ColorOptions}"
+                                FontSize="18"/>
+                    </Grid>
+
+                    <Grid RowDefinitions="*" ColumnDefinitions="Auto,*">
+                        <Label Text="Color code favorites commands:"
+                                WidthRequest="200"
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                HorizontalOptions="Start"                               
+                                VerticalOptions="Center"
+                                Margin="0, 10"
+                                TextColor="White"
+                                FontSize="18"
+                                LineBreakMode="WordWrap"
+                                FontAttributes="Bold"/>
+                        <Picker x:Name="FavoritesCommandColorsPicker"
+                                Grid.Column="1"
+                                Grid.Row="0"
+                                VerticalOptions="Center"
+                                HorizontalOptions="End"
+                                ItemsSource="{StaticResource FavoritesColorOptions}"
                                 FontSize="18"/>
                     </Grid>
                 </VerticalStackLayout>

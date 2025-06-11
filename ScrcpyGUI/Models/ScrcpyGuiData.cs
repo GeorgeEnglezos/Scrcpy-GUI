@@ -35,7 +35,8 @@ namespace ScrcpyGUI.Models
         public bool HideOutputPanel = false;
         public bool HideRecordingPanel = false;
         public bool HideVirtualMonitorPanel = false;
-        public string CommandColors = "None";
+        public string HomeCommandPreviewCommandColors = "None";
+        public string FavoritesPageCommandColors = "Package Only";
     }
 
     public class ScreenRecordingOptions

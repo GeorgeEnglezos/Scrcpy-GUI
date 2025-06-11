@@ -17,16 +17,23 @@ public partial class SettingsPage : ContentPage
         settings = scrcpyData.AppSettings;
         InitializeCheckboxValues();
 
-        CommandColorsPicker.PropertyChanged += OnCommandColorsChanged;
-
-
+        HomeCommandColorPicker.PropertyChanged += OnCommandColorsChanged;
+        FavoritesCommandColorsPicker.PropertyChanged += OnFavoritesCommandColorsChanged;
     }
 
     private void OnCommandColorsChanged(object? sender, PropertyChangedEventArgs e)
     {
-        settings.CommandColors = CommandColorsPicker.SelectedItem?.ToString() ?? "None";
-        if (CommandColorsPicker.SelectedItem == null || string.IsNullOrEmpty(CommandColorsPicker.SelectedItem.ToString())) {
-            CommandColorsPicker.SelectedItem = "None";
+        settings.HomeCommandPreviewCommandColors = HomeCommandColorPicker.SelectedItem?.ToString() ?? "None";
+        if (HomeCommandColorPicker.SelectedItem == null || string.IsNullOrEmpty(HomeCommandColorPicker.SelectedItem.ToString())) {
+            HomeCommandColorPicker.SelectedItem = "None";
+        }
+    }
+
+    private void OnFavoritesCommandColorsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        settings.FavoritesPageCommandColors = FavoritesCommandColorsPicker.SelectedItem?.ToString() ?? "None";
+        if (FavoritesCommandColorsPicker.SelectedItem == null || string.IsNullOrEmpty(FavoritesCommandColorsPicker.SelectedItem.ToString())) {
+            FavoritesCommandColorsPicker.SelectedItem = "None";
         }
     }
 
@@ -38,7 +45,8 @@ public partial class SettingsPage : ContentPage
         OutputPanelCheckbox.IsChecked = settings.HideOutputPanel;
         RecordingPanelCheckbox.IsChecked = settings.HideRecordingPanel;
         VirtualMonitorCheckbox.IsChecked = settings.HideVirtualMonitorPanel;
-        CommandColorsPicker.SelectedItem = settings.CommandColors;
+        HomeCommandColorPicker.SelectedItem = settings.HomeCommandPreviewCommandColors;
+        FavoritesCommandColorsPicker.SelectedItem = settings.FavoritesPageCommandColors;
     }
 
     private void OnCMDChanged(object sender, CheckedChangedEventArgs e)
