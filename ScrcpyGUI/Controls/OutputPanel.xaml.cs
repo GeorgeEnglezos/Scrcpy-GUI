@@ -233,7 +233,7 @@ public partial class OutputPanel : ContentView
     private void OnScrcpyCommandChanged(object? sender, string e)
     {
         command = e;
-        if(jsonData.AppSettings.CommandColors.Equals("None")) FinalCommandPreview.Text = command.ToString();
+        if(jsonData.AppSettings.HomeCommandPreviewCommandColors.Equals("None")) FinalCommandPreview.Text = command.ToString();
         else  UpdateCommandPreview(command);
         //if (FinalCommandPreview != null)
         //{
@@ -248,7 +248,7 @@ public partial class OutputPanel : ContentView
 
         // Split and process the command text
         var parts = commandText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var colorMappingToUse = jsonData.AppSettings.CommandColors.Equals("Complete") ? completeColorMappings : partialColorMappings;
+        var colorMappingToUse = jsonData.AppSettings.HomeCommandPreviewCommandColors.Equals("Complete") ? completeColorMappings : partialColorMappings;
 
             for (int i = 0; i < parts.Length; i++)
             {
