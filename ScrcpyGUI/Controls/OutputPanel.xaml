@@ -92,18 +92,18 @@
                         Stroke="{StaticResource PrimaryPurple}">
 
                     <Editor x:Name="AdbOutputLabel"
-                            Text="Command Output"
-                            FontFamily="Consolas"
-                            FontSize="15"
-                            BackgroundColor="#101010"
-                            MinimumHeightRequest="100"
-                            VerticalOptions="Center"
-                            TextColor="white"
-                            FontAttributes="Bold"
-                            IsReadOnly="True"
-                            Margin="0"
-                            VerticalTextAlignment="Start"
-                            HorizontalOptions="FillAndExpand"/>
+                        Text="Command Output"
+                        FontFamily="Consolas"
+                        FontSize="15"
+                        BackgroundColor="#101010"
+                        MinimumHeightRequest="100"
+                        VerticalOptions="FillAndExpand" 
+                        TextColor="white"
+                        FontAttributes="Bold"
+                        IsReadOnly="True"
+                        Margin="0"
+                        VerticalTextAlignment="Start"
+                        HorizontalOptions="FillAndExpand"/>
                 </Border>
             </Grid>
         </Border>
