@@ -39,12 +39,12 @@
                 </AbsoluteLayout>
 
                 <!-- Bitrate -->
-                <AbsoluteLayout>
+                <!--<AbsoluteLayout>
                     <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="BitrateEntry" Title="Bitrate (Mbps)" FontSize="16" TextChanged="OnBitrateChanged" Keyboard="Numeric" />
                     <Image WidthRequest="20" HeightRequest="20" 
                            ToolTipProperties.Text="(e.g., 8M, 2M). Controls video quality and bandwidth usage. Higher values improve quality but increase resource use. Default is 8M." 
                            VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
-                </AbsoluteLayout>
+                </AbsoluteLayout>-->
             
                 <!-- Max FPS -->
                 <AbsoluteLayout>
