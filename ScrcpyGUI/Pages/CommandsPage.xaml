@@ -1,115 +1,116 @@
-﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:ScrcpyGUI"
              x:Class="ScrcpyGUI.CommandsPage"
-             BackgroundColor="{DynamicResource BackGroundGrey}"
-             Shell.Title="">
-    
-    <ScrollView >
-        <VerticalStackLayout Padding="30,0" Spacing="25">
+             Title="Commands">
 
-            <!--Most Recent Command-->
+    <ContentPage.Resources>
+        <local:CommandColorConverter x:Key="CommandColorConverter" />
+    </ContentPage.Resources>
 
-            <Grid Margin="0, 50, 0, 20" ColumnDefinitions="*, Auto">
-                <Label Text="Last Command"                       
-                   FontSize="30"
-                   FontAttributes="Bold"
-                   Padding="10,0"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Start"
-                   TranslationY="-20"
-                   BackgroundColor="#1f1f1f"
-                   TextColor="{StaticResource PrimaryPurple}"
-                   ZIndex="1"
-                   Grid.Column="0" />
+    <ScrollView>
+        <StackLayout Padding="20">
 
-                <Border Padding="20"  Grid.Column="0" Stroke="{StaticResource PrimaryPurple}" StrokeThickness="2" > 
-                        <Border.GestureRecognizers>
+            <!-- Most Recent Command Section -->
+            <Label Text="Most Recent Command" FontSize="20" FontAttributes="Bold" Margin="0,0,0,10"/>
+
+            <Border Stroke="{StaticResource PrimaryPurple}" StrokeThickness="2" StrokeShape="RoundRectangle 10" Margin="0,0,0,20">
+                <Grid Padding="10" ColumnDefinitions="*, Auto, Auto">
+                    <Grid.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnRecentCommandTapped" />
-                        </Border.GestureRecognizers>
-                    <Grid ColumnDefinitions="*, Auto">
-                        <Label x:Name="MostRecentCommand" 
-                                           Padding="10"
-                                           Text="Your last command will appear here!"
-                                           HorizontalOptions="Center"
-                                           VerticalOptions="Center"
-                                           TextColor="White"
-                                           FontSize="18"
+                    </Grid.GestureRecognizers>
+
+                    <!-- Updated MostRecentCommand Label to support FormattedText -->
+                    <Label x:Name="MostRecentCommand"
+                           VerticalOptions="Center" 
+                           Grid.Column="0" 
+                           FontSize="16" 
+                           LineBreakMode="WordWrap"
+                           FontFamily="Courier New">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="No recent command found"/>
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+
+                    <ImageButton Margin="10, 0, 10, 0"
+                            x:Name="CopyMostRecentCommand"
+                            Clicked="OnCopyMostRecentCommand"
+                            BackgroundColor="Transparent"
+                            HeightRequest="25"
+                            WidthRequest="25"
+                            Grid.Column="1">
+                        <ImageButton.Source>
+                            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource ButtonColor}" Size="25"/>
+                        </ImageButton.Source>
+                    </ImageButton>
+                </Grid>
+            </Border>
+
+            <!-- Saved Commands Section -->
+            <Label x:Name="SavedCommandsTitleCount" Text="Favorites (0)" FontSize="20" FontAttributes="Bold" Margin="0,0,0,10"/>
+
+            <ListView ItemsSource="{Binding SavedCommandsList}">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <ViewCell>
+                            <Border Stroke="Gray" StrokeThickness="1" Margin="5">
+                                <Grid Padding="10" ColumnDefinitions="*, Auto, Auto, Auto">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnCommandTapped" />
+                                    </Grid.GestureRecognizers>
+
+                                    <!-- Updated Label to use the converter for colored text -->
+                                    <Label VerticalOptions="Center" 
+                                           Grid.Column="0" 
+                                           FontSize="18" 
                                            FontAttributes="Bold"
-                                           Grid.Column="0" />
-                        <ImageButton Margin="10, 0, 10, 0"
+                                           LineBreakMode="WordWrap"
+                                           FontFamily="Courier New"
+                                           FormattedText="{Binding ., Converter={StaticResource CommandColorConverter}}" />
+
+                                    <ImageButton Margin="10, 0, 10, 0"
+                                            x:Name="CopyCommand"
+                                            Clicked="OnCopyCommand"
                                             BackgroundColor="Transparent"
-                                x:Name="CopyMostRecentCommand"
-                                Clicked="OnCopyMostRecentCommand"
-                                HeightRequest="40"
-                                WidthRequest="40"
-                                Grid.Column="1">
-                            <ImageButton.Source>
-                                <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource ButtonColor}" Size="30"/>
-                            </ImageButton.Source>
-                        </ImageButton>
-                    </Grid>
-                </Border>
-            </Grid>
+                                            HeightRequest="25"
+                                            WidthRequest="25"
+                                            Grid.Column="2"
+                                            BindingContext="{Binding .}">
+                                        <ImageButton.Source>
+                                            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource ButtonColor}" Size="25"/>
+                                        </ImageButton.Source>
+                                    </ImageButton>
+                                    <ImageButton Margin="10, 0, 10, 0"
+                                            x:Name="DeleteCommand"
+                                            BackgroundColor="Transparent"
+                                            Clicked="OnDeleteCommand"
+                                            HeightRequest="25"
+                                            WidthRequest="25"
+                                            Grid.Column="3"
+                                            BindingContext="{Binding .}">
+                                        <ImageButton.Source>
+                                            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf2ed;" Color="{StaticResource ButtonColor}" Size="25"/>
+                                        </ImageButton.Source>
+                                    </ImageButton>
+                                    <Button StyleClass="FilledTonalButton" 
+                                            BackgroundColor="{StaticResource ButtonColor}" 
+                                            TextColor="White" 
+                                            Text=".bat" 
+                                            Clicked="OnDownloadBat" 
+                                            ToolTipProperties.Text="Create an execurable .bat file" 
+                                            FontSize="18" 
+                                            Grid.Column="1"
+                                            BindingContext="{Binding .}"/>
+                                </Grid>
+                            </Border>
+                        </ViewCell>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
 
-            <!--Saved Commands-->
-
-            <Grid Margin="0, 10, 0, 0">
-                <Label x:Name="SavedCommandsTitleCount"
-                           FontSize="30"
-                           FontAttributes="Bold"
-                           Padding="10,0"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Start"
-                           TranslationY="-20"
-                           BackgroundColor="#1f1f1f"
-                           TextColor="{StaticResource PrimaryPurple}"
-                           ZIndex="1"/>
-                <Border Padding="30" StrokeThickness="2" Stroke="{StaticResource PrimaryPurple}">
-
-                    <ListView ItemsSource="{Binding SavedCommandsList}">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <ViewCell>
-                                    <Border Stroke="Gray" StrokeThickness="1" Margin="5">
-                                        <Grid Padding="10" ColumnDefinitions="*, Auto, Auto, Auto">
-                                            <Grid.GestureRecognizers>
-                                                <TapGestureRecognizer Tapped="OnCommandTapped" />
-                                            </Grid.GestureRecognizers>
-                                            <Label Text="{Binding .}" VerticalOptions="Center" Grid.Column="0" FontSize="18" FontAttributes="Bold"/>
-                                            <ImageButton Margin="10, 0, 10, 0"
-                                                    x:Name="CopyCommand"
-                                                    Clicked="OnCopyCommand"
-                                                    BackgroundColor="Transparent"
-                                                    HeightRequest="25"
-                                                    WidthRequest="25"
-                                                    Grid.Column="2"
-                                                    BindingContext="{Binding .}">
-                                                <ImageButton.Source>
-                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource ButtonColor}" Size="25"/>
-                                                </ImageButton.Source>
-                                            </ImageButton>
-                                            <ImageButton Margin="10, 0, 10, 0"
-                                                    x:Name="DeleteCommand"
-                                                    BackgroundColor="Transparent"
-                                                    Clicked="OnDeleteCommand"
-                                                    HeightRequest="25"
-                                                    WidthRequest="25"
-                                                    Grid.Column="3"
-                                                    BindingContext="{Binding .}">
-                                                <ImageButton.Source>
-                                                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf2ed;" Color="{StaticResource ButtonColor}" Size="25"/>
-                                                </ImageButton.Source>
-                                            </ImageButton>
-
-                                            <Button StyleClass="FilledTonalButton" BackgroundColor="{StaticResource ButtonColor}" TextColor="White"  Text=".bat" Clicked="OnDownloadBat" ToolTipProperties.Text="Create an execurable .bat file" FontSize="18" Grid.Column="1"/>
-                                        </Grid>
-                                    </Border>
-                                </ViewCell>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </Border>
-            </Grid>
-        </VerticalStackLayout>
+        </StackLayout>
     </ScrollView>
 </ContentPage>
