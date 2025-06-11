@@ -31,7 +31,7 @@ public partial class OptionsScreenRecordingPanel : ContentView
             ScreenRecordingOptions_Changed();
 
             ResolutionEntry.Text = string.Empty;
-            BitrateEntry.Text = string.Empty;
+            //BitrateEntry.Text = string.Empty;
             FramerateEntry.Text = string.Empty;
             OutputFormatPicker.SelectedItem = null;
             screenRecordingOptions.OutputFormat = null;
@@ -46,11 +46,11 @@ public partial class OptionsScreenRecordingPanel : ContentView
         ScreenRecordingOptions_Changed();
     }
 
-    private void OnBitrateChanged(object sender, TextChangedEventArgs e)
-    {
-    screenRecordingOptions.Bitrate = e.NewTextValue;
-        ScreenRecordingOptions_Changed();
-    }
+    //private void OnBitrateChanged(object sender, TextChangedEventArgs e)
+    //{
+    //screenRecordingOptions.Bitrate = e.NewTextValue;
+    //    ScreenRecordingOptions_Changed();
+    //}
 
     private void OnFramerateChanged(object sender, TextChangedEventArgs e)
     {
@@ -60,11 +60,8 @@ public partial class OptionsScreenRecordingPanel : ContentView
 
     private void OnOutputFormatChanged(object sender, EventArgs e)
     {
-        if (OutputFormatPicker.SelectedItem != null)
-        {
-            screenRecordingOptions.OutputFormat = OutputFormatPicker.SelectedItem.ToString();
-            ScreenRecordingOptions_Changed();
-        }
+        screenRecordingOptions.OutputFormat = OutputFormatPicker.SelectedItem?.ToString() ?? "";
+        ScreenRecordingOptions_Changed();
     }
 
     private void OnOutputFileChanged(object sender, TextChangedEventArgs e)
@@ -89,11 +86,12 @@ public partial class OptionsScreenRecordingPanel : ContentView
     {
         // Reset Entries
         ResolutionEntry.Text = string.Empty;
-        BitrateEntry.Text = string.Empty;
+        //BitrateEntry.Text = string.Empty;
         FramerateEntry.Text = string.Empty;
         OutputFileEntry.Text = string.Empty;
 
         // Reset Picker
+        screenRecordingOptions.OutputFormat = "";
         OutputFormatPicker.SelectedIndex = -1;
     }
 }
