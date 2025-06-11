@@ -1,6 +1,7 @@
 ﻿using ScrcpyGUI.Controls;
 using ScrcpyGUI.Models;
 using System;
+using System.ComponentModel;
 
 namespace ScrcpyGUI;
 
@@ -15,6 +16,18 @@ public partial class SettingsPage : ContentPage
         scrcpyData = DataStorage.LoadData();
         settings = scrcpyData.AppSettings;
         InitializeCheckboxValues();
+
+        CommandColorsPicker.PropertyChanged += OnCommandColorsChanged;
+
+
+    }
+
+    private void OnCommandColorsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        settings.CommandColors = CommandColorsPicker.SelectedItem?.ToString() ?? "None";
+        if (CommandColorsPicker.SelectedItem == null || string.IsNullOrEmpty(CommandColorsPicker.SelectedItem.ToString())) {
+            CommandColorsPicker.SelectedItem = "None";
+        }
     }
 
     private void InitializeCheckboxValues()
@@ -25,6 +38,7 @@ public partial class SettingsPage : ContentPage
         OutputPanelCheckbox.IsChecked = settings.HideOutputPanel;
         RecordingPanelCheckbox.IsChecked = settings.HideRecordingPanel;
         VirtualMonitorCheckbox.IsChecked = settings.HideVirtualMonitorPanel;
+        CommandColorsPicker.SelectedItem = settings.CommandColors;
     }
 
     private void OnCMDChanged(object sender, CheckedChangedEventArgs e)

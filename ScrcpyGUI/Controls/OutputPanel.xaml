@@ -38,6 +38,9 @@
 
 
                 <Border Stroke="{StaticResource PrimaryPurple}" Grid.Row="2" Grid.Column="0" StrokeThickness="2" StrokeShape="RoundRectangle 10">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnLabelTapped" NumberOfTapsRequired="1" />
+                    </Border.GestureRecognizers>
                     <Label x:Name="FinalCommandPreview"
                            MinimumHeightRequest="80"
                            FontSize="16"
@@ -45,8 +48,7 @@
                            HorizontalOptions="FillAndExpand"
                            Margin="10,10,10,10"
                            LineBreakMode="WordWrap"
-                           FontAttributes="Bold"
-                           FontFamily="Courier New">
+                           FontAttributes="Bold">
                         <Label.FormattedText>
                             <FormattedString>
                                 <Span Text="Default command: scrcpy.exe --pause-on-exit=if-error" />

@@ -75,6 +75,8 @@ public partial class OutputPanel : ContentView
         { "--start-app", (Color)Application.Current.Resources["PackageSelector"] },
     };
 
+    public ScrcpyGuiData jsonData = new ScrcpyGuiData();
+
     public OutputPanel()
     {
         InitializeComponent();
@@ -88,6 +90,9 @@ public partial class OutputPanel : ContentView
     public void SubscribeToEvents()
     {
         ChecksPanel.StatusRefreshed += OnRefreshPage;
+        jsonData = DataStorage.LoadData();
+        OnScrcpyCommandChanged(null, command);
+
     }
 
     public void UnsubscribeToEvents()
@@ -228,7 +233,8 @@ public partial class OutputPanel : ContentView
     private void OnScrcpyCommandChanged(object? sender, string e)
     {
         command = e;
-        UpdateCommandPreview(command);
+        if(jsonData.AppSettings.CommandColors.Equals("None")) FinalCommandPreview.Text = command.ToString();
+        else  UpdateCommandPreview(command);
         //if (FinalCommandPreview != null)
         //{
           //  FinalCommandPreview.Text = e;
@@ -242,13 +248,14 @@ public partial class OutputPanel : ContentView
 
         // Split and process the command text
         var parts = commandText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var colorMappingToUse = jsonData.AppSettings.CommandColors.Equals("Complete") ? completeColorMappings : partialColorMappings;
 
-        for (int i = 0; i < parts.Length; i++)
-        {
+            for (int i = 0; i < parts.Length; i++)
+            {
             var part = parts[i];
             var span = new Span { Text = part };
 
-            foreach (var mapping in completeColorMappings)
+            foreach (var mapping in colorMappingToUse)
             {
                 if (part.StartsWith(mapping.Key))
                 {
