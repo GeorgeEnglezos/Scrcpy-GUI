@@ -7,23 +7,24 @@
              xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
              x:Name="Root">
 
-    <HorizontalStackLayout WidthRequest="420" HorizontalOptions="Start">
+    <Grid RowDefinitions="*" ColumnDefinitions="Auto,*">
         <Label x:Name="LabelControl"
-               WidthRequest="350"
-               HorizontalOptions="Start"
-               VerticalOptions="Center"
-               Padding="0, 10"
-               TextColor="White"
-               FontSize="18"
-               FontAttributes="Bold"
-               Text="{Binding LabelText, Source={x:Reference Root}}"/>
+           Grid.Row="0"
+           Grid.Column="0"
+           WidthRequest="360" HorizontalOptions="Start"
+           VerticalOptions="Center"
+           Margin="0, 10"
+           TextColor="White"
+           FontSize="18"
+           FontAttributes="Bold"
+           Text="{Binding LabelText, Source={x:Reference Root}}"/>
 
-        <!--replace with this-->
         <ur:CheckBox CheckChanged="CheckBox_CheckedChanged" 
-                     x:Name="CheckboxControl" 
-                     IsChecked="{Binding IsChecked, Source={x:Reference Root}}" 
-                     VerticalOptions="Center"
-                     HorizontalOptions="Center"/>
-
-    </HorizontalStackLayout>
+                 x:Name="CheckboxControl" 
+                 Grid.Row="0"
+                 Grid.Column="1"
+                 IsChecked="{Binding IsChecked, Source={x:Reference Root}}" 
+                 VerticalOptions="Center"
+                 HorizontalOptions="EndAndExpand"/>
+    </Grid>
 </ContentView>
