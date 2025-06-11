@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+
 namespace ScrcpyGUI.Controls;
 
 public partial class OutputPanel : ContentView
@@ -10,6 +11,69 @@ public partial class OutputPanel : ContentView
     private string command = "";
     public event EventHandler<string>? PageRefreshed;
     const string baseScrcpyCommand = "scrcpy.exe --pause-on-exit=if-error";
+
+    Dictionary<string, Color> completeColorMappings = new Dictionary<string, Color>
+    {
+        //General
+        { "--fullscreen", (Color)Application.Current.Resources["General"] },
+        { "--turn-screen-off", (Color)Application.Current.Resources["General"] },
+        { "--crop=", (Color)Application.Current.Resources["General"] },
+        { "--capture-orientation=", (Color)Application.Current.Resources["General"] },
+        { "--stay-awake", (Color)Application.Current.Resources["General"] },
+        { "--window-title=", (Color)Application.Current.Resources["General"] },
+        { "--video-bit-rate=", (Color)Application.Current.Resources["General"] },
+        { "--window-borderless", (Color)Application.Current.Resources["General"] },
+        { "--always-on-top", (Color)Application.Current.Resources["General"] },
+        { "--disable-screensaver", (Color)Application.Current.Resources["General"] },
+        { "--video-codec=", (Color)Application.Current.Resources["General"] },
+        { "--video-encoder=", (Color)Application.Current.Resources["General"] },
+
+        //Audio
+        { "--audio-bit-rate=", (Color)Application.Current.Resources["Audio"] },
+        { "--audio-buffer=", (Color)Application.Current.Resources["Audio"] },
+        { "--audio-codec-options=", (Color)Application.Current.Resources["Audio"] },
+        { "--audio-codec=", (Color)Application.Current.Resources["Audio"] },
+        { "--audio-encoder=", (Color)Application.Current.Resources["Audio"] },
+        { "--audio-dup", (Color)Application.Current.Resources["Audio"] },
+        { "--no-audio", (Color)Application.Current.Resources["Audio"] },
+
+        //Virtual Display
+        { "--new-display", (Color)Application.Current.Resources["VirtualDisplay"] },
+        { "--no-vd-destroy-content", (Color)Application.Current.Resources["VirtualDisplay"] },
+        { "--no-vd-system-decorations", (Color)Application.Current.Resources["VirtualDisplay"] },
+
+        //Recording
+        { "--max-size=", (Color)Application.Current.Resources["Recording"] },
+        //{ "--video-bit-rate=", (Color)Application.Current.Resources["Recording"] },
+        { "--max-fps=", (Color)Application.Current.Resources["Recording"] },
+        { "--record-format=", (Color)Application.Current.Resources["Recording"] },
+        { "--record=", (Color)Application.Current.Resources["Recording"] },
+
+        //Package
+        { "--start-app", (Color)Application.Current.Resources["PackageSelector"] },
+    };
+    Dictionary<string, Color> partialColorMappings = new Dictionary<string, Color>
+    {
+        //General
+        { "--fullscreen", (Color)Application.Current.Resources["General"] },
+        { "--turn-screen-off", (Color)Application.Current.Resources["General"] },
+        { "--video-bit-rate=", (Color)Application.Current.Resources["General"] },
+
+        //Audio
+        { "--audio-bit-rate=", (Color)Application.Current.Resources["Audio"] },
+        { "--audio-buffer=", (Color)Application.Current.Resources["Audio"] },
+        { "--no-audio", (Color)Application.Current.Resources["Audio"] },
+
+        //Virtual Display
+        { "--new-display", (Color)Application.Current.Resources["VirtualDisplay"] },
+
+        //Recording
+        { "--record-format=", (Color)Application.Current.Resources["Recording"] },
+        { "--record=", (Color)Application.Current.Resources["Recording"] },
+
+        //Package
+        { "--start-app", (Color)Application.Current.Resources["PackageSelector"] },
+    };
 
     public OutputPanel()
     {
@@ -67,16 +131,6 @@ public partial class OutputPanel : ContentView
         base.OnBindingContextChanged();
     }
 
-
-    private void OnScrcpyCommandChanged(object? sender, string e)
-    {
-        command = e;
-
-        if (FinalCommandPreview != null)
-        {
-            FinalCommandPreview.Text = e;
-        }
-    }
 
     private async void OnRunGeneratedCommand(object sender, EventArgs e)
     {
@@ -168,5 +222,50 @@ public partial class OutputPanel : ContentView
     {
         DataStorage.AppendFavoriteCommand(command);
         Application.Current.MainPage.DisplayAlert("Command saved", "View the saved commands in the 'Favorites Page'!", "OK");
+    }
+
+
+    private void OnScrcpyCommandChanged(object? sender, string e)
+    {
+        command = e;
+        UpdateCommandPreview(command);
+        //if (FinalCommandPreview != null)
+        //{
+          //  FinalCommandPreview.Text = e;
+        //}
+    }
+
+
+    public void UpdateCommandPreview(string commandText)
+    {
+        var formattedString = new FormattedString();
+
+        // Split and process the command text
+        var parts = commandText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        for (int i = 0; i < parts.Length; i++)
+        {
+            var part = parts[i];
+            var span = new Span { Text = part };
+
+            foreach (var mapping in completeColorMappings)
+            {
+                if (part.StartsWith(mapping.Key))
+                {
+                    span.TextColor = mapping.Value;
+                    break;
+                }
+            }
+
+            formattedString.Spans.Add(span);
+
+            // Add space between parts (except for the last one)
+            if (i < parts.Length - 1)
+            {
+                formattedString.Spans.Add(new Span { Text = " " });
+            }
+        }
+
+        FinalCommandPreview.FormattedText = formattedString;
     }
 }

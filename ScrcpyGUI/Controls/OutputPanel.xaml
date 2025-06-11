@@ -37,16 +37,22 @@
                 </Grid>
 
 
-                <Border Stroke="{StaticResource PrimaryPurple}" Grid.Row="2" Grid.Column="0" StrokeThickness="2"  StrokeShape="RoundRectangle 10">
-                    <Editor x:Name="FinalCommandPreview"
-                            Text="Default command: scrcpy.exe --pause-on-exit=if-error"                       
-                            MinimumHeightRequest="80"
-                            AutoSize="TextChanges"
-                            FontSize="16"
-                            VerticalTextAlignment="Start"
-                            HorizontalOptions="FillAndExpand"
-                            Margin="0,0,0,0"
-                            IsReadOnly="True"/>
+                <Border Stroke="{StaticResource PrimaryPurple}" Grid.Row="2" Grid.Column="0" StrokeThickness="2" StrokeShape="RoundRectangle 10">
+                    <Label x:Name="FinalCommandPreview"
+                           MinimumHeightRequest="80"
+                           FontSize="16"
+                           VerticalTextAlignment="Start"
+                           HorizontalOptions="FillAndExpand"
+                           Margin="10,10,10,10"
+                           LineBreakMode="WordWrap"
+                           FontAttributes="Bold"
+                           FontFamily="Courier New">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Default command: scrcpy.exe --pause-on-exit=if-error" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
                 </Border>
 
                 <ImageButton Grid.Row="2" Grid.Column="1" ToolTipProperties.Text="Run Command"
@@ -73,6 +79,9 @@
                         <FontImageSource FontFamily="FontAwesome" Glyph="&#xf004;" Color="{StaticResource ButtonColor}" Size="50"/>
                     </ImageButton.Source>
                 </ImageButton>
+
+
+                <!--Output Label-->
 
                 <Border x:Name="AdbOutputLabelBorder" StrokeShape="RoundRectangle 10"
                         Grid.Row="3" 
