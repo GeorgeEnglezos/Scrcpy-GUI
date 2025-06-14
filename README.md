@@ -18,10 +18,20 @@ Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting 
   <img src="https://github.com/user-attachments/assets/837dd020-71da-474f-9760-899488d04ad8" width="49%">
   <img src="https://github.com/user-attachments/assets/562755e3-4657-4f9f-9d4b-ded696b307e1" width="49%">
 </p>
-![image]()
 
 
 # 🛠️ Installation Steps (for windows):</h2>
 
-For the installation and setup of both your Windows and Android devices refer to the [Installation.md](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Installation.md)
-To explore the application without downloading it you can read the [Application Tour](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Application-Tour.md) Doc
+For the installation and setup of both your Windows and Android devices, refer to the [Installation.md](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Installation.md).
+
+For a small tour to the application without downloading it, you can read the [Application Tour](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Application-Tour.md) documentation.
+
+# FAQs
+- Is there a Linux port?
+No unfortunately, .NET MAUI doesn't support Linux builds. The create a Linux port, I would need to migrate the project to another library.
+
+Is there a macOS port?
+It's something I will explore soon. I don't own a macOS-powered machine, so I'll have to experiment with a VM, for which I'mm unsure of the compatibility.
+
+What's next for the project?
+Currently, the project is complete in terms of functionality. I am focused primarily on fixing bugs and making small tweaks. If you have a feature to suggest, please do! If it's something that will benefit everyone, I will most likely implement it.
