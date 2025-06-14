@@ -30,8 +30,8 @@ For a small tour to the application without downloading it, you can read the [Ap
 - Is there a Linux port?
 No unfortunately, .NET MAUI doesn't support Linux builds. The create a Linux port, I would need to migrate the project to another library.
 
-Is there a macOS port?
+- Is there a macOS port?
 It's something I will explore soon. I don't own a macOS-powered machine, so I'll have to experiment with a VM, for which I'mm unsure of the compatibility.
 
-What's next for the project?
+- What's next for the project?
 Currently, the project is complete in terms of functionality. I am focused primarily on fixing bugs and making small tweaks. If you have a feature to suggest, please do! If it's something that will benefit everyone, I will most likely implement it.
