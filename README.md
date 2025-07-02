@@ -9,18 +9,29 @@ Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting 
 - Connect wirelessly with a single click—no hassle.
 - Stream from multiple Android devices at the same time effortlessly.
 
-## Screenshots:
-
+## Screenshots (1.4.2):
 <p align="center">
-<img src="https://github.com/user-attachments/assets/96579965-39eb-431d-865b-bf0d0db4d130" alt="Main Screen 1" width="45%">
-<img src="https://github.com/user-attachments/assets/81574934-1540-41a9-b192-aaeae2fbe59e" alt="Main Screen 2 (Opened Daijishou)" width="45%">
-<img src="https://github.com/user-attachments/assets/5aaa3351-c1e7-4627-b8cb-e19eefe4fd94" alt="Main Screen 3 (Opened Daijishou and Sudachi)" width="45%">
-<img src="https://github.com/user-attachments/assets/dbcc9186-c506-441b-bc3f-5cb37014455d" alt="Favorites" width="45%">
-<img src="https://github.com/user-attachments/assets/5d331cae-69c6-4bf6-824b-5b067f428da1" alt="Resources" width="45%">
-<img src="https://github.com/user-attachments/assets/ab46a4d3-dfb1-4e91-b1f3-d2d77e2fbec9" alt="Settings" width="45%">
+  <img src="https://github.com/user-attachments/assets/87641081-16ad-4e61-87b5-d5ba23f8ddfe" width="49%">
+  <img src="https://github.com/user-attachments/assets/5d97620f-1f38-4857-930e-7ffad6011244" width="49%">
+  <img src="https://github.com/user-attachments/assets/b828ea5e-a2d2-450e-847e-3860640efce1" width="49%">
+  <img src="https://github.com/user-attachments/assets/d204929d-f5d0-4e65-9b68-419f630e6074" width="49%">
+  <img src="https://github.com/user-attachments/assets/837dd020-71da-474f-9760-899488d04ad8" width="49%">
+  <img src="https://github.com/user-attachments/assets/562755e3-4657-4f9f-9d4b-ded696b307e1" width="49%">
 </p>
+
 
 # 🛠️ Installation Steps (for windows):</h2>
 
-For the installation and setup of both your Windows and Android devices refer to the [Installation.md](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Installation.md)
-To explore the application without downloading it you can read the [Application Tour](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Application-Tour.md) Doc
+For the installation and setup of both your Windows and Android devices, refer to the [Installation.md](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Installation.md).
+
+For a small tour to the application without downloading it, you can read the [Application Tour](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Application-Tour.md) documentation.
+
+# FAQs
+- Is there a Linux port?
+No unfortunately, .NET MAUI doesn't support Linux builds. The create a Linux port, I would need to migrate the project to another library.
+
+- Is there a macOS port?
+It's something I will explore soon. I don't own a macOS-powered machine, so I'll have to experiment with a VM, for which I'mm unsure of the compatibility.
+
+- What's next for the project?
+Currently, the project is complete in terms of functionality. I am focused primarily on fixing bugs and making small tweaks. If you have a feature to suggest, please do! If it's something that will benefit everyone, I will most likely implement it.
