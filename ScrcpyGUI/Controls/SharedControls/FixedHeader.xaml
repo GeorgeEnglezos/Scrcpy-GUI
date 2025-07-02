@@ -11,7 +11,7 @@
             HorizontalOptions="Fill">
 
         <HorizontalStackLayout Spacing="10" VerticalOptions="Center" HorizontalOptions="Center">
-            <Label Text="Scrcpy-GUI v1.4.1 -"
+            <Label Text="Scrcpy-GUI v1.4.3 -"
                    FontSize="16"
                    FontAttributes="Bold"
                    VerticalOptions="Center"

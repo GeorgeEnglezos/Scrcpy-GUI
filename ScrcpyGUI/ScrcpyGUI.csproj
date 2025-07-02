@@ -110,6 +110,9 @@
 	  <Compile Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml.cs">
 	    <DependentUpon>VirtualDisplayPanel.xaml</DependentUpon>
 	  </Compile>
+	  <Compile Update="Controls\SharedControls\FolderSelector.xaml.cs">
+	    <DependentUpon>FolderSelector.xaml</DependentUpon>
+	  </Compile>
 	  <Compile Update="Controls\SharedControls\FixedFooter.xaml.cs">
 	    <DependentUpon>FixedFooter.xaml</DependentUpon>
 	  </Compile>
@@ -156,6 +159,9 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Controls\SharedControls\FolderSelector.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Controls\SharedControls\FixedFooter.xaml">

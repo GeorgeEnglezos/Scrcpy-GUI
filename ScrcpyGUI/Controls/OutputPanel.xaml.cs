@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-
 namespace ScrcpyGUI.Controls;
 
 public partial class OutputPanel : ContentView
@@ -141,7 +140,7 @@ public partial class OutputPanel : ContentView
     {
         try
         {
-            var result = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.RunScrcpy, command);
+            var result = await AdbCmdService.RunScrcpyCommand(command);
             if (!string.IsNullOrEmpty(result.RawError)) {
                 await Application.Current.MainPage.DisplayAlert("Error", $"{result.RawError}", "OK");
             }
