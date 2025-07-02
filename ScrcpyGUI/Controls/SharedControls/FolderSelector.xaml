@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
+             xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
+             xmlns:system="clr-namespace:System;assembly=netstandard"
+             x:Class="ScrcpyGUI.Controls.FolderSelector"
+             x:Name="This">
+
+    <Border BackgroundColor="#3C3C3C" 
+            StrokeThickness="1" 
+            Stroke="#555555"
+            StrokeShape="RoundRectangle 6"
+            Padding="8"
+            Margin="0">
+
+        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*">
+
+            <!-- Title -->
+            <Label x:Name="TitleLabel"
+                   Grid.Row="0"
+                   Text="Choose Folder"
+                   TextColor="White"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   Margin="0,0,0,10"/>
+
+            <!-- Browse Button -->
+            <Button x:Name="PickFolderButton" 
+                    Grid.Row="1"
+                    Text="Browse..."
+                    BackgroundColor="{StaticResource PrimaryPurple}"
+                    TextColor="White"
+                    FontSize="18"
+                    CornerRadius="4"
+                    HeightRequest="36"
+                    Margin="0,0,0,10"
+                    Clicked="OnPickFolderClicked"/>
+
+            <!-- Selected Path -->
+            <Border Grid.Row="2" 
+                    BackgroundColor="#2D2D2D" 
+                    StrokeThickness="1" 
+                    Stroke="#444444"
+                    StrokeShape="RoundRectangle 4"
+                    Padding="12,8"
+                    MinimumHeightRequest="36">
+
+                <Label x:Name="SelectedFolderLabel" 
+                       Text="No folder selected"
+                       TextColor="#CCCCCC"
+                       FontSize="14"
+                       LineBreakMode="WordWrap"
+                       VerticalOptions="Center"/>
+            </Border>
+
+        </Grid>
+    </Border>
+</ContentView>

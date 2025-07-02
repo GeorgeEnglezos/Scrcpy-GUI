@@ -4,6 +4,7 @@ using Microsoft.VisualBasic;
 using ScrcpyGUI.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -17,6 +18,14 @@ public static class AdbCmdService
     public const string installedPackagesCommand = "shell pm list packages -3";
     public static List<ConnectedDevice> connectedDeviceList = new List<ConnectedDevice>();
     public static ConnectedDevice selectedDevice = new ConnectedDevice();
+    
+    // Paths
+    public static string scrcpyPath = "";
+    public static string commandDownloadPath = "";
+    public static string recordingsPath = "";
+    public static string adbPath = "";
+    public static string settingsDataPath = "";
+
     public enum CommandEnum
     {
         GetPackages,
@@ -35,58 +44,131 @@ public static class AdbCmdService
         TcpIp
     }
 
-    //public static List<string> OutputHistory = new();  // Global list to track all outputs
-    //public static List<string> ErrorHistory = new();   // Global list to track all error outputs
 
+    public static async Task<CmdCommandResponse> RunScrcpyCommand(string command)
+    {
+        var response = new CmdCommandResponse();
+        bool showCmds = DataStorage.LoadData().AppSettings.OpenCmds;
+        if (string.IsNullOrEmpty(selectedDevice.DeviceId))
+        { //No device connected
+            response.RawError = "No ADB device connected. \nMake sure USB debugging is enabled and try again!";
+            return response;
+        }
+
+        command = command.Replace("scrcpy.exe", "");
+        command = $"scrcpy.exe -s {selectedDevice.DeviceId} {command} ";
+
+        ProcessStartInfo startInfo = new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = $"/c \"{command}\"",
+            WorkingDirectory = scrcpyPath,
+            WindowStyle = showCmds ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden,
+            UseShellExecute = false,
+            RedirectStandardOutput = !showCmds,
+            RedirectStandardError = !showCmds,
+            CreateNoWindow = !showCmds
+        };
+
+        Preferences.Set("lastCommand", command);
+
+        // Prepare to capture output and error streams asynchronously
+        var outputBuilder = new StringBuilder();
+        var errorBuilder = new StringBuilder();
+
+        // Process event handlers for async reading output and error streams
+        Process process = new Process { StartInfo = startInfo };
+
+        // Only attach handlers if redirection is enabled
+        if (!showCmds)
+        {
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    outputBuilder.AppendLine(e.Data);
+                }
+            };
+
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    errorBuilder.AppendLine(e.Data);
+                }
+            };
+        }
+
+        await Task.Run(() =>
+        {
+            process.Start();
+            Debug.WriteLine($"Process started with ID: {process.Id}");
+
+            // ONLY call BeginOutputReadLine and BeginErrorReadLine if streams are redirected
+            if (!showCmds)
+            {
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+            }
+
+            // Wait for the process to exit
+            process.WaitForExit();
+        });
+
+        // Capture the output and error from the StringBuilder objects
+        // Only if streams were redirected
+        if (!showCmds)
+        {
+            var output = outputBuilder.ToString();
+            var errorOutput = errorBuilder.ToString();
+            response.RawOutput = output;
+            response.RawError = errorOutput;
+            response.Output = string.IsNullOrEmpty(errorOutput) ? output : errorOutput;
+        }
+        else
+        {
+            // If CMD window was shown, there's no captured output/error via redirection
+            response.RawOutput = "Command run in a separate CMD window. Output not captured.";
+            response.Output = response.RawOutput;
+        }
+
+        response.ExitCode = process.ExitCode;
+
+        return response;
+    }
 
     public static async Task<CmdCommandResponse> RunAdbCommandAsync(CommandEnum commandType, string? command)
     {
         var response = new CmdCommandResponse();
 
-        bool showCmds = DataStorage.LoadData().AppSettings.OpenCmds && commandType == CommandEnum.RunScrcpy;
-
         try
         {
-            //Scrcpy
-            if (commandType == CommandEnum.RunScrcpy)
-            {
-                if (string.IsNullOrEmpty(selectedDevice.DeviceId))
-                { //No device connected
-                    response.RawError = "No ADB device connected. \nMake sure USB debugging is enabled and try again!";
-                    return response;
-                }
-
-                command = command.Replace("scrcpy.exe", "");
-                command = $"scrcpy.exe -s {selectedDevice.DeviceId} {command} ";
-            }
             if (commandType == CommandEnum.GetPackages || commandType == CommandEnum.Tcp || commandType == CommandEnum.PhoneIp)
             {
                 var deviceToUseForCommand = selectedDevice.DeviceId;
-                if (command.Equals("usb") || command.Equals("disconnect")) {
+                if (command.Equals("usb") || command.Equals("disconnect"))
+                {
                     deviceToUseForCommand = FindWirelessDeviceInList();
-                    if (string.IsNullOrEmpty(deviceToUseForCommand)) {
+                    if (string.IsNullOrEmpty(deviceToUseForCommand))
+                    {
                         response.RawError = "No Wireless device found!";
                         return response;
                     }
                 }
-                    command = $"adb -s {deviceToUseForCommand} {command} ";
+                command = $"adb -s {deviceToUseForCommand} {command} ";
             }
 
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
                 Arguments = $"/c \"{command}\"",
-                WindowStyle = showCmds ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden, // Set normal if showCmds, hidden otherwise
+                WorkingDirectory = scrcpyPath,
+                WindowStyle = ProcessWindowStyle.Hidden,
                 UseShellExecute = false,
-                RedirectStandardOutput = !showCmds,
-                RedirectStandardError = !showCmds,
-                CreateNoWindow = !showCmds // Hide the command window 
+                RedirectStandardOutput = true,  // Fixed: Changed to true
+                RedirectStandardError = true,   // Fixed: Changed to true
+                CreateNoWindow = true           // Fixed: Changed to true
             };
-
-            if (commandType == CommandEnum.RunScrcpy)
-            {
-                Preferences.Set("lastCommand", command);
-            }
 
             // Prepare to capture output and error streams asynchronously
             var outputBuilder = new StringBuilder();
@@ -95,25 +177,22 @@ public static class AdbCmdService
             // Process event handlers for async reading output and error streams
             Process process = new Process { StartInfo = startInfo };
 
-            // Only attach handlers if redirection is enabled
-            if (!showCmds)
+            // Fixed: Added event handlers for output capture
+            process.OutputDataReceived += (sender, e) =>
             {
-                process.OutputDataReceived += (sender, e) =>
+                if (!string.IsNullOrEmpty(e.Data))
                 {
-                    if (!string.IsNullOrEmpty(e.Data))
-                    {
-                        outputBuilder.AppendLine(e.Data);
-                    }
-                };
+                    outputBuilder.AppendLine(e.Data);
+                }
+            };
 
-                process.ErrorDataReceived += (sender, e) =>
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
                 {
-                    if (!string.IsNullOrEmpty(e.Data))
-                    {
-                        errorBuilder.AppendLine(e.Data);
-                    }
-                };
-            }
+                    errorBuilder.AppendLine(e.Data);
+                }
+            };
 
             // Run the process in the background (non-blocking)
             await Task.Run(() =>
@@ -121,48 +200,19 @@ public static class AdbCmdService
                 process.Start();
                 Debug.WriteLine($"Process started with ID: {process.Id}");
 
-                // ONLY call BeginOutputReadLine and BeginErrorReadLine if streams are redirected
-                if (!showCmds)
-                {
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
-                }
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
 
                 // Wait for the process to exit
                 process.WaitForExit();
             });
 
             // Capture the output and error from the StringBuilder objects
-            // Only if streams were redirected
-            if (!showCmds)
-            {
-                var output = outputBuilder.ToString();
-                var errorOutput = errorBuilder.ToString();
-
-                // Store all outputs in the global lists for history tracking
-                //if (!string.IsNullOrEmpty(output))
-                //{
-                //    OutputHistory.Add(output);
-                //}
-
-                //if (!string.IsNullOrEmpty(errorOutput))
-                //{
-                //    ErrorHistory.Add(errorOutput);
-                //}
-
-                response.RawOutput = output;
-                response.RawError = errorOutput;
-                response.Output = string.IsNullOrEmpty(errorOutput) ? output : errorOutput;
-            }
-            else
-            {
-                // If CMD window was shown, there's no captured output/error via redirection
-                // You might want to indicate this or handle it differently if needed.
-                // For now, it will just leave RawOutput/RawError empty.
-                response.RawOutput = "Command run in a separate CMD window. Output not captured.";
-                response.Output = response.RawOutput; // Set Output as well to reflect this
-            }
-
+            var output = outputBuilder.ToString();
+            var errorOutput = errorBuilder.ToString();
+            response.RawOutput = output;
+            response.RawError = errorOutput;
+            response.Output = string.IsNullOrEmpty(errorOutput) ? output : errorOutput;
 
             response.ExitCode = process.ExitCode;
 
@@ -172,7 +222,7 @@ public static class AdbCmdService
         {
             Debug.WriteLine($"Exception: {ex.Message}");
             response.Output = $"Error: {ex.Message}";
-            response.RawError = ex.ToString(); // Include full exception for debugging
+            response.RawError = ex.ToString();
             return response;
         }
     }
@@ -418,4 +468,7 @@ public static class AdbCmdService
 
         return null;
     }
+
+
+
 }

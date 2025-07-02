@@ -14,6 +14,7 @@ namespace ScrcpyGUI
         public MainPage()
         {
             InitializeComponent();
+            AdbCmdService.scrcpyPath = DataStorage.LoadData().AppSettings.ScrcpyPath;
         }
 
         protected override void OnAppearing()

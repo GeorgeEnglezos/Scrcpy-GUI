@@ -3,10 +3,10 @@
              xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
              xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
              xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
+             xmlns:system="clr-namespace:System;assembly=netstandard"
              x:Class="ScrcpyGUI.SettingsPage"
              BackgroundColor="{DynamicResource BackGroundGrey}"
              Shell.Title="">
-             <!--xmlns:sharedControls="clr-namespace:ScrcpyGUI.Controls.SharedControls"-->
 
     <ContentView.Resources>
         <x:Array x:Key="ColorOptions" Type="{x:Type x:String}">
@@ -21,107 +21,192 @@
             <x:String>Complete</x:String>
         </x:Array>
     </ContentView.Resources>
-    
-    <Grid RowDefinitions="*, Auto">
+
+    <Grid RowDefinitions="*, Auto" ColumnDefinitions="*">
         <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="20" HorizontalOptions="Center" WidthRequest="450">
+            <Grid x:Name="ResponsiveGrid" ColumnDefinitions="Auto,Auto" RowDefinitions="Auto">
+                <!-- Left Column: Settings -->
+                <VerticalStackLayout x:Name="SettingsPanel" Padding="20, 0, 20, 0" Spacing="20" Grid.Row="0" Grid.Column="0" MaximumWidthRequest="500">
+                    <!--Functionality-->
+                    <Label Text="Functionality"
+                           TextColor="{StaticResource Secondary}"
+                           Margin="0, 50, 0, 0" 
+                           FontSize="30"
+                           HorizontalOptions="Center"/>
 
-                <!--Functionality-->
-                <Label Text="Functionality"
-                       TextColor="{StaticResource Secondary}"
-                       Margin="0, 50, 0, 0" 
-                       FontSize="30"
-                       HorizontalOptions="Center"/>
-                
-                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
+                    <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
 
-                <VerticalStackLayout Padding="15, 0, 0, 0 ">
-                    <controls:SettingsPageOptions x:Name="CmdCheckbox"
-                        LabelText="Open CMD windows for scrcpy commands."                  
-                        IsChecked="{Binding IsCmdChecked}"
-                        CheckedChanged="OnCMDChanged"/>
+                    <VerticalStackLayout Padding="0, 0, 0, 0 ">
+                        <controls:SettingsPageOptions 
+                            x:Name="CmdCheckbox"
+                            LabelText="Open CMD windows for scrcpy commands."                  
+                            IsChecked="{Binding IsCmdChecked}"
+                            CheckedChanged="OnCMDChanged"/>
+                    </VerticalStackLayout>
+
+                    <!--UI-->
+                    <Label Text="User Interface (Home Page)"
+                        TextColor="{StaticResource Secondary}"
+                        Margin="0, 50, 0, 0" 
+                        FontSize="30"
+                        HorizontalOptions="Center"/>
+                    <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
+
+                    <VerticalStackLayout Padding="12, 0, 0, 0 ">
+                        <controls:SettingsPageOptions x:Name="WirelessPanelCheckbox"
+                            LabelText="Hide Wireless options."
+                            IsChecked="False"
+                            CheckedChanged="OnWirelessPanelChanged"/>
+
+                        <controls:SettingsPageOptions x:Name="StatusPanelCheckbox"
+                            LabelText="Hide Installation - Device status."
+                            IsChecked="False"
+                            CheckedChanged="OnStatusPanelChanged"/>
+
+                        <controls:SettingsPageOptions x:Name="OutputPanelCheckbox"
+                            LabelText="Hide Output panel."
+                            IsChecked="False"
+                            CheckedChanged="OnHideOutputPanelChanged"/>
+
+                        <controls:SettingsPageOptions x:Name="RecordingPanelCheckbox"
+                            LabelText="Hide Recording options."
+                            IsChecked="False"
+                            CheckedChanged="OnHideRecordingPanelChanged"/>
+
+                        <controls:SettingsPageOptions x:Name="VirtualMonitorCheckbox"
+                            LabelText="Hide Virtual Display options."
+                            IsChecked="False"
+                            CheckedChanged="OnHideVirtualDisplayPanelChanged"/>
+
+                        <!-- Beautiful Dropdown Container 1 -->
+                        <VerticalStackLayout Margin="0,20,0,10">
+                            <Label Text="Color code command preview:"
+                                   TextColor="White"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   Margin="0,0,0,8"/>
+
+                            <Border BackgroundColor="#2D2D30"
+                                    Stroke="{StaticResource PrimaryPurple}"
+                                    StrokeThickness="2"
+                                    StrokeDashArray="0">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <Border.Shadow>
+                                    <Shadow Brush="Black"
+                                            Offset="0,2"
+                                            Radius="8"
+                                            Opacity="0.3"/>
+                                </Border.Shadow>
+
+                                <Picker x:Name="HomeCommandColorPicker"
+                                        ItemsSource="{StaticResource ColorOptions}"
+                                        BackgroundColor="Transparent"
+                                        TextColor="White"
+                                        FontSize="17"
+                                        HorizontalOptions="FillAndExpand"
+                                        VerticalOptions="Center"
+                                        Margin="0,0"/>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Beautiful Dropdown Container 2 -->
+                        <VerticalStackLayout Margin="0,10,0,20">
+                            <Label Text="Color code favorites commands:"
+                                   TextColor="White"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   Margin="0,0,0,8"/>
+
+                            <Border BackgroundColor="#2D2D30"
+                                    Stroke="{StaticResource PrimaryPurple}"
+                                    StrokeThickness="2"
+                                    HeightRequest="50">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <Border.Shadow>
+                                    <Shadow Brush="Black"
+                                            Offset="0,2"
+                                            Radius="8"
+                                            Opacity="0.3"/>
+                                </Border.Shadow>
+
+                                <!-- Gradient Background -->
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#2D2D30" Offset="0.0"/>
+                                        <GradientStop Color="#3A3A3D" Offset="1.0"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+
+                                <Picker x:Name="FavoritesCommandColorsPicker"
+                                        ItemsSource="{StaticResource FavoritesColorOptions}"
+                                        BackgroundColor="Transparent"
+                                        TextColor="White"
+                                        FontSize="17"
+                                        HorizontalOptions="FillAndExpand"
+                                        VerticalOptions="Center"
+                                        Margin="0,0"/>
+                            </Border>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+
+                    <Button StyleClass="FilledTonalButton" 
+                            BackgroundColor="{StaticResource ButtonColor}" 
+                            TextColor="White" 
+                            x:Name="SaveCommand" 
+                            Margin="0, 20" 
+                            Text="Apply Changes" 
+                            Clicked="SaveChanges" 
+                            MaximumWidthRequest="170" 
+                            FontAttributes="Bold" 
+                            FontSize="16"/>
                 </VerticalStackLayout>
-                <!--UI-->
-                <Label Text="User Interface (Home Page)"
-                    TextColor="{StaticResource Secondary}"
-                    Margin="0, 50, 0, 0" 
-                    FontSize="30"
-                    HorizontalOptions="Center"/>
-                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
 
-                <VerticalStackLayout Padding="12, 0, 0, 0 ">
-                    <controls:SettingsPageOptions x:Name="WirelessPanelCheckbox"
-                        LabelText="Hide Wireless options."
-                        IsChecked="False"
-                        CheckedChanged="OnWirelessPanelChanged"/>
+                <!-- Right Column: Folder Selectors -->
+                <VerticalStackLayout x:Name="FolderSelectorsPanel" Padding="20, 0, 20, 0" Spacing="20" Grid.Row="0" Grid.Column="1" MaximumWidthRequest="800">
+                    <Label Text="Directory Settings"
+                           TextColor="{StaticResource Secondary}"
+                           Margin="0, 50, 0, 0" 
+                           FontSize="30"
+                           HorizontalOptions="Center"/>
 
-                    <controls:SettingsPageOptions x:Name="StatusPanelCheckbox"
-                        LabelText="Hide Installation - Device status."
-                        IsChecked="False"
-                        CheckedChanged="OnStatusPanelChanged"/>
+                    <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
 
-                    <controls:SettingsPageOptions x:Name="OutputPanelCheckbox"
-                        LabelText="Hide Output panel."
-                        IsChecked="False"
-                        CheckedChanged="OnHideOutputPanelChanged"/>
+                    <!-- Scrcpy Path -->
+                    <controls:FolderSelector x:Name="scrcpyFolderPicker"
+                         FolderType="ScrcpyPath"
+                         Title="Scrcpy Directory"                                             
+                         InitialFolder="{x:Static system:String.Empty}" />
 
-                    <controls:SettingsPageOptions x:Name="RecordingPanelCheckbox"
-                        LabelText="Hide Recording options."
-                        IsChecked="False"
-                        CheckedChanged="OnHideRecordingPanelChanged"/>
+                    <!-- Adb Path -->
+                    <controls:FolderSelector x:Name="adbFolderPicker"
+                        FolderType="AdbPath"
+                        Title="Adb Directory"
+                        InitialFolder="{x:Static system:String.Empty}" />
 
-                    <controls:SettingsPageOptions x:Name="VirtualMonitorCheckbox"
-                        LabelText="Hide Virtual Display options."
-                        IsChecked="False"
-                        CheckedChanged="OnHideVirtualDisplayPanelChanged"/>
+                    <!-- Settings Path -->
+                    <controls:FolderSelector x:Name="settingsFolderPicker"
+                         FolderType="SettingsDataPath"
+                         Title="Settings File Directory"
+                         InitialFolder="{x:Static system:String.Empty}" />
 
-                    <Grid RowDefinitions="*" ColumnDefinitions="Auto,*">
-                        <Label Text="Color code command preview:"
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                HorizontalOptions="Start"                               
-                                VerticalOptions="Center"
-                                Margin="0, 10"
-                                TextColor="White"
-                                FontSize="18"
-                                LineBreakMode="WordWrap"
-                                FontAttributes="Bold"/>
-                        <Picker x:Name="HomeCommandColorPicker"
-                                Grid.Column="1"
-                                Grid.Row="0"
-                                VerticalOptions="Center"
-                                HorizontalOptions="End"
-                                ItemsSource="{StaticResource ColorOptions}"
-                                FontSize="18"/>
-                    </Grid>
+                    <!-- Recordings Path -->
+                    <controls:FolderSelector x:Name="recordingFolderPicker"
+                         FolderType="RecordingPath"
+                         Title="Recordings Directory"                                             
+                         InitialFolder="{x:Static system:String.Empty}" />
 
-                    <Grid RowDefinitions="*" ColumnDefinitions="Auto,*">
-                        <Label Text="Color code favorites commands:"
-                                WidthRequest="200"
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                HorizontalOptions="Start"                               
-                                VerticalOptions="Center"
-                                Margin="0, 10"
-                                TextColor="White"
-                                FontSize="18"
-                                LineBreakMode="WordWrap"
-                                FontAttributes="Bold"/>
-                        <Picker x:Name="FavoritesCommandColorsPicker"
-                                Grid.Column="1"
-                                Grid.Row="0"
-                                VerticalOptions="Center"
-                                HorizontalOptions="End"
-                                ItemsSource="{StaticResource FavoritesColorOptions}"
-                                FontSize="18"/>
-                    </Grid>
+                    <!--Downloads Path -->
+                    <controls:FolderSelector x:Name="downloadFolderPicker"
+                         FolderType="DownloadPath"
+                         Title="Commands Download Directory"
+                         InitialFolder="{x:Static system:String.Empty}" />
                 </VerticalStackLayout>
-
-                <Button StyleClass="FilledTonalButton" BackgroundColor="{StaticResource ButtonColor}" TextColor="White" x:Name="SaveCommand" Margin="0, 20" Text="Apply Changes" Clicked="SaveChanges" MaximumWidthRequest="170" FontAttributes="Bold" FontSize="16"/>
-
-            </VerticalStackLayout>
+            </Grid>
         </ScrollView>
-
 
         <!-- Fixed Footer -->
         <controls:FixedFooter Grid.Row="1" />

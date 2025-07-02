@@ -37,6 +37,11 @@ namespace ScrcpyGUI.Models
         public bool HideVirtualMonitorPanel = false;
         public string HomeCommandPreviewCommandColors = "None";
         public string FavoritesPageCommandColors = "Package Only";
+        public string ScrcpyPath = "";
+        public string RecordingPath = "";
+        public string DownloadPath = "";
+        public string AdbPath = "";
+        public string SettingsDataPath = "";
     }
 
     public class ScreenRecordingOptions
@@ -234,9 +239,7 @@ namespace ScrcpyGUI.Models
         public string DeviceId { get; set; }
         public List<string> AudioCodecEncoderPairs { get; set; }
         public List<string> VideoCodecEncoderPairs { get; set; }
-        //public List<string> AudioCodecs { get; set; }
-        //public List<string> VideoEncoders { get; set; }
-        //public List<string> VideoCodecs { get; set; }
+
 
         public ConnectedDevice(){
             CombinedName = "";
