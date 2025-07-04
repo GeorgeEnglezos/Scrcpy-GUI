@@ -18,7 +18,7 @@
                 <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0,0, 0, 20" />
 
                 <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start">
-                    <controls:ChecksPanel x:Name="ChecksPanel" MaximumWidthRequest="380" Margin="0, 10, 20, 10"/>
+                    <controls:StatusPanel x:Name="ChecksPanel" MaximumWidthRequest="380" Margin="0, 10, 20, 10"/>
                     <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" MinimumWidthRequest="380" Margin="0, 10"/>
                 </FlexLayout>
 

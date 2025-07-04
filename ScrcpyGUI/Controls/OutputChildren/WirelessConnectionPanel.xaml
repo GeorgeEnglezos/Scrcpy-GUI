@@ -4,22 +4,13 @@
              xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
              xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
              xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
              x:Class="ScrcpyGUI.Controls.WirelessConnectionPanel">
     <!-- Main Grid -->
     <Grid RowDefinitions="Auto, *">
         <!-- Border -->
         <Border Grid.Row="1" Padding="40 ,20" StrokeThickness="2" Stroke="{StaticResource PrimaryPurple}" ZIndex="0"  StrokeShape="RoundRectangle 10">
             <VerticalStackLayout HorizontalOptions="Center">
-
-                <!--<HorizontalStackLayout Grid.Row="0" WidthRequest="270">
-                    <Label FontSize="18" Padding="7" Text="TCP Port:" VerticalOptions="Center" WidthRequest="100"/>
-                    <Entry FontSize="18" x:Name="TcpipEntry" Placeholder="TCP Port" Margin="0,5" Text="5555" WidthRequest="135"/>
-                </HorizontalStackLayout>-->
-
-                <!--<HorizontalStackLayout Grid.Row="1"  WidthRequest="270">
-                    <Label FontSize="18" Padding="7" Text="Phone IP:" VerticalOptions="Center"  WidthRequest="100" />
-                    <Entry FontSize="18" x:Name="PhoneIpEntry" Placeholder="Phone IP" Text="" WidthRequest="135"/>
-                </HorizontalStackLayout>-->
 
                 <AbsoluteLayout>
                     <ur:TextField 
@@ -51,13 +42,11 @@
                            AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
                 </AbsoluteLayout>
 
-                <Button StyleClass="FilledTonalButton" BackgroundColor="{StaticResource ButtonColor}" TextColor="White"  Text="Start Manual Connection" Clicked="OnStartConnection" Margin="0, 10" FontAttributes="Bold" FontSize="16"/>
-                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 10"  />
-
-                <Button StyleClass="FilledTonalButton" BackgroundColor="{StaticResource ButtonColor}" TextColor="White" Text="Auto Start Connection" Clicked="OnAutoStartConnection" Margin="0, 10" FontAttributes="Bold" FontSize="16"/>
-                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 10"  />
-
-                <Button StyleClass="FilledTonalButton" BackgroundColor="{StaticResource ButtonColor}" TextColor="White" Text="Close Connection" Clicked="OnResetToUsb" Margin="0, 10" FontAttributes="Bold" FontSize="16"/>
+                <controls:CustomButton ButtonStyle="CustomButton2" ButtonText="Start Manual Connection" HeightRequest="50" FontSize="16" Margin="0, 10, 0, 0" ButtonClicked="OnStartConnection"/>
+                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0"/>
+                <controls:CustomButton ButtonStyle="CustomButton2" ButtonText="Auto Start Connection" HeightRequest="50" FontSize="16" Margin="0, 10, 0, 0" ButtonClicked="OnAutoStartConnection"/>
+                <BoxView HeightRequest="1" BackgroundColor="LightGray"/>
+                <controls:CustomButton ButtonStyle="CustomButton2" ButtonText="Close Connection" HeightRequest="50" FontSize="16" Margin="0, 10, 0, 0" ButtonClicked="OnResetToUsb"/>
 
             </VerticalStackLayout>
         </Border>

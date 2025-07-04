@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScrcpyGUI.Controls.CustomButton"
+             x:Name="CustomButtonView">
+    <StackLayout>
+        
+        <!--Use case-->
+        <!-- Boring -->
+        <!--
+                    <controls:CustomButton 
+                    x:Name="BoringBtn"
+                    ButtonStyle="Boring"
+                    ButtonText="Boring Button"
+                    ButtonColor="{StaticResource PrimaryPurple}"
+                    TextColor="White"
+                    ButtonClicked="SaveChanges"/>
+
+                    -->
+        <!-- Base Button -->
+        <!--
+                    <controls:CustomButton 
+                    x:Name="BaseBtn"
+                    ButtonStyle="Base"
+                    ButtonText="Base Button"
+                    ButtonColor="{StaticResource PrimaryPurple}"
+                    TextColor="White"
+                    ButtonClicked="SaveChanges"/>-->
+
+
+        <!-- Boring Button Style -->
+        <Button x:Name="BoringButton" 
+                Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"
+                BackgroundColor="{Binding Source={x:Reference CustomButtonView}, Path=ButtonColor}"
+                TextColor="White"
+                FontSize="{Binding Source={x:Reference CustomButtonView}, Path=FontSize}"
+                FontAttributes="{Binding Source={x:Reference CustomButtonView}, Path=FontAttributes}"
+                IsVisible="False"
+                Clicked="OnButtonClicked"/>
+
+        <!-- Base Button Style -->
+        <Button x:Name="BaseButton" 
+                Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"
+                BackgroundColor="{Binding Source={x:Reference CustomButtonView}, Path=ButtonColor}"
+                TextColor="White"
+                FontSize="{Binding Source={x:Reference CustomButtonView}, Path=FontSize}"
+                FontAttributes="{Binding Source={x:Reference CustomButtonView}, Path=FontAttributes}"
+                CornerRadius="12"
+                IsVisible="False"
+                Clicked="OnButtonClicked">
+            <Button.Shadow>
+                <Shadow Brush="{Binding Source={x:Reference CustomButtonView}, Path=ButtonColor}" 
+                        Offset="0,4" 
+                        Radius="8" 
+                        Opacity="0.3"/>
+            </Button.Shadow>
+        </Button>
+
+        <!--Custom Button 2-->
+        <Border x:Name="CustomButton2"
+                BackgroundColor="Transparent" 
+                Stroke="Transparent"
+                StrokeThickness="0"
+                IsVisible="False">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="12"/>
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow Brush="{StaticResource PrimaryPurple}" 
+                            Offset="0,4" 
+                            Radius="12" 
+                            Opacity="0.3"/>
+            </Border.Shadow>
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="{StaticResource PrimaryPurple}" Offset="0.0"/>
+                    <GradientStop Color="#8A2BE2" Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.Background>
+
+            <Button                 
+                Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"
+                BackgroundColor="Transparent"
+                TextColor="White"
+                FontAttributes="Bold"
+                FontSize="16"
+                BorderWidth="0"
+                Clicked="OnButtonClicked"/>
+        </Border>
+
+        <!--Custom Button 3-->
+        <Button  x:Name="CustomButton3"
+            Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"
+            BackgroundColor="{StaticResource PrimaryPurple}"
+            TextColor="White"
+            FontAttributes="Bold"
+            FontSize="16"
+            HeightRequest="50"
+            WidthRequest="170"
+            CornerRadius="12"
+            IsVisible="False"
+            Clicked="OnButtonClicked">
+            <Button.Shadow>
+                <Shadow Brush="{StaticResource PrimaryPurple}" 
+            Offset="0,4" 
+            Radius="8" 
+            Opacity="0.3"/>
+            </Button.Shadow>
+        </Button>
+    </StackLayout>
+</ContentView>

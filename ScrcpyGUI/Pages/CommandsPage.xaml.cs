@@ -189,7 +189,7 @@ namespace ScrcpyGUI
                 try
                 {
                     string baseFileName = "SavedCommand";
-                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                    string desktopPath = DataStorage.staticSavedData.AppSettings.DownloadPath;
                     string fullPath = Path.Combine(desktopPath, baseFileName + ".bat");
 
                     int counter = 1;

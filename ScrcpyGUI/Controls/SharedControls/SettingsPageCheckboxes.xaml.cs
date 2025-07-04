@@ -4,15 +4,15 @@ using System.ComponentModel;
 using UraniumUI.Material.Controls;
 
 namespace ScrcpyGUI.Controls;
-public partial class SettingsPageOptions : ContentView
+public partial class SettingsPageCheckboxes : ContentView
 {
-	public SettingsPageOptions()
+	public SettingsPageCheckboxes()
 	{
 		InitializeComponent();
     }
 
     public static readonly BindableProperty LabelTextProperty =
-        BindableProperty.Create(nameof(LabelText), typeof(string), typeof(SettingsPageOptions), string.Empty);
+        BindableProperty.Create(nameof(LabelText), typeof(string), typeof(SettingsPageCheckboxes), string.Empty);
 
     public string LabelText
     {
@@ -21,7 +21,7 @@ public partial class SettingsPageOptions : ContentView
     }
 
     public static readonly BindableProperty IsCheckedProperty =
-        BindableProperty.Create(nameof(IsChecked), typeof(bool), typeof(SettingsPageOptions), false, BindingMode.TwoWay);
+        BindableProperty.Create(nameof(IsChecked), typeof(bool), typeof(SettingsPageCheckboxes), false, BindingMode.TwoWay);
 
     public bool IsChecked
     {

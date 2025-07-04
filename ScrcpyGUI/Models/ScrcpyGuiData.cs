@@ -41,7 +41,6 @@ namespace ScrcpyGUI.Models
         public string RecordingPath = "";
         public string DownloadPath = "";
         public string AdbPath = "";
-        public string SettingsDataPath = "";
     }
 
     public class ScreenRecordingOptions
@@ -81,8 +80,7 @@ namespace ScrcpyGUI.Models
             }
         }
     }  
-    
-    
+        
     public class VirtualDisplayOptions
     {
 
@@ -230,7 +228,6 @@ namespace ScrcpyGUI.Models
             }
         }
     }
-
 
     public class ConnectedDevice
     {

@@ -26,7 +26,7 @@
         <ScrollView Grid.Row="0">
             <Grid x:Name="ResponsiveGrid" ColumnDefinitions="Auto,Auto" RowDefinitions="Auto">
                 <!-- Left Column: Settings -->
-                <VerticalStackLayout x:Name="SettingsPanel" Padding="20, 0, 20, 0" Spacing="20" Grid.Row="0" Grid.Column="0" MaximumWidthRequest="500">
+                <VerticalStackLayout x:Name="SettingsPanel" Padding="20, 0, 20, 0" Spacing="20" Grid.Row="0" Grid.Column="0" MaximumWidthRequest="600" MinimumWidthRequest="500">
                     <!--Functionality-->
                     <Label Text="Functionality"
                            TextColor="{StaticResource Secondary}"
@@ -34,10 +34,10 @@
                            FontSize="30"
                            HorizontalOptions="Center"/>
 
-                    <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
+                    <BoxView HeightRequest="1" BackgroundColor="LightGray"/>
 
-                    <VerticalStackLayout Padding="0, 0, 0, 0 ">
-                        <controls:SettingsPageOptions 
+                    <VerticalStackLayout>
+                        <controls:SettingsPageCheckboxes 
                             x:Name="CmdCheckbox"
                             LabelText="Open CMD windows for scrcpy commands."                  
                             IsChecked="{Binding IsCmdChecked}"
@@ -47,38 +47,38 @@
                     <!--UI-->
                     <Label Text="User Interface (Home Page)"
                         TextColor="{StaticResource Secondary}"
-                        Margin="0, 50, 0, 0" 
+                        Margin="0, 35, 0, 0" 
                         FontSize="30"
                         HorizontalOptions="Center"/>
-                    <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
+                    <BoxView HeightRequest="1" BackgroundColor="LightGray"/>
 
-                    <VerticalStackLayout Padding="12, 0, 0, 0 ">
-                        <controls:SettingsPageOptions x:Name="WirelessPanelCheckbox"
+                    <VerticalStackLayout>
+                        <controls:SettingsPageCheckboxes x:Name="WirelessPanelCheckbox"
                             LabelText="Hide Wireless options."
                             IsChecked="False"
                             CheckedChanged="OnWirelessPanelChanged"/>
 
-                        <controls:SettingsPageOptions x:Name="StatusPanelCheckbox"
+                        <controls:SettingsPageCheckboxes x:Name="StatusPanelCheckbox"
                             LabelText="Hide Installation - Device status."
                             IsChecked="False"
                             CheckedChanged="OnStatusPanelChanged"/>
 
-                        <controls:SettingsPageOptions x:Name="OutputPanelCheckbox"
+                        <controls:SettingsPageCheckboxes x:Name="OutputPanelCheckbox"
                             LabelText="Hide Output panel."
                             IsChecked="False"
                             CheckedChanged="OnHideOutputPanelChanged"/>
 
-                        <controls:SettingsPageOptions x:Name="RecordingPanelCheckbox"
+                        <controls:SettingsPageCheckboxes x:Name="RecordingPanelCheckbox"
                             LabelText="Hide Recording options."
                             IsChecked="False"
                             CheckedChanged="OnHideRecordingPanelChanged"/>
 
-                        <controls:SettingsPageOptions x:Name="VirtualMonitorCheckbox"
+                        <controls:SettingsPageCheckboxes x:Name="VirtualMonitorCheckbox"
                             LabelText="Hide Virtual Display options."
                             IsChecked="False"
                             CheckedChanged="OnHideVirtualDisplayPanelChanged"/>
 
-                        <!-- Beautiful Dropdown Container 1 -->
+                        <!-- Dropdown Container -->
                         <VerticalStackLayout Margin="0,20,0,10">
                             <Label Text="Color code command preview:"
                                    TextColor="White"
@@ -89,7 +89,7 @@
                             <Border BackgroundColor="#2D2D30"
                                     Stroke="{StaticResource PrimaryPurple}"
                                     StrokeThickness="2"
-                                    StrokeDashArray="0">
+                                    HeightRequest="50">
                                 <Border.StrokeShape>
                                     <RoundRectangle CornerRadius="8"/>
                                 </Border.StrokeShape>
@@ -99,6 +99,14 @@
                                             Radius="8"
                                             Opacity="0.3"/>
                                 </Border.Shadow>
+
+                                <!-- Gradient Background -->
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#2D2D30" Offset="0.0"/>
+                                        <GradientStop Color="#3A3A3D" Offset="1.0"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
 
                                 <Picker x:Name="HomeCommandColorPicker"
                                         ItemsSource="{StaticResource ColorOptions}"
@@ -111,7 +119,7 @@
                             </Border>
                         </VerticalStackLayout>
 
-                        <!-- Beautiful Dropdown Container 2 -->
+                        <!-- Dropdown Container -->
                         <VerticalStackLayout Margin="0,10,0,20">
                             <Label Text="Color code favorites commands:"
                                    TextColor="White"
@@ -153,27 +161,27 @@
                         </VerticalStackLayout>
                     </VerticalStackLayout>
 
-                    <Button StyleClass="FilledTonalButton" 
-                            BackgroundColor="{StaticResource ButtonColor}" 
-                            TextColor="White" 
-                            x:Name="SaveCommand" 
-                            Margin="0, 20" 
-                            Text="Apply Changes" 
-                            Clicked="SaveChanges" 
-                            MaximumWidthRequest="170" 
-                            FontAttributes="Bold" 
-                            FontSize="16"/>
+                    <controls:CustomButton 
+                    x:Name="SaveButton"
+                    ButtonStyle="CustomButton2"
+                    ButtonText="Apply Settings"                   
+                    HeightRequest="50"
+                    WidthRequest="170"
+                    FontSize="16"
+                    Margin="0"
+                    ButtonClicked="SaveChanges"/>
+
                 </VerticalStackLayout>
 
                 <!-- Right Column: Folder Selectors -->
-                <VerticalStackLayout x:Name="FolderSelectorsPanel" Padding="20, 0, 20, 0" Spacing="20" Grid.Row="0" Grid.Column="1" MaximumWidthRequest="800">
+                <VerticalStackLayout x:Name="FolderSelectorsPanel" Padding="20, 0, 20, 0" Spacing="20" Grid.Row="0" Grid.Column="1" MaximumWidthRequest="800"><!---->
                     <Label Text="Directory Settings"
                            TextColor="{StaticResource Secondary}"
                            Margin="0, 50, 0, 0" 
                            FontSize="30"
                            HorizontalOptions="Center"/>
 
-                    <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
+                    <BoxView HeightRequest="1" BackgroundColor="LightGray" />
 
                     <!-- Scrcpy Path -->
                     <controls:FolderSelector x:Name="scrcpyFolderPicker"
@@ -187,12 +195,6 @@
                         Title="Adb Directory"
                         InitialFolder="{x:Static system:String.Empty}" />
 
-                    <!-- Settings Path -->
-                    <controls:FolderSelector x:Name="settingsFolderPicker"
-                         FolderType="SettingsDataPath"
-                         Title="Settings File Directory"
-                         InitialFolder="{x:Static system:String.Empty}" />
-
                     <!-- Recordings Path -->
                     <controls:FolderSelector x:Name="recordingFolderPicker"
                          FolderType="RecordingPath"
@@ -203,6 +205,13 @@
                     <controls:FolderSelector x:Name="downloadFolderPicker"
                          FolderType="DownloadPath"
                          Title="Commands Download Directory"
+                         InitialFolder="{x:Static system:String.Empty}" />
+
+
+                    <!-- Settings Path -->
+                    <controls:FolderSelector x:Name="settingsFolderPicker"
+                         FolderType="ReadOnlyPath"
+                         Title="Settings File Directory"
                          InitialFolder="{x:Static system:String.Empty}" />
                 </VerticalStackLayout>
             </Grid>
