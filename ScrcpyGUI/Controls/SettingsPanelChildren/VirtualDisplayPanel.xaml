@@ -43,7 +43,7 @@
     <!-- Main Grid -->
     <Grid RowDefinitions="*">
         <!-- Border -->
-        <Border Grid.Row="1" StrokeThickness="2" Stroke="{StaticResource PrimaryPurple}" ZIndex="0"  StrokeShape="RoundRectangle 10">
+        <Border Grid.Row="1" StrokeThickness="2" Stroke="{StaticResource PrimaryPurple}" ZIndex="0"  StrokeShape="RoundRectangle 10" Padding="20, 10">
             <FlexLayout x:Name="OptionsContainer" 
                         Direction="Row"
                         Wrap="Wrap"
