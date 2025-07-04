@@ -15,46 +15,49 @@
             Padding="8"
             Margin="0">
 
-        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*">
+        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="60*,40*" Padding="5 ,10" >
 
             <!-- Title -->
             <Label x:Name="TitleLabel"
                    Grid.Row="0"
                    Text="Choose Folder"
                    TextColor="White"
-                   FontSize="18"
-                   FontAttributes="Bold"
-                   Margin="0,0,0,10"/>
+                   HorizontalOptions="StartAndExpand"
+                   HorizontalTextAlignment="Center"
+                   VerticalOptions="Center"
+                   FontSize="20"
+                   FontAttributes="Bold"/>
 
             <!-- Browse Button -->
-            <Button x:Name="PickFolderButton" 
-                    Grid.Row="1"
-                    Text="Browse..."
-                    BackgroundColor="{StaticResource PrimaryPurple}"
-                    TextColor="White"
-                    FontSize="18"
-                    CornerRadius="4"
-                    HeightRequest="36"
-                    Margin="0,0,0,10"
-                    Clicked="OnPickFolderClicked"/>
+            <controls:CustomButton
+                    x:Name="PickFolderButton"
+                    VerticalOptions="Center"
+                    ButtonStyle="CustomButton2"
+                    ButtonText="Browse..."                   
+                    FontSize="17"
+                    Margin="0"       
+                    ButtonClicked="OnPickFolderClicked"
+                    Grid.Row="0"
+                    Grid.Column="1"/>
 
             <!-- Selected Path -->
-            <Border Grid.Row="2" 
-                    BackgroundColor="#2D2D2D" 
-                    StrokeThickness="1" 
-                    Stroke="#444444"
-                    StrokeShape="RoundRectangle 4"
-                    Padding="12,8"
-                    MinimumHeightRequest="36">
-
-                <Label x:Name="SelectedFolderLabel" 
-                       Text="No folder selected"
-                       TextColor="#CCCCCC"
-                       FontSize="14"
-                       LineBreakMode="WordWrap"
-                       VerticalOptions="Center"/>
+            <Border Grid.Row="1"
+        Grid.ColumnSpan="2"
+        BackgroundColor="#2D2D2D" 
+        StrokeThickness="1" 
+        Stroke="#444444"
+        StrokeShape="RoundRectangle 4"
+        Margin="0, 5">
+                <Editor x:Name="SelectedFolderLabel" 
+            Text="No folder selected"
+            TextColor="#CCCCCC"
+            FontSize="14"
+            VerticalOptions="Center"
+            IsReadOnly="True"
+            BackgroundColor="Transparent"
+            Placeholder="No folder selected"
+            AutoSize="TextChanges"/>
             </Border>
-
         </Grid>
     </Border>
 </ContentView>

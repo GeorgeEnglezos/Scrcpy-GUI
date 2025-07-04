@@ -21,10 +21,8 @@ public static class AdbCmdService
     
     // Paths
     public static string scrcpyPath = "";
-    public static string commandDownloadPath = "";
     public static string recordingsPath = "";
     public static string adbPath = "";
-    public static string settingsDataPath = "";
 
     public enum CommandEnum
     {

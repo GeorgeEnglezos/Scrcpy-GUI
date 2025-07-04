@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="ScrcpyGUI.Controls.ChecksPanel">
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             x:Class="ScrcpyGUI.Controls.StatusPanel">
 
     <!-- Main Grid -->
     <Grid RowDefinitions="Auto, *">
@@ -31,7 +32,7 @@
                         <Label x:Name="DeviceStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding DeviceStatusColor}"  FontAttributes="Bold" FontSize="18"/>
                     </HorizontalStackLayout>
                 </FlexLayout>
-                <Button StyleClass="FilledTonalButton" BackgroundColor="{StaticResource ButtonColor}" TextColor="White"  Margin="0, 20" Text="Status Check" Clicked="OnRefreshStatusClicked" MaximumWidthRequest="170" FontAttributes="Bold" FontSize="16"/>
+                <!--<controls:CustomButton HorizontalOptions="Center" ButtonStyle="CustomButton2" ButtonText="Status Check" FontSize="17" Margin="0, 10, 0, 0" ButtonClicked="OnRefreshStatusClicked"  MaximumWidthRequest="200"/>-->
             </VerticalStackLayout>
         </Border>
 

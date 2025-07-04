@@ -21,29 +21,19 @@
             <Grid Padding="10" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
                 
                 <!-- Settings Panel -->
-                <controls:OptionsPackageSelectionPanel x:Name="OptionsPackageSelectionPanel" 
-                                                        Grid.Row="0" 
-                                                        HorizontalOptions="Fill" />
+                <controls:OptionsPackageSelectionPanel x:Name="OptionsPackageSelectionPanel" Grid.Row="0" HorizontalOptions="Fill" Margin="0,20"/>
 
                 <!-- Generic Options -->
-                <controls:OptionsGeneralPanel x:Name="OptionsGeneralPanel" 
-                                               Grid.Row="1" 
-                                               HorizontalOptions="Fill" />
+                <controls:OptionsGeneralPanel x:Name="OptionsGeneralPanel" Grid.Row="1" HorizontalOptions="Fill" Margin="0,20"/>
                 
                 <!-- Audio Options -->
-                <controls:OptionsAudioPanel x:Name="OptionsAudioPanel" 
-                                               Grid.Row="2" 
-                                               HorizontalOptions="Fill" />
+                <controls:OptionsAudioPanel x:Name="OptionsAudioPanel" Grid.Row="2" HorizontalOptions="Fill" Margin="0,20"/>
 
                 <!-- Virtual Display Options -->
-                <controls:OptionsVirtualDisplayPanel x:Name="OptionsVirtualDisplayPanel" 
-                                                      Grid.Row="3" 
-                                                      HorizontalOptions="Fill" />
+                <controls:OptionsVirtualDisplayPanel x:Name="OptionsVirtualDisplayPanel" Grid.Row="3" HorizontalOptions="Fill" Margin="0,20"/>
 
                 <!-- Screen Recording Panel -->
-                <controls:OptionsScreenRecordingPanel x:Name="OptionsScreenRecordingPanel" 
-                                                       Grid.Row="4" 
-                                                       HorizontalOptions="Fill" />
+                <controls:OptionsScreenRecordingPanel x:Name="OptionsScreenRecordingPanel" Grid.Row="4" HorizontalOptions="Fill" Margin="0,20"/>
             </Grid>
         </Border>
     </Grid>

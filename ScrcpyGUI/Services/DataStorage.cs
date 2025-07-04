@@ -8,22 +8,23 @@ using Microsoft.Maui.Storage;
 
 public static class DataStorage
 {
-    public static readonly string filePath = Path.Combine(FileSystem.AppDataDirectory, "ScrcpyGui-Data.json");
-
     public static ScrcpyGuiData staticSavedData { get; set; } = new ScrcpyGuiData();
+    public static AppSettings appSettings = new AppSettings();
+
+    public static readonly string settingsPath = Path.Combine(FileSystem.AppDataDirectory, "ScrcpyGui-Data.json");
 
     public static ScrcpyGuiData LoadData()
     {
         try
         {
-            if (!File.Exists(filePath))
+            if (!File.Exists(settingsPath))
             {
                 // File doesn't exist, create it with default data
                 SaveData(new ScrcpyGuiData()); // Ensure it's created
                 return staticSavedData;
             }
 
-            var jsonString = File.ReadAllText(filePath, Encoding.UTF8);
+            var jsonString = File.ReadAllText(settingsPath, Encoding.UTF8);
             staticSavedData = JsonConvert.DeserializeObject<ScrcpyGuiData>(jsonString) ?? new ScrcpyGuiData();
             return staticSavedData;
         }
@@ -39,14 +40,14 @@ public static class DataStorage
         try
         {
             // Ensure directory exists
-            var dir = Path.GetDirectoryName(filePath);
+            var dir = Path.GetDirectoryName(settingsPath);
             var directoryExists = File.Exists(dir);
             if (!directoryExists)
                 CreateFile();
 
             staticSavedData = data;
             var jsonString = JsonConvert.SerializeObject(data, Formatting.Indented);
-            File.WriteAllText(filePath, jsonString, Encoding.UTF8);
+            File.WriteAllText(settingsPath, jsonString, Encoding.UTF8);
         }
         catch (Exception ex)
         {
@@ -58,15 +59,15 @@ public static class DataStorage
     {
         try
         {
-            var dir = Path.GetDirectoryName(filePath);
+            var dir = Path.GetDirectoryName(settingsPath);
             if (!Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
             }
 
-            if (!File.Exists(filePath))
+            if (!File.Exists(settingsPath))
             {
-                File.WriteAllText(filePath, "{}"); // Avoid deserialization issues
+                File.WriteAllText(settingsPath, "{}"); // Avoid deserialization issues
             }
         }
         catch (Exception ex)
@@ -107,9 +108,9 @@ public static class DataStorage
 
     public static void ClearAll()
     {
-        if (File.Exists(filePath))
+        if (File.Exists(settingsPath))
         {
-            File.Delete(filePath);
+            File.Delete(settingsPath);
         }
     }
 }

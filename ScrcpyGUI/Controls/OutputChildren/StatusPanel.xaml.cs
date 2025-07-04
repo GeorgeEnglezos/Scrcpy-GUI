@@ -6,7 +6,7 @@ using ScrcpyGUI.Models;
 
 namespace ScrcpyGUI.Controls
 {
-    public partial class ChecksPanel : ContentView
+    public partial class StatusPanel : ContentView
     {
         public event EventHandler<string> StatusRefreshed;
 
@@ -32,7 +32,7 @@ namespace ScrcpyGUI.Controls
             set { _deviceStatusColor = value; OnPropertyChanged(); }
         }
 
-        public ChecksPanel()
+        public StatusPanel()
         {
             InitializeComponent();
             BindingContext = this;

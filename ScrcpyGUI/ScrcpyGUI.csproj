@@ -86,8 +86,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Controls\OutputChildren\ChecksPanel.xaml.cs">
-	    <DependentUpon>ChecksPanel.xaml</DependentUpon>
+	  <Compile Update="Controls\OutputChildren\StatusPanel.xaml.cs">
+	    <DependentUpon>StatusPanel.xaml</DependentUpon>
 	  </Compile>
 	  <Compile Update="Controls\SettingsPanelChildren\AudioPanel.xaml.cs">
 	    <DependentUpon>AudioPanel.xaml</DependentUpon>
@@ -110,6 +110,9 @@
 	  <Compile Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml.cs">
 	    <DependentUpon>VirtualDisplayPanel.xaml</DependentUpon>
 	  </Compile>
+	  <Compile Update="Controls\SharedControls\CustomButton.xaml.cs">
+	    <DependentUpon>CustomButton.xaml</DependentUpon>
+	  </Compile>
 	  <Compile Update="Controls\SharedControls\FolderSelector.xaml.cs">
 	    <DependentUpon>FolderSelector.xaml</DependentUpon>
 	  </Compile>
@@ -119,8 +122,8 @@
 	  <Compile Update="Controls\SharedControls\FixedHeader.xaml.cs">
 	    <DependentUpon>FixedHeader.xaml</DependentUpon>
 	  </Compile>
-	  <Compile Update="Controls\SharedControls\SettingsPageOptions.xaml.cs">
-	    <DependentUpon>SettingsPageOptions.xaml</DependentUpon>
+	  <Compile Update="Controls\SharedControls\SettingsPageCheckboxes.xaml.cs">
+	    <DependentUpon>SettingsPageCheckboxes.xaml</DependentUpon>
 	  </Compile>
 	  <Compile Update="Pages\SettingsPage.xaml.cs">
 	    <DependentUpon>SettingsPage.xaml</DependentUpon>
@@ -134,7 +137,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiXaml Update="Controls\OutputChildren\ChecksPanel.xaml">
+	  <MauiXaml Update="Controls\OutputChildren\StatusPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Controls\OutputChildren\WirelessConnectionPanel.xaml">
@@ -161,6 +164,9 @@
 	  <MauiXaml Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Controls\SharedControls\CustomButton.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Controls\SharedControls\FolderSelector.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
@@ -170,7 +176,7 @@
 	  <MauiXaml Update="Controls\SharedControls\FixedHeader.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Controls\SharedControls\SettingsPageOptions.xaml">
+	  <MauiXaml Update="Controls\SharedControls\SettingsPageCheckboxes.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Controls\SharedControls\CommandBorder.xaml">

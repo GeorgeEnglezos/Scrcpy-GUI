@@ -32,7 +32,7 @@
 
                 <!-- Responsive Grid for Panels -->
                 <Grid x:Name="ResponsiveGrid" Grid.Row="0" Grid.ColumnSpan="3" RowDefinitions="Auto, Auto" ColumnDefinitions="*, *">
-                    <controls:ChecksPanel x:Name="ChecksPanel" Grid.Row="0" Grid.Column="0" Margin="2, 20"/>
+                    <controls:StatusPanel x:Name="ChecksPanel" Grid.Row="0" Grid.Column="0" Margin="2, 20"/>
                     <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" Grid.Row="0" Grid.Column="1" Margin="2, 20"/>
                 </Grid>
 

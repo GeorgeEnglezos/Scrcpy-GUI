@@ -7,14 +7,15 @@ using Microsoft.Maui.Controls;
 namespace ScrcpyGUI
 {
     //To build the application run
-    //dotnet publish -c Release -f net9.0-windows10.0.19041.0 -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=true
+    //dotnet publish -c Release -f net9.0-windows10.0.19041.0 -p:PublishSingleFile=true
+    // THIS PART MIGHT CAUSE ISSUES -p:SelfContained=true -p:PublishTrimmed=true
 
     public partial class MainPage : ContentPage
     {
         public MainPage()
         {
             InitializeComponent();
-            AdbCmdService.scrcpyPath = DataStorage.LoadData().AppSettings.ScrcpyPath;
+            LoadSettings();
         }
 
         protected override void OnAppearing()
@@ -56,13 +57,7 @@ namespace ScrcpyGUI
             FixedHeader.DeviceChanged -= OnDeviceChanged;
         }
 
-
         public event EventHandler AppRefreshed;
-
-        private async void OnRefreshPage(object? sender, string e)
-        {
-            AppRefreshed?.Invoke(this, EventArgs.Empty);
-        }
 
         private void OnSizeChanged(object sender, EventArgs e)
         {
@@ -96,8 +91,6 @@ namespace ScrcpyGUI
             }
         }
 
-
-        // Change the values for every value related to the device
         private async void OnDeviceChanged(object? sender, string e)
         {
             await OptionsPanel.PackageSelector.LoadPackages();
@@ -105,9 +98,14 @@ namespace ScrcpyGUI
             OptionsPanel.AudioPanel.ReloadCodecsEncoders();
         }
 
-        //public async void ReloadPage() {
-        //    //await Navigation.PushAsync(new MainPage());
-        //    //Navigation.RemovePage(this);
-        //}
+        private async void LoadSettings() {
+            DataStorage.staticSavedData = DataStorage.LoadData();
+            var settings = DataStorage.staticSavedData.AppSettings;
+
+            AdbCmdService.scrcpyPath = settings.ScrcpyPath;
+            AdbCmdService.adbPath = settings.AdbPath;
+            AdbCmdService.recordingsPath = settings.RecordingPath ?? Environment.SpecialFolder.Desktop.ToString();
+            DataStorage.staticSavedData.AppSettings.DownloadPath = settings.DownloadPath ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop).ToString();
+        }
     }
 }

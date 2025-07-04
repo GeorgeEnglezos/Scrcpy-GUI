@@ -11,24 +11,38 @@ public partial class FolderSelector : ContentView
         AdbPath,
         DownloadPath,
         RecordingPath,
-        SettingsDataPath,
+        ReadOnlyPath,
     }
 
     // Callback property to notify parent when folder changes
     public Action<string, FolderSelectorType> OnFolderSelected { get; set; }
 
-    // Bindable property for folder selector type
+    // Update your FolderTypeProperty declaration to include a property changed callback
     public static readonly BindableProperty FolderTypeProperty =
         BindableProperty.Create(
             nameof(FolderType),
             typeof(FolderSelectorType),
             typeof(FolderSelector),
-            FolderSelectorType.ScrcpyPath);
+            FolderSelectorType.ScrcpyPath,
+            propertyChanged: OnFolderTypeChanged); // Add this callback
 
     public FolderSelectorType FolderType
     {
         get => (FolderSelectorType)GetValue(FolderTypeProperty);
         set => SetValue(FolderTypeProperty, value);
+    }
+
+    // Add this new method to handle when FolderType changes
+    private static void OnFolderTypeChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        var control = (FolderSelector)bindable;
+        control.SetButtonVisibility();
+    }
+
+    // Keep your existing SetButtonVisibility method
+    private void SetButtonVisibility()
+    {
+        PickFolderButton.IsVisible = FolderType != FolderSelectorType.ReadOnlyPath;
     }
 
     // Bindable property for initial folder value
