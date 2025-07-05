@@ -8,7 +8,6 @@ public partial class FolderSelector : ContentView
     public enum FolderSelectorType
     {
         ScrcpyPath,
-        AdbPath,
         DownloadPath,
         RecordingPath,
         ReadOnlyPath,

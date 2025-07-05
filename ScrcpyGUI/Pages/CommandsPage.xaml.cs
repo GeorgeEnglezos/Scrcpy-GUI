@@ -1,12 +1,14 @@
 ﻿using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Layouts;
+using ScrcpyGUI.Controls;
 using ScrcpyGUI.Models;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace ScrcpyGUI
@@ -143,7 +145,7 @@ namespace ScrcpyGUI
 
         private void OnCopyCommand(object sender, EventArgs e)
         {
-            var button = (ImageButton)sender;
+            var button = (CustomButton)sender;
             var command = (string)button.BindingContext;
 
             Clipboard.SetTextAsync(command);
@@ -186,9 +188,10 @@ namespace ScrcpyGUI
         {
             if (sender is Button button && button.BindingContext is string commandText)
             {
-                try
-                {
+                    try
+                    {
                     string baseFileName = "SavedCommand";
+                    if (commandText.Contains("--start-app=")) baseFileName = RenameToPackage(commandText);
                     string desktopPath = DataStorage.staticSavedData.AppSettings.DownloadPath;
                     string fullPath = Path.Combine(desktopPath, baseFileName + ".bat");
 
@@ -209,6 +212,31 @@ namespace ScrcpyGUI
                     DisplayAlert("Error", $"Couldn't save file: {ex.Message}", "OK");
                 }
             }
+        }
+
+        private static string RenameToPackage(string command) {
+            string packageName = string.Empty;
+            // Find the index of "--start-app="
+            int startIndex = command.IndexOf("--start-app=");
+
+            // Move the startIndex past "--start-app="
+            startIndex += "--start-app=".Length;
+
+            // Find the next space to determine the end of the package name
+            int endIndex = command.IndexOf(" ", startIndex);
+
+            if (endIndex != -1)
+            {
+                // Extract the substring between the start and end index
+                packageName = command.Substring(startIndex, endIndex - startIndex);
+            }
+            else
+            {
+                // If there's no space after the package name, it means it's the last argument
+                packageName = command.Substring(startIndex);
+            }
+
+            return packageName;
         }
 
         public static FormattedString CreateColoredCommandText(string commandText)

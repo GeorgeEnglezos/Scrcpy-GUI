@@ -22,7 +22,6 @@ public static class AdbCmdService
     // Paths
     public static string scrcpyPath = "";
     public static string recordingsPath = "";
-    public static string adbPath = "";
 
     public enum CommandEnum
     {
@@ -45,6 +44,8 @@ public static class AdbCmdService
 
     public static async Task<CmdCommandResponse> RunScrcpyCommand(string command)
     {
+        var scrcpyPath = (string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.ScrcpyPath)) ? "" : DataStorage.staticSavedData.AppSettings.ScrcpyPath ;
+
         var response = new CmdCommandResponse();
         bool showCmds = DataStorage.LoadData().AppSettings.OpenCmds;
         if (string.IsNullOrEmpty(selectedDevice.DeviceId))
@@ -137,6 +138,9 @@ public static class AdbCmdService
 
     public static async Task<CmdCommandResponse> RunAdbCommandAsync(CommandEnum commandType, string? command)
     {
+
+        var adbPath = (string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.ScrcpyPath)) ? "" : DataStorage.staticSavedData.AppSettings.ScrcpyPath;
+
         var response = new CmdCommandResponse();
 
         try
@@ -160,7 +164,7 @@ public static class AdbCmdService
             {
                 FileName = "cmd.exe",
                 Arguments = $"/c \"{command}\"",
-                WorkingDirectory = scrcpyPath,
+                WorkingDirectory = adbPath,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,  // Fixed: Changed to true

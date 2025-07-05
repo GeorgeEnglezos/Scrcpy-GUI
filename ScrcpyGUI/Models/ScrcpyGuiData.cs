@@ -1,6 +1,7 @@
 ﻿using System;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -40,7 +41,6 @@ namespace ScrcpyGUI.Models
         public string ScrcpyPath = "";
         public string RecordingPath = "";
         public string DownloadPath = "";
-        public string AdbPath = "";
     }
 
     public class ScreenRecordingOptions
@@ -75,7 +75,7 @@ namespace ScrcpyGUI.Models
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in ScreenRecordingOptions.GenerateCommandPart: {ex.Message}");
+                Debug.WriteLine($"Error in ScreenRecordingOptions.GenerateCommandPart: {ex.Message}");
                 throw;
             }
         }
@@ -122,7 +122,7 @@ namespace ScrcpyGUI.Models
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in VirtualDisplayOptions.GenerateCommandPart: {ex.Message}");
+                Debug.WriteLine($"Error in VirtualDisplayOptions.GenerateCommandPart: {ex.Message}");
                 throw;
             }
         }
@@ -163,7 +163,7 @@ namespace ScrcpyGUI.Models
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in VirtualDisplayOptions.GenerateCommandPart: {ex.Message}");
+                Debug.WriteLine($"Error in VirtualDisplayOptions.GenerateCommandPart: {ex.Message}");
                 throw;
             }
         }
@@ -223,7 +223,7 @@ namespace ScrcpyGUI.Models
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in WindowsCastOptions.GenerateCommandPart: {ex.Message}");
+                Debug.WriteLine($"Error in WindowsCastOptions.GenerateCommandPart: {ex.Message}");
                 throw;
             }
         }

@@ -4,6 +4,7 @@
              xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
              xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
              xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
              x:Class="ScrcpyGUI.Controls.OptionsGeneralPanel">
 
     <ContentView.Resources>
@@ -95,21 +96,6 @@
                     <Image WidthRequest="20" HeightRequest="20" 
                            ToolTipProperties.Text="(e.g., 8M, 2M). Higher values improve quality but increase latency and bandwidth usage. Default is 8M." VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
                 </AbsoluteLayout>
-                <!-- no-window -->
-                <!--
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="No Window" VerticalTextAlignment="Center" FontSize="16" WidthRequest="160" Margin="0, 10"/>
-                    <CheckBox x:Name="NoWindowCheck" CheckboxChanged="OnNoWindowCheckboxChanged" VerticalOptions="Center"/>
-                </HorizontalStackLayout>
-                -->
-                <!-- no-control -->
-                <!--
-                <HorizontalStackLayout WidthRequest="350" Spacing="10" Margin="0,2">
-                    <Label Text="No Control" VerticalTextAlignment="Center" FontSize="16" WidthRequest="160" Margin="0, 10"/>
-                    <CheckBox x:Name="NoControlCheck" CheckboxChanged="OnNoControlCheckboxChanged" VerticalOptions="Center"/>
-                </HorizontalStackLayout>
-                -->
-
             </FlexLayout>
         </Border>
 
@@ -127,20 +113,18 @@
                    Padding="10,0,0,0"
                    VerticalOptions="Center"
                    HorizontalOptions="Center"/>
-                <ImageButton
-                    ToolTipProperties.Text="Clear Settings"
-                    Clicked="CleanSettings"
-                    HeightRequest="50"
-                    WidthRequest="50"
-                    BackgroundColor="Transparent"
-                    Margin="0"
-                    Padding="0"
-                    HorizontalOptions="Center"
-                    VerticalOptions="Center">
-                    <ImageButton.Source>
-                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource ButtonColor}" Size="20"/>
-                    </ImageButton.Source>
-                </ImageButton>
+                <controls:CustomButton
+                        x:Name="CleanButton"
+                        Grid.Row="2" Grid.Column="2" 
+                        VerticalOptions="Center"
+                        ButtonWidth="50"
+                        Margin="0"
+                        Padding="0"
+                        ButtonSize="25"
+                        ButtonStyle="ImageButton"
+                        ButtonGlyph="&#xf12d;"
+                        TooltipText="Clear Settings"
+                        ButtonClicked="CleanSettings"/>
             </FlexLayout>
         </Grid>
 </ContentView>
