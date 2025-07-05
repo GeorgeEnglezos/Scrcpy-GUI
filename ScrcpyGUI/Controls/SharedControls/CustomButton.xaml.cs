@@ -7,6 +7,7 @@ public enum ButtonStyle
     Base,
     CustomButton2,
     CustomButton3,
+    ImageButton
 }
 
 public partial class CustomButton : ContentView
@@ -138,6 +139,48 @@ public partial class CustomButton : ContentView
         set => SetValue(ButtonWidthProperty, value);
     }
 
+    // ButtonSize Property
+    public static readonly BindableProperty ButtonSizeProperty = BindableProperty.Create(
+        nameof(ButtonSize),
+        typeof(double), // Assuming ButtonSize is a double (e.g., for font size or dimension)
+        typeof(CustomButton),
+        16.0); // Default value for ButtonSize
+
+    public double ButtonSize
+    {
+        get => (double)GetValue(ButtonSizeProperty);
+        set => SetValue(ButtonSizeProperty, value);
+    }
+
+    // ButtonGlyph Property
+    public static readonly BindableProperty ButtonGlyphProperty = BindableProperty.Create(
+        nameof(ButtonGlyph),
+        typeof(string), // Assuming ButtonGlyph is a string (e.g., a character, icon font code, or SVG path)
+        typeof(CustomButton),
+        ""); // Default empty string for ButtonGlyph
+
+    public string ButtonGlyph
+    {
+        get => (string)GetValue(ButtonGlyphProperty);
+        set => SetValue(ButtonGlyphProperty, value);
+    }
+
+    // TooltipText Property
+    public static readonly BindableProperty TooltipTextProperty = BindableProperty.Create(
+        nameof(TooltipText),
+        typeof(string), // TooltipText is typically a string
+        typeof(CustomButton),
+        ""); // Default empty string for TooltipText
+
+    public string TooltipText
+    {
+        get => (string)GetValue(TooltipTextProperty);
+        set => SetValue(TooltipTextProperty, value);
+    }
+
+
+
+
     // Property changed handler for ButtonStyle
     private static void OnButtonStyleChanged(BindableObject bindable, object oldValue, object newValue)
     {
@@ -165,6 +208,9 @@ public partial class CustomButton : ContentView
                 break;
             case ButtonStyle.CustomButton2:
                 CustomButton2.IsVisible = true;
+                break;
+            case ButtonStyle.ImageButton:
+                ImageButton.IsVisible = true;
                 break;
             case ButtonStyle.CustomButton3:
                 CustomButton3.IsVisible = true;

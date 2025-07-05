@@ -57,31 +57,31 @@
                     </Label>
                 </Border>
 
-                <ImageButton Grid.Row="2" Grid.Column="1" ToolTipProperties.Text="Run Command"
+                <controls:CustomButton
                     x:Name="RunCommand"
-                    Clicked="OnRunGeneratedCommand"
-                    HeightRequest="50"
-                    WidthRequest="50"
-                    BackgroundColor="Transparent"
-                    Margin="5">
-                                        
-                    <ImageButton.Source>
-                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf04b;" Color="{StaticResource ButtonColor}" Size="50"/>
-                    </ImageButton.Source>
-                </ImageButton>
+                    Grid.Row="2" Grid.Column="1"
+                    VerticalOptions="Center"
+                    ButtonWidth="70"                    
+                    Margin="0"
+                    Padding="0"
+                    ButtonSize="50"
+                    ButtonStyle="ImageButton"
+                    ButtonGlyph="&#xf04b;"
+                    TooltipText="Run Scrcpy Command"
+                    ButtonClicked="OnRunGeneratedCommand"/>
 
-                <ImageButton Grid.Row="2" Grid.Column="2" StyleClass="FilledTonalButton" 
+                <controls:CustomButton
                     x:Name="SaveCommand"
-                    Clicked="OnSaveGeneratedCommand"
-                    HeightRequest="50"
-                    WidthRequest="50"
-                    BackgroundColor="Transparent"
-                    Margin="5">
-                    <ImageButton.Source>
-                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf004;" Color="{StaticResource ButtonColor}" Size="50"/>
-                    </ImageButton.Source>
-                </ImageButton>
-
+                    Grid.Row="2" Grid.Column="2" 
+                    VerticalOptions="Center"
+                    ButtonWidth="50"
+                    Margin="0"
+                    Padding="0"
+                    ButtonSize="50"
+                    ButtonStyle="ImageButton"
+                    ButtonGlyph="&#xf004;"
+                    TooltipText="Run Scrcpy Command"
+                    ButtonClicked="OnSaveGeneratedCommand"/>
 
                 <!--Output Label-->
 

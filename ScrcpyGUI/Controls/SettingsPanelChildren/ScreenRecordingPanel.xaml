@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
              xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"             
              x:Class="ScrcpyGUI.Controls.OptionsScreenRecordingPanel">
 
     <ContentView.Resources>
@@ -71,17 +72,18 @@
                    Padding="10,0,0,0"                   
                    VerticalOptions="Center"
                    HorizontalOptions="Center"/>
-            <ImageButton ToolTipProperties.Text="Clear Settings"
-                         Clicked="CleanSettings"
-                         HeightRequest="50"
-                         WidthRequest="50"
-                         BackgroundColor="Transparent"
-                         HorizontalOptions="Center"
-                         VerticalOptions="Center">
-                <ImageButton.Source>
-                    <FontImageSource FontFamily="FontAwesome" Glyph="&#xf12d;" Color="{StaticResource ButtonColor}" Size="20"/>
-                </ImageButton.Source>
-            </ImageButton>
+            <controls:CustomButton
+                        x:Name="CleanButton"
+                        Grid.Row="2" Grid.Column="2" 
+                        VerticalOptions="Center"
+                        ButtonWidth="50"
+                        Margin="0"
+                        Padding="0"
+                        ButtonSize="25"
+                        ButtonStyle="ImageButton"
+                        ButtonGlyph="&#xf12d;"
+                        TooltipText="Clear Settings"
+                        ButtonClicked="CleanSettings"/>
         </FlexLayout>
     </Grid>
 </ContentView>

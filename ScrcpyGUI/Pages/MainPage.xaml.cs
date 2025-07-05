@@ -15,7 +15,6 @@ namespace ScrcpyGUI
         public MainPage()
         {
             InitializeComponent();
-            LoadSettings();
         }
 
         protected override void OnAppearing()
@@ -24,8 +23,8 @@ namespace ScrcpyGUI
 
             OutputPanel.ApplySavedVisibilitySettings();
             OptionsPanel.ApplySavedVisibilitySettings();
-            
-            SubscribeToEvents();
+
+            FixedHeader.DeviceChanged += OnDeviceChanged;
             OptionsPanel.SubscribeToEvents();
             OutputPanel.SubscribeToEvents();
 
@@ -37,24 +36,12 @@ namespace ScrcpyGUI
         {
             base.OnDisappearing();
 
-            UnsubscribeToEvents();
+            FixedHeader.DeviceChanged -= OnDeviceChanged;
             OptionsPanel.UnsubscribeToEvents();
             OutputPanel.UnsubscribeToEvents();
 
             OptionsPanel.Unsubscribe_SetOutputPanelReferenceFromMainPage(OutputPanel);
             OutputPanel.Unsubscribe_SetOptionsPanelReferenceFromMainPage(OptionsPanel);
-        }
-
-
-        private void SubscribeToEvents()
-        {
-            //OutputPanel.PageRefreshed += OnRefreshPage;
-            FixedHeader.DeviceChanged += OnDeviceChanged;
-        }
-
-        private void UnsubscribeToEvents()
-        {
-            FixedHeader.DeviceChanged -= OnDeviceChanged;
         }
 
         public event EventHandler AppRefreshed;
@@ -96,16 +83,6 @@ namespace ScrcpyGUI
             await OptionsPanel.PackageSelector.LoadPackages();
             OptionsPanel.GeneralPanel.ReloadCodecsEncoders();
             OptionsPanel.AudioPanel.ReloadCodecsEncoders();
-        }
-
-        private async void LoadSettings() {
-            DataStorage.staticSavedData = DataStorage.LoadData();
-            var settings = DataStorage.staticSavedData.AppSettings;
-
-            AdbCmdService.scrcpyPath = settings.ScrcpyPath;
-            AdbCmdService.adbPath = settings.AdbPath;
-            AdbCmdService.recordingsPath = settings.RecordingPath ?? Environment.SpecialFolder.Desktop.ToString();
-            DataStorage.staticSavedData.AppSettings.DownloadPath = settings.DownloadPath ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop).ToString();
         }
     }
 }

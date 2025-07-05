@@ -91,7 +91,6 @@ public partial class SettingsPage : ContentPage
         // Load current paths and set them as initial values
         scrcpyFolderPicker.InitialFolder = scrcpyData.AppSettings.ScrcpyPath;
         downloadFolderPicker.InitialFolder = scrcpyData.AppSettings.DownloadPath; 
-        adbFolderPicker.InitialFolder = scrcpyData.AppSettings.AdbPath; 
         settingsFolderPicker.InitialFolder = Path.Combine(FileSystem.AppDataDirectory, "ScrcpyGui-Data.json"); 
         recordingFolderPicker.InitialFolder = scrcpyData.AppSettings.RecordingPath;
 
@@ -99,7 +98,6 @@ public partial class SettingsPage : ContentPage
         scrcpyFolderPicker.OnFolderSelected = OnFolderSelected;
         downloadFolderPicker.OnFolderSelected = OnFolderSelected;
         recordingFolderPicker.OnFolderSelected = OnFolderSelected;
-        adbFolderPicker.OnFolderSelected = OnFolderSelected;
         settingsFolderPicker.OnFolderSelected = OnFolderSelected;
     }
 
@@ -111,7 +109,6 @@ public partial class SettingsPage : ContentPage
             FolderSelector.FolderSelectorType.ScrcpyPath => "Scrcpy",
             FolderSelector.FolderSelectorType.DownloadPath => "Download",
             FolderSelector.FolderSelectorType.RecordingPath => "Recording",
-            FolderSelector.FolderSelectorType.AdbPath => "Adb",
             _ => "Unknown"
         };
 
@@ -131,9 +128,6 @@ public partial class SettingsPage : ContentPage
                 break;
             case FolderSelector.FolderSelectorType.DownloadPath:
                 scrcpyData.AppSettings.DownloadPath = selectedFolder;
-                break;
-            case FolderSelector.FolderSelectorType.AdbPath:
-                scrcpyData.AppSettings.AdbPath = selectedFolder;
                 break;
             case FolderSelector.FolderSelectorType.RecordingPath:
                 scrcpyData.AppSettings.RecordingPath = selectedFolder;

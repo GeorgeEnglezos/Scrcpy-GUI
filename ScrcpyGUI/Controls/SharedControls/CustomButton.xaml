@@ -88,6 +88,32 @@
                 Clicked="OnButtonClicked"/>
         </Border>
 
+        <ImageButton
+            x:Name="ImageButton"
+            IsVisible="False"
+            ToolTipProperties.Text="{Binding Source={x:Reference CustomButtonView}, Path=TooltipText}"
+            Clicked="OnButtonClicked"
+            HeightRequest="{Binding Source={x:Reference CustomButtonView}, Path=ButtonHeight}"
+            WidthRequest="{Binding Source={x:Reference CustomButtonView}, Path=ButtonWidth}"
+            BackgroundColor="Transparent"
+            Margin="0">
+
+            <ImageButton.Shadow>
+                <Shadow Brush="indigo" 
+                Offset="0,0" 
+                Radius="15" 
+                Opacity="3"/>
+            </ImageButton.Shadow>
+
+            <ImageButton.Source>
+                <FontImageSource FontFamily="FontAwesome" 
+                         Glyph="{Binding Source={x:Reference CustomButtonView}, Path=ButtonGlyph}" 
+                         Color="#a46cdc" 
+                         Size="{Binding Source={x:Reference CustomButtonView}, Path=ButtonSize}"/>
+            </ImageButton.Source>
+        </ImageButton>
+
+
         <!--Custom Button 3-->
         <Button  x:Name="CustomButton3"
             Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"

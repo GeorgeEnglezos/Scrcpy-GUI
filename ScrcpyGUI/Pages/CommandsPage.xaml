@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:ScrcpyGUI"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
              x:Class="ScrcpyGUI.CommandsPage"
              Title="Commands">
 
@@ -35,17 +36,17 @@
                         </Label.FormattedText>
                     </Label>
 
-                    <ImageButton Margin="10, 0, 10, 0"
-                            x:Name="CopyMostRecentCommand"
-                            Clicked="OnCopyMostRecentCommand"
-                            BackgroundColor="Transparent"
-                            HeightRequest="25"
-                            WidthRequest="25"
-                            Grid.Column="1">
-                        <ImageButton.Source>
-                            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource ButtonColor}" Size="25"/>
-                        </ImageButton.Source>
-                    </ImageButton>
+                    <controls:CustomButton 
+                        x:Name="CopyMostRecentCommand"
+                        Grid.Column="1"
+                        VerticalOptions="Center"
+                        ButtonWidth="50"
+                        Padding="0"
+                        Margin="10, 0, 10, 0"
+                        ButtonSize="25"
+                        ButtonStyle="ImageButton"
+                        ButtonGlyph="&#xf0c5;"
+                        ButtonClicked="OnCopyMostRecentCommand"/>
                 </Grid>
             </Border>
 
@@ -71,39 +72,64 @@
                                            FontFamily="Courier New"
                                            FormattedText="{Binding ., Converter={StaticResource CommandColorConverter}}" />
 
-                                    <ImageButton Margin="10, 0, 10, 0"
-                                            x:Name="CopyCommand"
-                                            Clicked="OnCopyCommand"
+                                    <controls:CustomButton 
+                                        x:Name="CopyCommand"
+                                        Grid.Column="2"
+                                        VerticalOptions="Center"
+                                        ButtonWidth="50"
+                                        Padding="0"
+                                        Margin="5, 0, 0, 0"
+                                        ButtonSize="25"
+                                        ButtonStyle="ImageButton"
+                                        ButtonGlyph="&#xf0c5;"
+                                        ButtonClicked="OnCopyCommand"/>
+
+                                    <controls:CustomButton 
+                                        x:Name="DeleteCommand"
+                                        Grid.Column="3"
+                                        VerticalOptions="Center"
+                                        ButtonWidth="50"
+                                        Padding="0"
+                                        Margin="5, 0, 5, 0"
+                                        ButtonSize="25"
+                                        ButtonStyle="ImageButton"
+                                        ButtonGlyph="&#xf2ed;"
+                                        ButtonClicked="OnDeleteCommand"/>
+
+                                    
+                                    <Border x:Name="CustomButton2" Grid.Column="1" BindingContext="{Binding .}"      
+                                            VerticalOptions="Center"
+                                        BackgroundColor="Transparent" 
+                                        Stroke="Transparent"
+                                            WidthRequest="80"
+                                           HeightRequest="40"
+                                        StrokeThickness="0">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12"/>
+                                        </Border.StrokeShape>
+                                        <Border.Shadow>
+                                            <Shadow Brush="{StaticResource PrimaryPurple}" 
+                                                Offset="0,4" 
+                                                Radius="12" 
+                                                Opacity="0.3"/>
+                                        </Border.Shadow>
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Color="{StaticResource PrimaryPurple}" Offset="0.0"/>
+                                                <GradientStop Color="#8A2BE2" Offset="1.0"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <Button             
+                                            Text=".bat"
                                             BackgroundColor="Transparent"
-                                            HeightRequest="25"
-                                            WidthRequest="25"
-                                            Grid.Column="2"
-                                            BindingContext="{Binding .}">
-                                        <ImageButton.Source>
-                                            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf0c5;" Color="{StaticResource ButtonColor}" Size="25"/>
-                                        </ImageButton.Source>
-                                    </ImageButton>
-                                    <ImageButton Margin="10, 0, 10, 0"
-                                            x:Name="DeleteCommand"
-                                            BackgroundColor="Transparent"
-                                            Clicked="OnDeleteCommand"
-                                            HeightRequest="25"
-                                            WidthRequest="25"
-                                            Grid.Column="3"
-                                            BindingContext="{Binding .}">
-                                        <ImageButton.Source>
-                                            <FontImageSource FontFamily="FontAwesome" Glyph="&#xf2ed;" Color="{StaticResource ButtonColor}" Size="25"/>
-                                        </ImageButton.Source>
-                                    </ImageButton>
-                                    <Button StyleClass="FilledTonalButton" 
-                                            BackgroundColor="{StaticResource ButtonColor}" 
-                                            TextColor="White" 
-                                            Text=".bat" 
-                                            Clicked="OnDownloadBat" 
-                                            ToolTipProperties.Text="Create an execurable .bat file" 
-                                            FontSize="18" 
-                                            Grid.Column="1"
-                                            BindingContext="{Binding .}"/>
+                                            TextColor="White"
+                                            FontAttributes="Bold"
+                                            FontSize="18"
+                                            BorderWidth="0"
+                                            WidthRequest="80"
+                                            Clicked="OnDownloadBat"/>
+                                    </Border>
+
                                 </Grid>
                             </Border>
                         </ViewCell>

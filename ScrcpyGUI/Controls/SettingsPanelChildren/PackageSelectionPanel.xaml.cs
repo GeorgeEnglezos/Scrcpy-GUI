@@ -57,6 +57,8 @@ namespace ScrcpyGUI.Controls
 
         public async Task LoadPackages()
         {
+            if (string.IsNullOrEmpty(AdbCmdService.selectedDevice.DeviceId)) return;
+
             var allPackagesResult = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.GetPackages, AdbCmdService.allPackagesCommand);
             var installedPackagesResult = await AdbCmdService.RunAdbCommandAsync(AdbCmdService.CommandEnum.GetPackages, AdbCmdService.installedPackagesCommand);
             bool installedPackagesFound = installedPackagesResult.Output != null && installedPackagesResult.Output.Length > 0 && !installedPackagesResult.Output.Contains("no devices/emulators found") && !installedPackagesResult.Output.Contains("adb.exe:");

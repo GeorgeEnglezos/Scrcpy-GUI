@@ -1,10 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Maui.Storage;
+using Newtonsoft.Json;
 using ScrcpyGUI.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
-using Microsoft.Maui.Storage;
 
 public static class DataStorage
 {
@@ -111,6 +112,28 @@ public static class DataStorage
         if (File.Exists(settingsPath))
         {
             File.Delete(settingsPath);
+        }
+    }
+
+    public static string ValidateAndCreatePath(string folderPath, string fallbackPath = null)
+    {
+        // If the path is null or empty, use fallback or return empty string
+        if (string.IsNullOrWhiteSpace(folderPath))
+        {
+            return fallbackPath ?? string.Empty;
+        }
+        try
+        {
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+            return folderPath;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to create directory '{folderPath}': {ex.Message}");
+            return fallbackPath ?? string.Empty;
         }
     }
 }
