@@ -110,6 +110,9 @@
 	  <Compile Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml.cs">
 	    <DependentUpon>VirtualDisplayPanel.xaml</DependentUpon>
 	  </Compile>
+	  <Compile Update="Controls\SharedControls\BorderTitle.xaml.cs">
+	    <DependentUpon>BorderTitle.xaml</DependentUpon>
+	  </Compile>
 	  <Compile Update="Controls\SharedControls\CustomButton.xaml.cs">
 	    <DependentUpon>CustomButton.xaml</DependentUpon>
 	  </Compile>
@@ -162,6 +165,9 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Controls\SharedControls\BorderTitle.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Controls\SharedControls\CustomButton.xaml">

@@ -26,24 +26,43 @@
         <ScrollView Grid.Row="0">
             <Grid x:Name="ResponsiveGrid" ColumnDefinitions="Auto,Auto" RowDefinitions="Auto">
                 <!-- Left Column: Settings -->
-                <VerticalStackLayout x:Name="SettingsPanel" Padding="20, 0, 20, 0" Spacing="20" Grid.Row="0" Grid.Column="0" MaximumWidthRequest="600" MinimumWidthRequest="500">
+                <VerticalStackLayout x:Name="SettingsPanel" Padding="20, 50, 20, 0" Spacing="20" Grid.Row="0" Grid.Column="0" MaximumWidthRequest="600" MinimumWidthRequest="500">
                     <!--Functionality-->
-                    <Label Text="Functionality"
-                           TextColor="{StaticResource Secondary}"
-                           Margin="0, 50, 0, 0" 
-                           FontSize="30"
-                           HorizontalOptions="Center"/>
+                    <Border BackgroundColor="black" Padding="15,10" StrokeThickness="1" Stroke="{StaticResource PrimaryPurple}">
+                        
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="15" />
+                        </Border.StrokeShape>
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#1d2028" Offset="0.7"/>
+                                <GradientStop Color="#1d202F" Offset="1.0"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Shadow>
+                            <Shadow Brush="Black" 
+                            Offset="5,5" 
+                            Radius="20" 
+                            Opacity="0.4"/>
+                        </Border.Shadow>
 
-                    <BoxView HeightRequest="1" BackgroundColor="LightGray"/>
 
-                    <VerticalStackLayout>
-                        <controls:SettingsPageCheckboxes 
-                            x:Name="CmdCheckbox"
-                            LabelText="Open CMD windows for scrcpy commands."                  
-                            IsChecked="{Binding IsCmdChecked}"
-                            CheckedChanged="OnCMDChanged"/>
-                    </VerticalStackLayout>
+                        <VerticalStackLayout>
+                            <controls:BorderTitle 
+                               TitleText="Functionality"
+                               TitleGlyph="&#xf013;"
+                               Margin="0,0,0,15"/>
 
+                            <controls:SettingsPageCheckboxes 
+                                x:Name="CmdCheckbox"
+                                LabelText="Open CMD windows for scrcpy commands."                  
+                                IsChecked="{Binding IsCmdChecked}"
+                                CheckedChanged="OnCMDChanged"/>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    
+                    
                     <!--UI-->
                     <Label Text="User Interface (Home Page)"
                         TextColor="{StaticResource Secondary}"

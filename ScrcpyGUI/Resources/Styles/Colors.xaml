@@ -5,11 +5,14 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
     <Color x:Key="Purple1">#9880e5</Color>
-    <Color x:Key="PrimaryPurple">#7b63b2</Color>
+    <Color x:Key="PrimaryPurple">#8C4DDB</Color>
+    <Color x:Key="AccentPurple">#B76FFF</Color>
     <Color x:Key="Purple3">#7b63b2</Color>
     <Color x:Key="Purple4">#333333</Color>
     <Color x:Key="ButtonColor">#9880e5</Color>
     <Color x:Key="BorderColor">#888888</Color>
+    <Color x:Key="SuccessGreen">#28BF5F</Color>
+    <Color x:Key="ErrorRed">#E02E4F</Color>
     
     <!--Panel Color Coding-->
     <Color x:Key="PackageSelector">#FFA38C</Color>
