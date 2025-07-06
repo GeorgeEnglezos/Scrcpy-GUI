@@ -43,7 +43,7 @@ public partial class SettingsPage : ContentPage
 
     private void InitializeCheckboxValues()
     {
-        CmdCheckbox.IsChecked = scrcpyData.AppSettings.OpenCmds;
+        //CmdCheckbox.IsChecked = scrcpyData.AppSettings.OpenCmds;
         WirelessPanelCheckbox.IsChecked = scrcpyData.AppSettings.HideTcpPanel;
         StatusPanelCheckbox.IsChecked = scrcpyData.AppSettings.HideStatusPanel;
         OutputPanelCheckbox.IsChecked = scrcpyData.AppSettings.HideOutputPanel;
@@ -148,13 +148,11 @@ public partial class SettingsPage : ContentPage
     private void OnSizeChanged(object sender, EventArgs e)
     {
         double breakpointWidth = 950;
-
         if (Width < breakpointWidth) // Switch to vertical layout (stacked)
         {
             ResponsiveGrid.RowDefinitions.Clear();
             ResponsiveGrid.ColumnDefinitions.Clear();
 
-            // Set up vertical layout: 2 rows, 1 column
             ResponsiveGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             ResponsiveGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             ResponsiveGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
@@ -162,25 +160,23 @@ public partial class SettingsPage : ContentPage
             // Position panels vertically
             Grid.SetRow(SettingsPanel, 0);
             Grid.SetColumn(SettingsPanel, 0);
-            Grid.SetRow(FolderSelectorsPanel, 1);
-            Grid.SetColumn(FolderSelectorsPanel, 0);
+            Grid.SetRow(FolderBorder, 1);  // Now you can reference it directly
+            Grid.SetColumn(FolderBorder, 0);
         }
         else // Horizontal layout (side by side)
         {
             ResponsiveGrid.RowDefinitions.Clear();
             ResponsiveGrid.ColumnDefinitions.Clear();
 
-            // Set up horizontal layout: 1 row, 2 columns
             ResponsiveGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             ResponsiveGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(45, GridUnitType.Star) });
-            ResponsiveGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(45, GridUnitType.Star) });
-            ResponsiveGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10, GridUnitType.Star) });
+            ResponsiveGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(55, GridUnitType.Star) });
 
             // Position panels side by side
             Grid.SetRow(SettingsPanel, 0);
             Grid.SetColumn(SettingsPanel, 0);
-            Grid.SetRow(FolderSelectorsPanel, 0);
-            Grid.SetColumn(FolderSelectorsPanel, 1);
+            Grid.SetRow(FolderBorder, 0);
+            Grid.SetColumn(FolderBorder, 1);
         }
     }
 }

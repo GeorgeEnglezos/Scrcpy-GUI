@@ -5,7 +5,7 @@
              x:Class="ScrcpyGUI.Controls.BorderTitle"
              x:Name="This">
 
-    <HorizontalStackLayout HorizontalOptions="Start" VerticalOptions="Center">
+    <HorizontalStackLayout HorizontalOptions="Start" VerticalOptions="Center" Margin="0, 15">
         <Border BackgroundColor="Transparent" Stroke="Transparent" StrokeThickness="0"  VerticalOptions="Center">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="12"/>
@@ -33,7 +33,7 @@
         </Border>
         <Label 
             Text="{Binding Source={x:Reference This}, Path=TitleText}"
-            Padding="10,0"
+            Padding="10"
             FontSize="22"
             FontAttributes="Bold"
             TextColor="White"

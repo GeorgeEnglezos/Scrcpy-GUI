@@ -13,6 +13,8 @@
     <Color x:Key="BorderColor">#888888</Color>
     <Color x:Key="SuccessGreen">#28BF5F</Color>
     <Color x:Key="ErrorRed">#E02E4F</Color>
+    <Color x:Key="InputBackround">#181d25</Color>
+    <Color x:Key="BlackButton">#0b0e13</Color>
     
     <!--Panel Color Coding-->
     <Color x:Key="PackageSelector">#FFA38C</Color>
