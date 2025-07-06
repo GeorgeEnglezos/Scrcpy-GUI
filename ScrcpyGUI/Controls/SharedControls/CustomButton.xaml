@@ -84,7 +84,6 @@
                 TextColor="White"
                 FontAttributes="Bold"
                 FontSize="16"
-                BorderWidth="0"
                 Clicked="OnButtonClicked"/>
         </Border>
 

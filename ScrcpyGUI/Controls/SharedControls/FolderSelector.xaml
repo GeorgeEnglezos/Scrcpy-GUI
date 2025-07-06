@@ -8,56 +8,54 @@
              x:Class="ScrcpyGUI.Controls.FolderSelector"
              x:Name="This">
 
-    <Border BackgroundColor="#3C3C3C" 
+    <Border BackgroundColor="Transparent" Margin="0, 0, 0, 20"
             StrokeThickness="1" 
-            Stroke="#555555"
-            StrokeShape="RoundRectangle 6"
-            Padding="8"
-            Margin="0">
+            Stroke="Transparent"
+            StrokeShape="RoundRectangle 6">
 
-        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="60*,40*" Padding="5 ,10" >
+        <Grid RowDefinitions="*,*,Auto" ColumnDefinitions="80*,20*">
 
             <!-- Title -->
-            <Label x:Name="TitleLabel"
-                   Grid.Row="0"
-                   Text="Choose Folder"
-                   TextColor="White"
-                   HorizontalOptions="StartAndExpand"
-                   HorizontalTextAlignment="Center"
+            <Label 
+                x:Name="TitleLabel"
+                Grid.Row="0"
+                Margin="0,0,0,10"
+                Text="Choose Folder"
+                TextColor="White"
+                HorizontalOptions="StartAndExpand"
+                HorizontalTextAlignment="Center"
+                VerticalOptions="Center"
+                FontSize="17"
+                FontAttributes="Bold"/>
+
+            <!-- Selected Path -->
+            <Border 
+                Grid.Row="1"
+                BackgroundColor="{StaticResource InputBackround}" 
+                StrokeThickness="0.5" 
+                Stroke="{StaticResource BorderColor}"
+                StrokeShape="RoundRectangle 10"
+                Margin="0, 0, 10, 0">
+                <Entry x:Name="SelectedFolderLabel"
+                   Text="No folder selected"
+                   TextColor="#CCCCCC"
+                   FontSize="17"
                    VerticalOptions="Center"
-                   FontSize="20"
-                   FontAttributes="Bold"/>
+                   IsReadOnly="True"
+                   BackgroundColor="Transparent"
+                   Placeholder="No folder selected"/>
+            </Border>
 
             <!-- Browse Button -->
             <controls:CustomButton
                     x:Name="PickFolderButton"
+                    Grid.Row="1"
+                    Grid.Column="1"
                     VerticalOptions="Center"
                     ButtonStyle="CustomButton2"
                     ButtonText="Browse..."                   
                     FontSize="17"
-                    Margin="0"       
-                    ButtonClicked="OnPickFolderClicked"
-                    Grid.Row="0"
-                    Grid.Column="1"/>
-
-            <!-- Selected Path -->
-            <Border Grid.Row="1"
-        Grid.ColumnSpan="2"
-        BackgroundColor="#2D2D2D" 
-        StrokeThickness="1" 
-        Stroke="#444444"
-        StrokeShape="RoundRectangle 4"
-        Margin="0, 5">
-                <Editor x:Name="SelectedFolderLabel" 
-            Text="No folder selected"
-            TextColor="#CCCCCC"
-            FontSize="14"
-            VerticalOptions="Center"
-            IsReadOnly="True"
-            BackgroundColor="Transparent"
-            Placeholder="No folder selected"
-            AutoSize="TextChanges"/>
-            </Border>
+                    ButtonClicked="OnPickFolderClicked"/>
         </Grid>
     </Border>
 </ContentView>

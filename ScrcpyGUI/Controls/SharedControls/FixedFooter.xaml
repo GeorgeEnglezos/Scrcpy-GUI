@@ -5,7 +5,7 @@
              x:Class="ScrcpyGUI.Controls.FixedFooter"
              x:Name="This">
 
-    <Border BackgroundColor="{StaticResource BackGroundGrey}"
+    <Border BackgroundColor="Transparent"
         Padding="10"
         StrokeThickness="0"
         HorizontalOptions="Fill">
