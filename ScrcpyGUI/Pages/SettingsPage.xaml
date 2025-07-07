@@ -4,22 +4,10 @@
              xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
              xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
              xmlns:system="clr-namespace:System;assembly=netstandard"
+             Background="{StaticResource PageGradientBackground}"
              x:Class="ScrcpyGUI.SettingsPage"
              BackgroundColor="{DynamicResource BackGroundGrey}"
              Shell.Title="">
-
-    <!--<ContentPage.Background>
-        <RadialGradientBrush Center="0.5,0.5" Radius="0.8">
-            <GradientStop Color="#0a0d12" Offset="0.0" />
-            <GradientStop Color="#1B1B2F" Offset="1.0" />
-        </RadialGradientBrush>
-    </ContentPage.Background>-->
-    <ContentPage.Background>
-        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#0b0e13" Offset="0.2" />
-            <!--<GradientStop Color="{StaticResource AccentPurple}" Offset="0.0" />-->
-        </LinearGradientBrush>
-    </ContentPage.Background>
 
     <ContentView.Resources>
         <x:Array x:Key="ColorOptions" Type="{x:Type x:String}">

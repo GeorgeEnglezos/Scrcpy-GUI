@@ -3,8 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:ScrcpyGUI"
              xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             Background="{StaticResource PageGradientBackground}"
              x:Class="ScrcpyGUI.CommandsPage"
-             Title="Commands">
+             Title="">
 
     <ContentPage.Resources>
         <local:CommandColorConverter x:Key="CommandColorConverter" />
@@ -14,29 +15,33 @@
         <StackLayout Padding="20">
 
             <!-- Most Recent Command Section -->
-            <Label Text="Most Recent Command" FontSize="20" FontAttributes="Bold" Margin="0,0,0,10"/>
+            <Border Style="{StaticResource GradientBorderStyle}"  Margin="0, 0, 0, 40">
+                <StackLayout>
+                    <controls:BorderTitle 
+                                TitleText="Last Command"
+                                TitleGlyph="&#xf120;"
+                                Margin="0,0,0,15"/>
+                    <Border Stroke="{StaticResource PrimaryPurple}" StrokeThickness="2" StrokeShape="RoundRectangle 10" Margin="0,0,0,20">
+                        <Grid Padding="10" ColumnDefinitions="*, Auto, Auto">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnRecentCommandTapped" />
+                            </Grid.GestureRecognizers>
 
-            <Border Stroke="{StaticResource PrimaryPurple}" StrokeThickness="2" StrokeShape="RoundRectangle 10" Margin="0,0,0,20">
-                <Grid Padding="10" ColumnDefinitions="*, Auto, Auto">
-                    <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnRecentCommandTapped" />
-                    </Grid.GestureRecognizers>
-
-                    <!-- Updated MostRecentCommand Label to support FormattedText -->
-                    <Label x:Name="MostRecentCommand"
+                            <!-- Updated MostRecentCommand Label to support FormattedText -->
+                            <Label x:Name="MostRecentCommand"
                            VerticalOptions="Center" 
                            Grid.Column="0" 
                            FontSize="16" 
                            LineBreakMode="WordWrap"
                            FontFamily="Courier New">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="No recent command found"/>
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="No recent command found"/>
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
 
-                    <controls:CustomButton 
+                            <controls:CustomButton 
                         x:Name="CopyMostRecentCommand"
                         Grid.Column="1"
                         VerticalOptions="Center"
@@ -47,95 +52,118 @@
                         ButtonStyle="ImageButton"
                         ButtonGlyph="&#xf0c5;"
                         ButtonClicked="OnCopyMostRecentCommand"/>
-                </Grid>
+                        </Grid>
+                    </Border>
+                </StackLayout>
             </Border>
 
             <!-- Saved Commands Section -->
-            <Label x:Name="SavedCommandsTitleCount" Text="Favorites (0)" FontSize="20" FontAttributes="Bold" Margin="0,0,0,10"/>
+            <Border Style="{StaticResource GradientBorderStyle}"  Margin="0, 0, 0, 40">
+                <StackLayout>
+                    <controls:BorderTitle x:Name="SavedCommandsTitleCount"
+                                TitleText="Favorites"
+                                TitleGlyph="&#xf0f6;"
+                                Margin="0,0,0,15"/>
+                    <!--<Label x:Name="SavedCommandsTitleCount" Text="Favorites (0)" FontSize="20" FontAttributes="Bold" Margin="0,0,0,10"/>-->
 
-            <ListView ItemsSource="{Binding SavedCommandsList}">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <ViewCell>
-                            <Border Stroke="Gray" StrokeThickness="1" Margin="5">
-                                <Grid Padding="10" ColumnDefinitions="*, Auto, Auto, Auto">
-                                    <Grid.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnCommandTapped" />
-                                    </Grid.GestureRecognizers>
+                    <ListView ItemsSource="{Binding SavedCommandsList}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <ViewCell>
+                                    <Border Stroke="Gray" Margin="5" BackgroundColor="{StaticResource InputBackround}"  StrokeThickness="1" StrokeShape="RoundRectangle 10">
+                                        <Grid Padding="10" ColumnDefinitions="*, Auto, Auto, Auto">
+                                            <Grid.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnCommandTapped" />
+                                            </Grid.GestureRecognizers>
 
-                                    <!-- Updated Label to use the converter for colored text -->
-                                    <Label VerticalOptions="Center" 
-                                           Grid.Column="0" 
-                                           FontSize="18" 
-                                           FontAttributes="Bold"
-                                           LineBreakMode="WordWrap"
-                                           FontFamily="Courier New"
-                                           FormattedText="{Binding ., Converter={StaticResource CommandColorConverter}}" />
+                                            <!-- Updated Label to use the converter for colored text -->
+                                            <Label VerticalOptions="Center" 
+                                               Grid.Column="0" 
+                                               FontSize="18" 
+                                               FontAttributes="Bold"
+                                               LineBreakMode="WordWrap"
+                                               FontFamily="Courier New"
+                                               FormattedText="{Binding ., Converter={StaticResource CommandColorConverter}}" />
 
-                                    <controls:CustomButton 
-                                        x:Name="CopyCommand"
-                                        Grid.Column="2"
-                                        VerticalOptions="Center"
-                                        ButtonWidth="50"
-                                        Padding="0"
-                                        Margin="5, 0, 0, 0"
-                                        ButtonSize="25"
-                                        ButtonStyle="ImageButton"
-                                        ButtonGlyph="&#xf0c5;"
-                                        ButtonClicked="OnCopyCommand"/>
 
-                                    <controls:CustomButton 
-                                        x:Name="DeleteCommand"
-                                        Grid.Column="3"
-                                        VerticalOptions="Center"
-                                        ButtonWidth="50"
-                                        Padding="0"
-                                        Margin="5, 0, 5, 0"
-                                        ButtonSize="25"
-                                        ButtonStyle="ImageButton"
-                                        ButtonGlyph="&#xf2ed;"
-                                        ButtonClicked="OnDeleteCommand"/>
 
-                                    
-                                    <Border x:Name="CustomButton2" Grid.Column="1" BindingContext="{Binding .}"      
+                                            <controls:CustomButton 
+                                            x:Name="CopyCommand"
+                                            Grid.Column="2"
                                             VerticalOptions="Center"
-                                        BackgroundColor="Transparent" 
-                                        Stroke="Transparent"
-                                            WidthRequest="80"
-                                           HeightRequest="40"
-                                        StrokeThickness="0">
-                                        <Border.StrokeShape>
-                                            <RoundRectangle CornerRadius="12"/>
-                                        </Border.StrokeShape>
-                                        <Border.Shadow>
-                                            <Shadow Brush="{StaticResource PrimaryPurple}" 
-                                                Offset="0,4" 
-                                                Radius="12" 
-                                                Opacity="0.3"/>
-                                        </Border.Shadow>
-                                        <Border.Background>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                <GradientStop Color="{StaticResource PrimaryPurple}" Offset="0.0"/>
-                                                <GradientStop Color="#8A2BE2" Offset="1.0"/>
-                                            </LinearGradientBrush>
-                                        </Border.Background>
-                                        <Button             
-                                            Text=".bat"
-                                            BackgroundColor="Transparent"
-                                            TextColor="White"
-                                            FontAttributes="Bold"
-                                            FontSize="18"
-                                            BorderWidth="0"
-                                            WidthRequest="80"
-                                            Clicked="OnDownloadBat"/>
-                                    </Border>
+                                            ButtonWidth="50"
+                                            Padding="0"
+                                            Margin="5, 0, 0, 0"
+                                            ButtonSize="25"
+                                            ButtonStyle="ImageButton"
+                                            ButtonGlyph="&#xf0c5;"
+                                            TooltipText="Copy command in the clipboard!"                                                
+                                            ButtonClicked="OnCopyCommand"/>
 
-                                </Grid>
-                            </Border>
-                        </ViewCell>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                                            <controls:CustomButton 
+                                            x:Name="DeleteCommand"
+                                            Grid.Column="3"
+                                            VerticalOptions="Center"
+                                            ButtonWidth="50"
+                                            Padding="0"
+                                            Margin="5, 0, 5, 0"
+                                            ButtonSize="25"
+                                            ButtonStyle="ImageButton"
+                                            ButtonGlyph="&#xf2ed;"
+                                            TooltipText="Delete command from list!"                                                
+                                            ButtonClicked="OnDeleteCommand"/>
+
+
+                                            <!--If I add this instead of the normal button below all the buttons break.-->
+                                            <controls:CustomButton 
+                                            Grid.Column="1"
+                                            VerticalOptions="Center"
+                                            ButtonWidth="50"
+                                            Padding="0"
+                                            Margin="5, 0, 0, 0"
+                                            ButtonSize="25"
+                                            ButtonStyle="ImageButton"
+                                            ButtonGlyph="&#xf019;"
+                                            BindingContext="{Binding .}"
+                                            TooltipText="Download command as bat file!"
+                                            ButtonClicked="OnDownloadBat"/>
+
+                                            <!--With this button all the buttons work properly-->
+                                            <!--<Border x:Name="CustomButton2" Grid.Column="1" BindingContext="{Binding .}" StrokeShape="RoundRectangle 10 " StrokeThickness="0"
+                                                VerticalOptions="Center"
+                                                Stroke="Transparent"
+                                                WidthRequest="80"
+                                                HeightRequest="40">
+                                                <Border.Shadow>
+                                                    <Shadow Brush="{StaticResource PrimaryPurple}" 
+                                                    Offset="0,4" 
+                                                    Radius="12" 
+                                                    Opacity="0.3"/>
+                                                </Border.Shadow>
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                        <GradientStop Color="{StaticResource PrimaryPurple}" Offset="0.0"/>
+                                                        <GradientStop Color="#8A2BE2" Offset="1.0"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                                <Button             
+                                                Text=".bat"
+                                                BackgroundColor="Transparent"
+                                                TextColor="White"
+                                                FontAttributes="Bold"
+                                                FontSize="18"
+                                                BorderWidth="0"
+                                                WidthRequest="80"
+                                                Clicked="OnDownloadBat"/>
+                                            </Border>-->
+                                        </Grid>
+                                    </Border>
+                                </ViewCell>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackLayout>
+            </Border>
 
         </StackLayout>
     </ScrollView>
