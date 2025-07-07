@@ -9,7 +9,7 @@
              x:Class="ScrcpyGUI.MainPage"
              x:DataType="local:MainPage"
              SizeChanged="OnSizeChanged"
-             BackgroundColor="{DynamicResource BackGroundGrey}"
+             Background="{StaticResource PageGradientBackground}"             
              Shell.Title="">
     <Grid RowDefinitions="Auto, *, Auto">
 

@@ -5,26 +5,60 @@
              x:Class="ScrcpyGUI.Controls.FixedHeader"
              x:Name="This">
 
-    <Border BackgroundColor="{StaticResource BackGroundGrey}"
-            Padding="10"
+    <Border BackgroundColor="Transparent"
             StrokeThickness="0"
             HorizontalOptions="Fill">
 
-        <HorizontalStackLayout Spacing="10" VerticalOptions="Center" HorizontalOptions="Center">
-            <Label Text="Scrcpy-GUI v1.4.3 -"
-                   FontSize="16"
-                   FontAttributes="Bold"
-                   VerticalOptions="Center"
-                   TextColor="{StaticResource Secondary}" 
-                   Padding="0, 0, 0, 6"/>
 
-            <Picker x:Name="DevicePicker"
-                SelectedIndexChanged="OnDevicePickerIndexChanged"
-                ItemDisplayBinding="{Binding CombinedName}"
-                TextColor="{StaticResource Secondary}"
-                FontSize="16"
-                FontAttributes="Bold"
-                VerticalOptions="Center" />
+        <HorizontalStackLayout Margin="10" VerticalOptions="Center" HorizontalOptions="Center">
+
+            <Border Margin="10,0" BackgroundColor="Transparent" Stroke="Transparent" StrokeThickness="0"  VerticalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="{StaticResource PrimaryPurple}" Offset="0,4" Radius="20" Opacity="0.3"/>
+                </Border.Shadow>
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="{StaticResource PrimaryPurple}" Offset="0.0"/>
+                        <GradientStop Color="{StaticResource AccentPurple}" Offset="1.0"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+
+                <Image 
+                   Margin="10"                
+                   x:Name="CopyMostRecentImage"
+                   HeightRequest="20"
+                   WidthRequest="20"
+                   VerticalOptions="Center"
+                   BackgroundColor="Transparent">
+                    <Image.Source>
+                        <FontImageSource FontFamily="FontAwesome" Glyph="&#xf10b;" Color="White" Size="100"/>
+                    </Image.Source>
+                </Image>
+            </Border>
+
+            <VerticalStackLayout>
+                <Picker x:Name="DevicePicker"
+                    SelectedIndexChanged="OnDevicePickerIndexChanged"
+                    ItemDisplayBinding="{Binding CombinedName}"
+                    TextColor="{StaticResource Secondary}"
+                    FontSize="14"
+                    FontAttributes="Bold"
+                    HorizontalTextAlignment="Start"
+                    VerticalOptions="Center"/>
+                <Label Text="Scrcpy-GUI v1.4.3"
+                       FontSize="14"
+                       FontAttributes="Bold"
+                       VerticalOptions="End"
+                       HorizontalOptions="Center"
+                       TextColor="{StaticResource Secondary}" 
+                       Padding="0, 0, 0, 6"/>
+                
+            </VerticalStackLayout>
+            
+
         </HorizontalStackLayout>
 
     </Border>
