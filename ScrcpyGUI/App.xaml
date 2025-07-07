@@ -6,11 +6,17 @@
              x:Class="ScrcpyGUI.App">
     <Application.Resources>
         <ResourceDictionary>
+
+            <LinearGradientBrush  x:Key="PageGradientBackground"  StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#0b0e13" Offset="0.2" />
+            </LinearGradientBrush>
+
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary x:Name="appColors" Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary x:Name="appStyles" Source="Resources/Styles/Styles.xaml" />
                 <ResourceDictionary Source="Resources/Styles/BorderStyles.xaml"/>
-                
+
+
                 <material:StyleResource ColorsOverride="{x:Reference appColors}"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

@@ -126,7 +126,7 @@ namespace ScrcpyGUI
 
             if (jsonData.FavoriteCommands != null)
             {
-                SavedCommandsTitleCount.Text = $"Favorites ({SavedCommandsList.Count.ToString()})";
+                //SavedCommandsTitleCount.Text = $"Favorites ({SavedCommandsList.Count.ToString()})";
             }
         }
 
@@ -143,6 +143,16 @@ namespace ScrcpyGUI
             await AdbCmdService.RunScrcpyCommand(MostRecentCommand.FormattedText?.ToString() ?? "");
         }
 
+
+        private void OnCopyMostRecentCommand(object sender, EventArgs e)
+        {
+            var command = MostRecentCommand.FormattedText?.ToString() ?? MostRecentCommand.Text;
+
+            Clipboard.SetTextAsync(command);
+            DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
+        }
+
+
         private void OnCopyCommand(object sender, EventArgs e)
         {
             var button = (CustomButton)sender;
@@ -152,13 +162,6 @@ namespace ScrcpyGUI
             DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
         }
 
-        private void OnCopyMostRecentCommand(object sender, EventArgs e)
-        {
-            var command = MostRecentCommand.FormattedText?.ToString() ?? MostRecentCommand.Text;
-
-            Clipboard.SetTextAsync(command);
-            DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
-        }
 
         private void OnDeleteCommand(object sender, EventArgs e)
         {
@@ -186,12 +189,12 @@ namespace ScrcpyGUI
 
         private void OnDownloadBat(object sender, EventArgs e)
         {
-            if (sender is Button button && button.BindingContext is string commandText)
+            if (sender is VisualElement element && element.BindingContext is string text)
             {
-                    try
+                try
                     {
                     string baseFileName = "SavedCommand";
-                    if (commandText.Contains("--start-app=")) baseFileName = RenameToPackage(commandText);
+                    if (text.Contains("--start-app=")) baseFileName = RenameToPackage(text);
                     string desktopPath = DataStorage.staticSavedData.AppSettings.DownloadPath;
                     string fullPath = Path.Combine(desktopPath, baseFileName + ".bat");
 
@@ -203,7 +206,7 @@ namespace ScrcpyGUI
                     }
 
                     // Write the file
-                    File.WriteAllText(fullPath, commandText);
+                    File.WriteAllText(fullPath, text);
 
                     DisplayAlert("Success", $"Saved as:\n{Path.GetFileName(fullPath)}", "OK");
                 }
