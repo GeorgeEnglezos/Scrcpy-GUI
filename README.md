@@ -9,15 +9,21 @@ Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting 
 - Connect wirelessly with a single click—no hassle.
 - Stream from multiple Android devices at the same time effortlessly.
 
-## Screenshots (1.4.2):
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/87641081-16ad-4e61-87b5-d5ba23f8ddfe" width="49%">
-  <img src="https://github.com/user-attachments/assets/5d97620f-1f38-4857-930e-7ffad6011244" width="49%">
-  <img src="https://github.com/user-attachments/assets/b828ea5e-a2d2-450e-847e-3860640efce1" width="49%">
-  <img src="https://github.com/user-attachments/assets/d204929d-f5d0-4e65-9b68-419f630e6074" width="49%">
-  <img src="https://github.com/user-attachments/assets/837dd020-71da-474f-9760-899488d04ad8" width="49%">
-  <img src="https://github.com/user-attachments/assets/562755e3-4657-4f9f-9d4b-ded696b307e1" width="49%">
-</p>
+## Screenshots (1.5):
+<div align="center">
+  <img width="48%" alt="New Home 1" src="https://github.com/user-attachments/assets/15f0b0ef-0001-4109-9ae3-edff8db9cdab" />
+  <img width="48%" alt="New Home 2" src="https://github.com/user-attachments/assets/1014bd4c-1288-489f-8484-2e336df90649" />
+</div>
+<div align="center">
+  <img width="48%" alt="New Favorites" src="https://github.com/user-attachments/assets/bd664d7a-238c-4df8-9d5e-1965c36830d1" />
+  <img width="48%" alt="New Resources" src="https://github.com/user-attachments/assets/b30c3009-ae19-4f7e-b7e9-37d1dc4c26d1" />
+</div>
+<div align="center">
+  <img width="48%" alt="New Settings" src="https://github.com/user-attachments/assets/ae23ccf2-9347-4dc3-924d-6f61a133ac33" />
+  <img width="48%" alt="Opened Apps" src="https://github.com/user-attachments/assets/d3dd5620-daad-4676-a397-8e9a5418ab66" />
+</div>
+
+
 
 
 # 🛠️ Installation Steps (for windows):</h2>
@@ -34,4 +40,4 @@ No unfortunately, .NET MAUI doesn't support Linux builds. To create a Linux port
 It's something I will explore soon. I don't own a macOS-powered machine, so I'll have to experiment with a VM, for which I'mm unsure of the compatibility.
 
 - What's next for the project?
-Currently I am working on a more modern redesign for the project!
+With the release of v1.5 I completely emptied my to-do list. Feel free to suggest any features.
