@@ -18,7 +18,7 @@
 
         <ScrollView Grid.Row="1" Margin="0, 0">
             <Grid x:Name="MainGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,*">
-                <controls:OptionsPanel x:Name="OptionsPanel" Margin="0, 0, 10, 0" Grid.Column="0" Grid.Row="0" MaximumWidthRequest="1000"/>
+                <controls:OptionsPanel x:Name="OptionsPanel" Grid.Column="0" Grid.Row="0" MaximumWidthRequest="1000"/>
                 <controls:OutputPanel x:Name="OutputPanel" Grid.Column="1" Grid.Row="0" MaximumWidthRequest="1000"/>
             </Grid>
         </ScrollView>

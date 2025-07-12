@@ -12,8 +12,9 @@ public partial class OptionsVirtualDisplayPanel : ContentView
     public OptionsVirtualDisplayPanel()
     {
         InitializeComponent();
+        this.SizeChanged += OnSizeChanged;
+        OnEnableVDChanged(null,null);
         ResetAllControls();
-        BindingContext = virtualDisplaySettings;
     }
 
     public void SubscribeToEvents()
@@ -24,20 +25,6 @@ public partial class OptionsVirtualDisplayPanel : ContentView
     public void UnsubscribeToEvents()
     {
         ResolutionContainer.PropertyChanged -= OnResolutionSelected;
-    }
-
-    private void OnVirtualDisplaySettings_Changed()
-    {
-        VirtualDisplaySettingsChanged?.Invoke(this, virtualDisplaySettings.GenerateCommandPart());
-    }
-
-    private void OnNewDisplayCheckedChanged(object sender, EventArgs e)
-    {
-        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
-        ResolutionContainer.IsVisible = checkBox?.IsChecked ?? false;
-        DpiEntry.IsVisible = checkBox?.IsChecked ?? false;
-        virtualDisplaySettings.NewDisplay = checkBox?.IsChecked ?? false;
-        OnVirtualDisplaySettings_Changed();
     }
 
     private void OnResolutionSelected(object sender, EventArgs e)
@@ -52,19 +39,30 @@ public partial class OptionsVirtualDisplayPanel : ContentView
         OnVirtualDisplaySettings_Changed();
     }
 
-    private void OnNoVdDestroyContentCheckedChanged(object sender, EventArgs e)
+    private void OnNoVdDestroyContentCheckedChanged(object sender, CheckedChangedEventArgs e)
     {
-        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
-
-        virtualDisplaySettings.NoVdDestroyContent = checkBox?.IsChecked ?? false;
+        virtualDisplaySettings.NoVdDestroyContent = NoVdDestroyContent.IsChecked;
         OnVirtualDisplaySettings_Changed();
     }
 
-    private void OnNoVdSystemDecorationsCheckedChanged(object sender, EventArgs e)
+    private void OnNoVdSystemDecorationsCheckedChanged(object sender, CheckedChangedEventArgs e)
     {
-        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
+        virtualDisplaySettings.NoVdSystemDecorations = NoVdSystemDecorations.IsChecked;
+        OnVirtualDisplaySettings_Changed();
+    }
 
-        virtualDisplaySettings.NoVdSystemDecorations = checkBox?.IsChecked ?? false;
+    private void OnEnableVDChanged(object sender, CheckedChangedEventArgs e)
+    {
+        bool isEnabled = NewDisplay.IsChecked;
+        virtualDisplaySettings.NewDisplay = isEnabled;
+
+
+        ResolutionContainer.IsEnabled = isEnabled;
+        NoVdDestroyContent.IsEnabled = isEnabled;
+        NoVdSystemDecorations.IsEnabled = isEnabled;
+        DpiEntry.IsEnabled = isEnabled;
+        
+        if (!isEnabled) CleanSettings(null, null);
         OnVirtualDisplaySettings_Changed();
     }
 
@@ -75,6 +73,11 @@ public partial class OptionsVirtualDisplayPanel : ContentView
         ResetAllControls();
     }
 
+    private void OnVirtualDisplaySettings_Changed()
+    {
+        VirtualDisplaySettingsChanged?.Invoke(this, virtualDisplaySettings.GenerateCommandPart());
+    }
+
     private void ResetAllControls()
     {
         // Reset CheckBoxes
@@ -83,15 +86,73 @@ public partial class OptionsVirtualDisplayPanel : ContentView
         NoVdSystemDecorations.IsChecked = false;
 
         // Reset Picker
-        ResolutionContainer.SelectedIndex = -1;
+        ResolutionContainer.SelectedIndex = 0;
         virtualDisplaySettings.Resolution = "";
 
         // Reset Entry
         DpiEntry.Text = string.Empty;
-
-        // Optionally hide resolution container if logic depends on it
-        ResolutionContainer.IsVisible = false;
-        DpiEntry.IsVisible = false;
     }
 
+    private void OnSizeChanged(object sender, EventArgs e)
+    {
+        double breakpointWidth = 670;
+
+        if (Width < breakpointWidth) // Switch to vertical layout (stacked)
+        {
+            VirtualDisplayGrid.RowDefinitions.Clear();
+            VirtualDisplayGrid.ColumnDefinitions.Clear();
+
+            VirtualDisplayGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            VirtualDisplayGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            VirtualDisplayGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            VirtualDisplayGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            VirtualDisplayGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+            //Row 1
+            Grid.SetRow(NewDisplay, 0);
+            Grid.SetColumn(NewDisplay, 0);
+
+            Grid.SetRow(ResolutionContainer, 0);
+            Grid.SetColumn(ResolutionContainer, 1);
+
+            //Row 2
+            Grid.SetRow(NoVdDestroyContent, 1);
+            Grid.SetColumn(NoVdDestroyContent, 0);
+
+            Grid.SetRow(NoVdSystemDecorations, 1);
+            Grid.SetColumn(NoVdSystemDecorations, 1);
+
+            //Row 3
+            Grid.SetRow(DpiEntry, 2);
+            Grid.SetColumn(DpiEntry, 0);
+        }
+        else // Horizontal layout (side by side)
+        {
+            VirtualDisplayGrid.RowDefinitions.Clear();
+            VirtualDisplayGrid.ColumnDefinitions.Clear();
+
+            VirtualDisplayGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            VirtualDisplayGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            VirtualDisplayGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            VirtualDisplayGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            VirtualDisplayGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+            //Row 1
+            Grid.SetRow(NewDisplay, 0);
+            Grid.SetColumn(NewDisplay, 0);
+
+            Grid.SetRow(ResolutionContainer, 0);
+            Grid.SetColumn(ResolutionContainer, 1);
+
+            Grid.SetRow(NoVdDestroyContent, 0);
+            Grid.SetColumn(NoVdDestroyContent, 2);
+
+            //Row 2
+            Grid.SetRow(NoVdSystemDecorations, 1);
+            Grid.SetColumn(NoVdSystemDecorations, 0);
+
+            Grid.SetRow(DpiEntry, 1);
+            Grid.SetColumn(DpiEntry, 1);
+        }
+    }
 }

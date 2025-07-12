@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             x:Class="ScrcpyGUI.Controls.CustomCheckbox"
+             xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
+             xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
+             x:Name="Root">
+    <Border x:Name="MainBorder" HeightRequest="50"
+        BackgroundColor="{StaticResource InputBackround}"
+        StrokeThickness="1"             
+        Stroke="Transparent"
+        VerticalOptions="Center"
+        Padding="10">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="8"/>
+        </Border.StrokeShape>
+
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnBorderTapped"/>
+        </Border.GestureRecognizers>
+
+        <Border.Triggers>
+            <DataTrigger TargetType="Border" Binding="{Binding IsChecked, Source={x:Reference CheckboxControl}}" Value="True">
+                <Setter Property="BackgroundColor" Value="Indigo"/>
+                <Setter Property="Stroke" Value="Transparent"/>
+                <Setter Property="StrokeThickness" Value="1"/>
+            </DataTrigger>
+        </Border.Triggers>
+        <Grid RowDefinitions="*" 
+          ColumnDefinitions="*" 
+          VerticalOptions="Center">
+            <StackLayout Grid.Row="0" 
+                     Grid.Column="0" 
+                     Orientation="Horizontal">
+                <Label x:Name="LabelControl"                    
+                   HorizontalOptions="StartAndExpand"
+                   TextColor="White"
+                   FontSize="17"
+                       VerticalOptions="Center"
+                   Text="{Binding LabelText, Source={x:Reference Root}}"/>
+                <ur:CheckBox CheckChanged="CheckBox_CheckedChanged" 
+                         x:Name="CheckboxControl" 
+                         Grid.Row="0"                          
+                         Grid.Column="1"
+                         IsChecked="{Binding IsChecked, Source={x:Reference Root}}" 
+                         VerticalOptions="Center"
+                         HorizontalOptions="End"
+                         Color="#6A5ACD"
+                         BackgroundColor="Transparent"                            
+                         Scale="1.1"
+                         WidthRequest="24"
+                         HeightRequest="24"/>
+            </StackLayout>
+        </Grid>
+    </Border>
+</ContentView>

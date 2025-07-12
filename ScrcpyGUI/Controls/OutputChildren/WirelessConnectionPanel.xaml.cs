@@ -11,6 +11,7 @@ namespace ScrcpyGUI.Controls
         public WirelessConnectionPanel()
         {
             InitializeComponent();
+            this.SizeChanged += OnSizeChanged;
         }
 
         private async void OnResetToUsb(object sender, EventArgs e)
@@ -85,5 +86,68 @@ namespace ScrcpyGUI.Controls
         {
             await Application.Current.MainPage.DisplayAlert(title, message, "OK");
         }
+
+        private void OnSizeChanged(object sender, EventArgs e)
+        {
+            double breakpointWidth = 670;
+
+            if (Width < breakpointWidth)
+            {
+                InputGrid.RowDefinitions.Clear();
+                InputGrid.ColumnDefinitions.Clear();
+                ButtonGrid.RowDefinitions.Clear();
+                ButtonGrid.ColumnDefinitions.Clear();
+
+                InputGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                InputGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                InputGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+                ButtonGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                ButtonGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                ButtonGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                ButtonGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+                Grid.SetRow(FirstInput, 0);
+                Grid.SetColumn(FirstInput, 0);
+                Grid.SetRow(SecondInput, 1);
+                Grid.SetColumn(SecondInput, 0);
+
+                Grid.SetRow(ButtonOne, 0);
+                Grid.SetColumn(ButtonOne, 0);
+                Grid.SetRow(ButtonTwo, 1);
+                Grid.SetColumn(ButtonTwo, 0);
+                Grid.SetRow(ButtonThree, 2);
+                Grid.SetColumn(ButtonThree, 0);
+            }
+            else
+            {
+                InputGrid.RowDefinitions.Clear();
+                InputGrid.ColumnDefinitions.Clear();
+                ButtonGrid.RowDefinitions.Clear();
+                ButtonGrid.ColumnDefinitions.Clear();
+
+                InputGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                InputGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+                InputGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+
+                ButtonGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                ButtonGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+                ButtonGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+                ButtonGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+                Grid.SetRow(FirstInput, 0);
+                Grid.SetColumn(FirstInput, 0);
+                Grid.SetRow(SecondInput, 0);
+                Grid.SetColumn(SecondInput, 1);
+
+                Grid.SetRow(ButtonOne, 0);
+                Grid.SetColumn(ButtonOne, 0);
+                Grid.SetRow(ButtonTwo, 0);
+                Grid.SetColumn(ButtonTwo, 1);
+                Grid.SetRow(ButtonThree, 0);
+                Grid.SetColumn(ButtonThree, 2);
+            }
+        }
     }
-    }
+}

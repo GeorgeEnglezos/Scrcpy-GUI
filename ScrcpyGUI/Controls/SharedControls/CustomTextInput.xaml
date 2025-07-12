@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
+             xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
+             xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
+             x:Class="ScrcpyGUI.Controls.CustomTextInput"
+             x:Name="Root">
+    <Border HeightRequest="60" Stroke="Transparent">
+        <AbsoluteLayout>
+            <ur:TextField x:Name="AudioBitRateEntry"
+                          Title="{Binding Source={x:Reference Root}, Path=LabelText}"
+                          Text="{Binding Source={x:Reference Root}, Path=Text, Mode=TwoWay}"
+                          AbsoluteLayout.LayoutBounds="0.5,-0.2,1,1"
+                          AbsoluteLayout.LayoutFlags="All"
+                          FontSize="16" 
+                          TextChanged="InputText_Changed">
+            </ur:TextField>
+            <Image WidthRequest="20"
+                   HeightRequest="20"
+                   IsVisible="{Binding Source={x:Reference Root}, Path=UseTooltip}"
+                   ToolTipProperties.Text="{Binding Source={x:Reference Root}, Path=TooltipText}"
+                   Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}"
+                   VerticalOptions="Center"
+                   AbsoluteLayout.LayoutBounds="0.95,0.55,20,20"
+                   AbsoluteLayout.LayoutFlags="PositionProportional" />
+        </AbsoluteLayout>
+    </Border>
+    <!--<Grid>
+        <ur:TextField x:Name="AudioBitRateEntry"  
+                  VerticalOptions="Center"
+                  Title="{Binding Source={x:Reference Root}, Path=LabelText}"
+                  Text="{Binding Source={x:Reference Root}, Path=Text, Mode=TwoWay}"
+                  FontSize="16" 
+                  TextChanged="InputText_Changed"
+                  Margin="0,0,30,0" />
+
+        <Image WidthRequest="20"
+           HeightRequest="20"
+           IsVisible="{Binding Source={x:Reference Root}, Path=UseTooltip}"
+           ToolTipProperties.Text="{Binding Source={x:Reference Root}, Path=TooltipText}"
+           Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}"
+           VerticalOptions="Center"
+           HorizontalOptions="End"
+           Margin="0,0,10,0" />
+    </Grid>-->
+</ContentView>

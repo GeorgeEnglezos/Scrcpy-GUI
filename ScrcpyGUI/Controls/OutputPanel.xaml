@@ -5,107 +5,97 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="ScrcpyGUI.Controls.OutputPanel"             
              xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
-             xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
+             xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"             
              SizeChanged="OnSizeChanged">
-    
-    <!-- Settings Panel -->
-    <Grid x:Name="CommandPanel"
-        Padding="20"
-        MinimumWidthRequest="300"
-        HorizontalOptions="FillAndExpand">
 
-        <Label Text="Commands Preview and Output"
-            TextColor="MintCream"
-            FontSize="24"
-            FontAttributes="Bold"
-            Padding="10,0"
-            HorizontalOptions="Center"
-            VerticalOptions="Start"
-            TranslationY="-18"
-            BackgroundColor="#1f1f1f"
-            ZIndex="1"/>
-        <Border Padding="30" StrokeThickness="3" Stroke="{StaticResource Purple4}">
-            <Grid RowDefinitions="Auto,Auto, Auto, Auto, Auto"
-                ColumnDefinitions="*,Auto,Auto"
-                ColumnSpacing="15"   
-                RowSpacing="10">
-
-                <!-- Responsive Grid for Panels -->
-                <Grid x:Name="ResponsiveGrid" Grid.Row="0" Grid.ColumnSpan="3" RowDefinitions="Auto, Auto" ColumnDefinitions="*, *">
-                    <controls:StatusPanel x:Name="ChecksPanel" Grid.Row="0" Grid.Column="0" Margin="2, 20"/>
-                    <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" Grid.Row="0" Grid.Column="1" Margin="2, 20"/>
-                </Grid>
+    <StackLayout Padding="20, 0">
+        <Grid x:Name="ResponsiveGrid" RowDefinitions="Auto, Auto" ColumnDefinitions="*, *" ColumnSpacing="20" Margin="0,10,0,15">
+            <controls:StatusPanel x:Name="ChecksPanel" Grid.Row="0" Grid.Column="0"  Margin="0,0,0,15"/>
+            <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" Grid.Row="0" Grid.Column="1"/>
+        </Grid>
 
 
-                <Border Stroke="{StaticResource PrimaryPurple}" Grid.Row="2" Grid.Column="0" StrokeThickness="2" StrokeShape="RoundRectangle 10">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnLabelTapped" NumberOfTapsRequired="1" />
-                    </Border.GestureRecognizers>
-                    <Label x:Name="FinalCommandPreview"
-                           MinimumHeightRequest="80"
-                           FontSize="16"
-                           VerticalTextAlignment="Start"
-                           HorizontalOptions="FillAndExpand"
-                           Margin="10,10,10,10"
-                           LineBreakMode="WordWrap"
-                           FontAttributes="Bold">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Default command: scrcpy.exe --pause-on-exit=if-error" />
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
-                </Border>
+        <StackLayout>
+            <Border Style="{StaticResource GradientBorderStyle}" x:Name="OptionsContainer">
+                <StackLayout>
+                    <controls:BorderTitle TitleText="Preview - Output" TitleGlyph="&#xf120;"/>
+                    <Grid RowDefinitions="Auto, Auto, Auto"
+                    ColumnDefinitions="*,Auto"
+                    ColumnSpacing="10"
+                    RowSpacing="10">
 
-                <controls:CustomButton
-                    x:Name="RunCommand"
-                    Grid.Row="2" Grid.Column="1"
-                    VerticalOptions="Center"
-                    ButtonWidth="70"                    
-                    Margin="0"
-                    Padding="0"
-                    ButtonSize="50"
-                    ButtonStyle="ImageButton"
-                    ButtonGlyph="&#xf04b;"
-                    TooltipText="Run Scrcpy Command"
-                    ButtonClicked="OnRunGeneratedCommand"/>
+                        <Border Stroke="{StaticResource PrimaryPurple}" Grid.Row="0" Grid.Column="0" StrokeThickness="2" StrokeShape="RoundRectangle 10" BackgroundColor="{StaticResource InputBackround}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnLabelTapped" NumberOfTapsRequired="1" />
+                            </Border.GestureRecognizers>
+                            <Label x:Name="FinalCommandPreview"
+                            MinimumHeightRequest="80"
+                            FontSize="16"
+                            VerticalTextAlignment="Start"
+                            HorizontalOptions="FillAndExpand"
+                            Margin="10,10,10,10"
+                            LineBreakMode="WordWrap"
+                            FontAttributes="Bold">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="Default command: scrcpy.exe --pause-on-exit=if-error" />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                        </Border>
 
-                <controls:CustomButton
-                    x:Name="SaveCommand"
-                    Grid.Row="2" Grid.Column="2" 
-                    VerticalOptions="Center"
-                    ButtonWidth="50"
-                    Margin="0"
-                    Padding="0"
-                    ButtonSize="50"
-                    ButtonStyle="ImageButton"
-                    ButtonGlyph="&#xf004;"
-                    TooltipText="Run Scrcpy Command"
-                    ButtonClicked="OnSaveGeneratedCommand"/>
+                        <Grid x:Name="ButtonGrid" Grid.Row="0" Grid.Column="1" RowDefinitions="*,*" ColumnDefinitions="*" ColumnSpacing="20" RowSpacing="10">
 
-                <!--Output Label-->
+                            <controls:CustomButton Grid.Row="0" Grid.Column="0" 
+                            x:Name="RunCommand"
+                            ButtonStyle="ImageButtonBorder"                            
+                            VerticalOptions="Center"
+                            HorizontalOptions="End"
+                            ButtonWidth="60"
+                            ButtonHeight="50"
+                            ButtonSize="25"
+                            ButtonGlyph="&#xf04b;"
+                            ButtonColor="{StaticResource GreenInnerButton}"
+                            ButtonStrokeColor="{StaticResource GreenInnerButton}"
+                            ShadowColor="indigo"
+                            TooltipText="Execute the command displayed above!"
+                            ButtonClicked="OnRunGeneratedCommand"/>
 
-                <Border x:Name="AdbOutputLabelBorder" StrokeShape="RoundRectangle 10"
-                        Grid.Row="3" 
-                        Grid.ColumnSpan="3"                             
-                        StrokeThickness="3" 
-                        Stroke="{StaticResource PrimaryPurple}">
+                            <controls:CustomButton Grid.Row="1" Grid.Column="0" 
+                            x:Name="SaveCommand"
+                            ButtonStyle="ImageButtonBorder"                            
+                            VerticalOptions="Center"
+                            HorizontalOptions="End"
+                            ButtonWidth="60"
+                            ButtonHeight="50"
+                            ButtonSize="25"
+                            ButtonGlyph="&#xf004;"
+                            ButtonColor="{StaticResource RedInnerButton}"
+                            ButtonStrokeColor="{StaticResource RedInnerButton}"
+                            ShadowColor="indigo"                                                   
+                            TooltipText="Save Scrcpy Command"
+                            ButtonClicked="OnSaveGeneratedCommand"/>
+                        </Grid>
 
-                    <Editor x:Name="AdbOutputLabel"
-                        Text="Command Output"
-                        FontFamily="Consolas"
-                        FontSize="15"
-                        BackgroundColor="#101010"
-                        MinimumHeightRequest="100"
-                        VerticalOptions="FillAndExpand" 
-                        TextColor="white"
-                        FontAttributes="Bold"
-                        IsReadOnly="True"
-                        Margin="0"
-                        VerticalTextAlignment="Start"
-                        HorizontalOptions="FillAndExpand"/>
-                </Border>
-            </Grid>
-        </Border>
-    </Grid>
+                        <!--Output Label-->
+                        <Border x:Name="AdbOutputLabelBorder"  Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" StrokeShape="RoundRectangle 10" Stroke="{StaticResource PrimaryPurple}">
+                            <Editor x:Name="AdbOutputLabel"
+                                Text="Command Output"
+                                FontFamily="Consolas"
+                                FontSize="15"
+                                BackgroundColor="#101010"
+                                MinimumHeightRequest="100"
+                                TextColor="white"
+                                FontAttributes="Bold"
+                                IsReadOnly="True"
+                                Margin="0"
+                                VerticalTextAlignment="Start"
+                                VerticalOptions="FillAndExpand" 
+                                HorizontalOptions="FillAndExpand"/>
+                        </Border>
+                    </Grid>
+                </StackLayout>
+            </Border>
+        </StackLayout>
+    </StackLayout>
 </ContentView>

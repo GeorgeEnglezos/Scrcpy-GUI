@@ -3,11 +3,11 @@ namespace ScrcpyGUI.Controls;
 
 public enum ButtonStyle
 {
-    Boring,
-    Base,
-    CustomButton2,
-    CustomButton3,
-    ImageButton
+    CancelButton,
+    BasicButton,
+    ImageButtonBorder,
+    ImageButton,
+    TextImageButton
 }
 
 public partial class CustomButton : ContentView
@@ -26,7 +26,7 @@ public partial class CustomButton : ContentView
         nameof(ButtonStyle),
         typeof(ButtonStyle),
         typeof(CustomButton),
-        ButtonStyle.Base,
+        ButtonStyle.BasicButton,
         propertyChanged: OnButtonStyleChanged);
 
     public ButtonStyle ButtonStyle
@@ -61,7 +61,33 @@ public partial class CustomButton : ContentView
         set => SetValue(ButtonColorProperty, value);
     }
 
-    // GradientEndColor Property (for gradient style)
+    // ButtonStrokeColor Property
+    public static readonly BindableProperty ButtonStrokeColorProperty = BindableProperty.Create(
+        nameof(ButtonStrokeColor),
+        typeof(Color),
+        typeof(CustomButton),
+        Colors.Blue);
+
+    public Color ButtonStrokeColor
+    {
+        get => (Color)GetValue(ButtonStrokeColorProperty);
+        set => SetValue(ButtonStrokeColorProperty, value);
+    }
+
+    // GradientStartColor Property
+    public static readonly BindableProperty GradientStartColorProperty = BindableProperty.Create(
+        nameof(GradientStartColor),
+        typeof(Color),
+        typeof(CustomButton),
+        Colors.Purple);
+
+    public Color GradientStartColor
+    {
+        get => (Color)GetValue(GradientStartColorProperty);
+        set => SetValue(GradientStartColorProperty, value);
+    }
+
+    // GradientEndColor Property
     public static readonly BindableProperty GradientEndColorProperty = BindableProperty.Create(
         nameof(GradientEndColor),
         typeof(Color),
@@ -74,18 +100,31 @@ public partial class CustomButton : ContentView
         set => SetValue(GradientEndColorProperty, value);
     }
 
-    // TextColor Property
-    //public static readonly BindableProperty TextColorProperty = BindableProperty.Create(
-    //    nameof(TextColor),
-    //    typeof(Color),
-    //    typeof(CustomButton),
-    //    Colors.White);
+    //TextColor Property
+    public static readonly BindableProperty TextColorProperty = BindableProperty.Create(
+        nameof(TextColor),
+        typeof(Color),
+        typeof(CustomButton),
+        Colors.White);
 
-    //public Color TextColor
-    //{
-    //    get => (Color)GetValue(TextColorProperty);
-    //    set => SetValue(TextColorProperty, value);
-    //}
+    public Color TextColor
+    {
+        get => (Color)GetValue(TextColorProperty);
+        set => SetValue(TextColorProperty, value);
+    }
+
+    //ShadowColor Property
+    public static readonly BindableProperty ShadowColorProperty = BindableProperty.Create(
+        nameof(ShadowColor),
+        typeof(Color),
+        typeof(CustomButton),
+        Colors.White);
+
+    public Color ShadowColor
+    {
+        get => (Color)GetValue(ShadowColorProperty);
+        set => SetValue(ShadowColorProperty, value);
+    }
 
     // FontSize Property
     public static readonly BindableProperty FontSizeProperty = BindableProperty.Create(
@@ -118,7 +157,7 @@ public partial class CustomButton : ContentView
         nameof(ButtonHeight),
         typeof(double),
         typeof(CustomButton),
-        50.0);
+        null);
 
     public double ButtonHeight
     {
@@ -131,7 +170,7 @@ public partial class CustomButton : ContentView
         nameof(ButtonWidth),
         typeof(double),
         typeof(CustomButton),
-        170.0);
+        null);
 
     public double ButtonWidth
     {
@@ -142,9 +181,9 @@ public partial class CustomButton : ContentView
     // ButtonSize Property
     public static readonly BindableProperty ButtonSizeProperty = BindableProperty.Create(
         nameof(ButtonSize),
-        typeof(double), // Assuming ButtonSize is a double (e.g., for font size or dimension)
+        typeof(double),
         typeof(CustomButton),
-        16.0); // Default value for ButtonSize
+        16.0);
 
     public double ButtonSize
     {
@@ -155,9 +194,9 @@ public partial class CustomButton : ContentView
     // ButtonGlyph Property
     public static readonly BindableProperty ButtonGlyphProperty = BindableProperty.Create(
         nameof(ButtonGlyph),
-        typeof(string), // Assuming ButtonGlyph is a string (e.g., a character, icon font code, or SVG path)
+        typeof(string),
         typeof(CustomButton),
-        ""); // Default empty string for ButtonGlyph
+        "");
 
     public string ButtonGlyph
     {
@@ -168,18 +207,15 @@ public partial class CustomButton : ContentView
     // TooltipText Property
     public static readonly BindableProperty TooltipTextProperty = BindableProperty.Create(
         nameof(TooltipText),
-        typeof(string), // TooltipText is typically a string
+        typeof(string),
         typeof(CustomButton),
-        ""); // Default empty string for TooltipText
+        "");
 
     public string TooltipText
     {
         get => (string)GetValue(TooltipTextProperty);
         set => SetValue(TooltipTextProperty, value);
     }
-
-
-
 
     // Property changed handler for ButtonStyle
     private static void OnButtonStyleChanged(BindableObject bindable, object oldValue, object newValue)
@@ -190,35 +226,35 @@ public partial class CustomButton : ContentView
         }
     }
 
-    // Update button visibility based on style
+    // Update button visibility Canceld on style
     private void UpdateButtonVisibility()
     {
-        // Hide all buttons first
-        BoringButton.IsVisible = false;
-        BaseButton.IsVisible = false;
+        CancelButton.IsVisible = false;
+        BasicButton.IsVisible = false;
+        TextImageButton.IsVisible = false;
+        ImageButton.IsVisible = false;
+        ImageButtonBorder.IsVisible = false;
 
-        // Show the appropriate button based on style
         switch (ButtonStyle)
         {
-            case ButtonStyle.Boring:
-                BoringButton.IsVisible = true;
+            case ButtonStyle.CancelButton:
+                CancelButton.IsVisible = true;
                 break;
-            case ButtonStyle.Base:
-                BaseButton.IsVisible = true;
-                break;
-            case ButtonStyle.CustomButton2:
-                CustomButton2.IsVisible = true;
+            case ButtonStyle.BasicButton:
+                BasicButton.IsVisible = true;
                 break;
             case ButtonStyle.ImageButton:
                 ImageButton.IsVisible = true;
                 break;
-            case ButtonStyle.CustomButton3:
-                CustomButton3.IsVisible = true;
+            case ButtonStyle.ImageButtonBorder:
+                ImageButtonBorder.IsVisible = true;
+                break;
+            case ButtonStyle.TextImageButton:
+                TextImageButton.IsVisible = true;
                 break;
         }
     }
 
-    // Handle button click and raise the event
     private void OnButtonClicked(object sender, EventArgs e)
     {
         ButtonClicked?.Invoke(this, e);

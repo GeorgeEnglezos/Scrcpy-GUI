@@ -16,115 +16,72 @@
         </x:Array>
     </ContentView.Resources>
 
-    <!-- Main Grid -->
-        <Grid RowDefinitions="Auto, *">
-            <!-- Border -->
-        <Border Grid.Row="1" StrokeThickness="2" Stroke="{StaticResource PrimaryPurple}" ZIndex="0" StrokeShape="RoundRectangle 10" Padding="20, 10">
-            <FlexLayout x:Name="OptionsContainer"
-                Direction="Row"
-                Wrap="Wrap"
-                JustifyContent="SpaceBetween"
-                AlignItems="Center"
-                AlignContent="Start">
+    <StackLayout>
+        <Border Style="{StaticResource GradientBorderStyle}" x:Name="OptionsContainer">
+            <StackLayout>
+                <controls:BorderTitle TitleText="General" TitleGlyph="&#xf109;" Margin="0, 0, 0, 20"
+                                      ShowButton="True" ButtonClicked="CleanSettings"/>
+                <Grid x:Name="GeneralGrid" RowDefinitions="*,*" ColumnDefinitions="*,*,*" RowSpacing="20" ColumnSpacing="20">
 
-                <!-- Window Title -->
-                <AbsoluteLayout>
-                    <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="WindowTitleEntry" Title="Window Title" FontSize="16" TextChanged="OnWindowTitleEntryTextChanged"/>
-                    <Image WidthRequest="20" HeightRequest="20" ToolTipProperties.Text="Gives a simple name to the opened scrcpy window." VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
-                </AbsoluteLayout>
-                
-                <!-- Fullscreen -->
-                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10" >
-                    <Label Text="Fullscreen" WidthRequest="185" VerticalTextAlignment="Center" FontSize="16" FontAttributes="Bold" />
-                    <ur:CheckBox CheckChanged="OnFullscreenCheckboxChanged" x:Name="FullscreenCheck" />
-                 </HorizontalStackLayout>
+                    <controls:CustomTextInput x:Name="OptionWindowTitleEntry"
+                        LabelText="Window Title"
+                        TooltipText="Gives a simple name to the opened scrcpy window."
+                        TextChanged="OnWindowTitleEntryTextChanged"/>
 
-                <!-- Screen off -->
-                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10">
-                    <Label Text="Screen off" WidthRequest="185" VerticalTextAlignment="Center" FontSize="16" FontAttributes="Bold"/>
-                    <ur:CheckBox CheckChanged="OnScreenOffCheckboxChanged" x:Name="TurnScreenOffCheck"/>
-                </HorizontalStackLayout>
+                    <controls:CustomTextInput x:Name="OptionCropEntry"
+                        LabelText="Crop Screen (W:H:X:Y)"
+                        UseTooltip="False"
+                        TextChanged="OnCropEntryTextChanged"/>
 
-                <!-- Stay Awake -->
-                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10">
-                    <Label Text="Stay Awake" WidthRequest="185" VerticalTextAlignment="Center" FontSize="16"/>
-                    <ur:CheckBox CheckChanged="OnStayAwakeCheckboxChanged" x:Name="StayAwakeCheck" />
-                </HorizontalStackLayout>
-                
-                <!-- Crop Entry -->
-                <ur:TextField  WidthRequest="210" Margin="5, 10, 0, 10" Title="Crop Screen (W:H:X:Y)" FontSize="16" x:Name="CropEntry" TextChanged="OnCropEntryTextChanged"></ur:TextField>
+                    <controls:CustomTextInput x:Name="OptionExtraParameterEntry"
+                        LabelText="Extra Parameters"
+                        TooltipText="Add missing parameters manually!"
+                        TextChanged="OnExtraParametersEntryTextChanged"/>
 
-                <!-- Screen Orientation -->
-                <ur:PickerField WidthRequest="210" Margin="5, 10, 0, 10"
-                    x:Name="VideoOrientationPicker"
-                    Title="Video Orientation"
-                    ItemsSource="{StaticResource VideoOrientations}" 
-                    Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Expand_circle_down}}" />
+                    <controls:CustomTextInput x:Name="OptionVideoBitRate"
+                        LabelText="Video Bit Rate"
+                        TooltipText="(e.g., 8M, 2M). Higher values improve quality but increase latency and bandwidth usage. Default is 8M."
+                        TextChanged="OnVideoBitRateTextChanged"/>
 
-                <!-- Window Borderless -->
-                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10" >
-                    <Label Text="Window Borderless" VerticalTextAlignment="Center" FontSize="16" WidthRequest="185"/>
-                    <ur:CheckBox CheckChanged="OnBorderlessCheckboxChanged" x:Name="WindowBorderlessCheck" />
-                </HorizontalStackLayout>
+                    <controls:CustomCheckbox x:Name="OptionFullscreenCheck"
+                        IsChecked="{Binding IsChecked}"                                            
+                        LabelText="Fullscreen"
+                        CheckedChanged="OnFullscreenCheckboxChanged"/>
 
-                <!-- Always on Top -->
-                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10" >
-                    <Label Text="Window Always on Top" VerticalTextAlignment="Center" FontSize="16" WidthRequest="185" Margin="0, 10"/>
-                    <ur:CheckBox CheckChanged="OnWindowAlwaysOnTopCheckboxChanged" x:Name="WindowAlwaysOnTopCheck"/>
-                </HorizontalStackLayout>    
+                    <controls:CustomCheckbox x:Name="OptionTurnScreenOffCheck"
+                        IsChecked="{Binding IsChecked}"                                            
+                        LabelText="Screen off"
+                        CheckedChanged="OnScreenOffCheckboxChanged"/>
 
-                <!-- Disable Screensaver -->
-                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10" >
-                    <Label Text="Disable Screensaver" WidthRequest="185" VerticalTextAlignment="Center" FontSize="16" Margin="0, 10"/>
-                    <ur:CheckBox CheckChanged="OnDisableScreensaverCheckboxChanged" x:Name="DisableScreensaverCheck"/>
-                </HorizontalStackLayout>
+                    <controls:CustomCheckbox x:Name="OptionStayAwakeCheck"
+                        IsChecked="{Binding IsChecked}"                                             
+                        LabelText="Stay Awake"
+                        CheckedChanged="OnStayAwakeCheckboxChanged"/>
 
-                <!-- Video Codec-Encoder Pair-->
-                <ur:PickerField WidthRequest="210" Margin="5, 10, 0, 10"
-                    x:Name="VideoCodecEncoderPicker"
-                    Title="Video Codec - Encoder"
-                    Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Expand_circle_down}}" />
+                    <controls:CustomCheckbox x:Name="OptionWindowBorderlessCheck"
+                        IsChecked="{Binding IsChecked}"
+                        LabelText="Window Borderless"
+                        CheckedChanged="OnBorderlessCheckboxChanged"/>
 
-                <AbsoluteLayout>
-                    <!--Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}}">-->
-                    <ur:TextField WidthRequest="470" Margin="5, 10, 0, 10" x:Name="ExtraParameterEntry" Title="Extra Parameters" FontSize="16" TextChanged="OnExtraParametersEntryTextChanged"/>
-                    <Image WidthRequest="20" HeightRequest="20" ToolTipProperties.Text="Add missing parameters manually!" VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
-                </AbsoluteLayout>
-                
-                <AbsoluteLayout>
-                    <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" Title="Video Bit Rate" FontSize="16" x:Name="VideoBitRate" TextChanged="OnVideoBitRateTextChanged"> </ur:TextField>
-                    <Image WidthRequest="20" HeightRequest="20" 
-                           ToolTipProperties.Text="(e.g., 8M, 2M). Higher values improve quality but increase latency and bandwidth usage. Default is 8M." VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
-                </AbsoluteLayout>
-            </FlexLayout>
+                    <controls:CustomCheckbox x:Name="OptionWindowAlwaysOnTopCheck"
+                        IsChecked="{Binding IsChecked}"
+                        LabelText="Window Always on Top"
+                        CheckedChanged="OnWindowAlwaysOnTopCheckboxChanged"/>
+
+                    <controls:CustomCheckbox x:Name="OptionDisableScreensaverCheck"
+                        IsChecked="{Binding IsChecked}"
+                        LabelText="Disable Screensaver"
+                        CheckedChanged="OnDisableScreensaverCheckboxChanged"/>
+
+                    <!-- Screen Orientation -->
+                    <ur:PickerField x:Name="OptionVideoOrientationPicker" FontSize="16" Title="Video Orientation" ItemsSource="{StaticResource VideoOrientations}" 
+                        Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Expand_circle_down}}" />
+
+                    <!-- Video Codec-Encoder Pair-->
+                    <ur:PickerField x:Name="OptionVideoCodecEncoderPicker" FontSize="16" Title="Video Codec - Encoder"
+                        Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Expand_circle_down}}" />
+                </Grid>
+            </StackLayout>
         </Border>
-
-        <!-- Label and Checkbox -->
-            <FlexLayout Grid.RowSpan="2" 
-                BackgroundColor="{DynamicResource BackGroundGrey}"
-                VerticalOptions="Start"
-                HorizontalOptions="Center"
-                ZIndex="1"
-                TranslationY="-25">
-                <Label Text="General"
-                   TextColor="{StaticResource PrimaryPurple}"
-                   FontSize="22"
-                   FontAttributes="Bold"
-                   Padding="10,0,0,0"
-                   VerticalOptions="Center"
-                   HorizontalOptions="Center"/>
-                <controls:CustomButton
-                        x:Name="CleanButton"
-                        Grid.Row="2" Grid.Column="2" 
-                        VerticalOptions="Center"
-                        ButtonWidth="50"
-                        Margin="0"
-                        Padding="0"
-                        ButtonSize="25"
-                        ButtonStyle="ImageButton"
-                        ButtonGlyph="&#xf12d;"
-                        TooltipText="Clear Settings"
-                        ButtonClicked="CleanSettings"/>
-            </FlexLayout>
-        </Grid>
+    </StackLayout>
 </ContentView>

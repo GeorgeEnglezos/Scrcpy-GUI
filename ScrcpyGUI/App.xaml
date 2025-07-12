@@ -7,14 +7,19 @@
     <Application.Resources>
         <ResourceDictionary>
 
-            <LinearGradientBrush  x:Key="PageGradientBackground"  StartPoint="0,0" EndPoint="1,1">
+            <!--<LinearGradientBrush  x:Key="PageGradientBackground"  StartPoint="0,0" EndPoint="1,1">
                 <GradientStop Color="#0b0e13" Offset="0.2" />
+            </LinearGradientBrush>-->
+            <LinearGradientBrush  x:Key="PageGradientBackground"  StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#0A0D12" Offset="0.3" />
+                <GradientStop Color="#080B10" Offset="0.75" />
             </LinearGradientBrush>
 
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary x:Name="appColors" Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary x:Name="appStyles" Source="Resources/Styles/Styles.xaml" />
                 <ResourceDictionary Source="Resources/Styles/BorderStyles.xaml"/>
+
 
 
                 <material:StyleResource ColorsOverride="{x:Reference appColors}"/>

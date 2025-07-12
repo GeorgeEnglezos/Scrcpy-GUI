@@ -15,147 +15,173 @@
         <StackLayout Padding="20">
 
             <!-- Most Recent Command Section -->
-            <Border Style="{StaticResource GradientBorderStyle}"  Margin="0, 0, 0, 40">
+            <Border Style="{StaticResource GradientBorderStyle}" Margin="0,0,0,40">
                 <StackLayout>
                     <controls:BorderTitle 
-                                TitleText="Last Command"
-                                TitleGlyph="&#xf120;"
-                                Margin="0,0,0,15"/>
-                    <Border Stroke="{StaticResource PrimaryPurple}" StrokeThickness="2" StrokeShape="RoundRectangle 10" Margin="0,0,0,20">
-                        <Grid Padding="10" ColumnDefinitions="*, Auto, Auto">
+                        TitleText="Last Command"
+                        TitleGlyph="&#xf120;"
+                        Margin="0,0,0,15"/>
+
+                    <!-- Simplified border with fewer nested elements -->
+                    <Border Stroke="{StaticResource PrimaryPurple}" 
+                            StrokeThickness="2" 
+                            StrokeShape="RoundRectangle 10" 
+                            Margin="0,0,0,20">
+                        <Grid Padding="10" ColumnDefinitions="*, Auto">
                             <Grid.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnRecentCommandTapped" />
                             </Grid.GestureRecognizers>
 
-                            <!-- Updated MostRecentCommand Label to support FormattedText -->
+                            <!-- Use FormattedText binding with CommandColorConverter -->
                             <Label x:Name="MostRecentCommand"
-                           VerticalOptions="Center" 
-                           Grid.Column="0" 
-                           FontSize="16" 
-                           LineBreakMode="WordWrap"
-                           FontFamily="Courier New">
-                                <Label.FormattedText>
-                                    <FormattedString>
-                                        <Span Text="No recent command found"/>
-                                    </FormattedString>
-                                </Label.FormattedText>
-                            </Label>
+                                   VerticalOptions="Center" 
+                                   Grid.Column="0" 
+                                   FontSize="16" 
+                                   LineBreakMode="WordWrap"
+                                   FontFamily="Courier New"
+                                   FormattedText="{Binding MostRecentCommandText, Converter={StaticResource CommandColorConverter}}" />
 
-                            <controls:CustomButton 
-                        x:Name="CopyMostRecentCommand"
-                        Grid.Column="1"
-                        VerticalOptions="Center"
-                        ButtonWidth="50"
-                        Padding="0"
-                        Margin="10, 0, 10, 0"
-                        ButtonSize="25"
-                        ButtonStyle="ImageButton"
-                        ButtonGlyph="&#xf0c5;"
-                        ButtonClicked="OnCopyMostRecentCommand"/>
+                            <ImageButton
+                                x:Name="CopyMostRecentCommand"
+                                Grid.Column="1"
+                                VerticalOptions="Center"
+                                ToolTipProperties.Text="Copy command in the clipboard!"
+                                Clicked="OnCopyMostRecentCommand"
+                                HeightRequest="60"
+                                WidthRequest="60"
+                                BackgroundColor="Transparent"
+                                Padding="0"
+                                Margin="5, 0, 0, 0">
+                                <ImageButton.Shadow>
+                                    <Shadow Brush="indigo"
+                                        Offset="0,0"
+                                        Radius="15"
+                                        Opacity="3"/>
+                                </ImageButton.Shadow>
+                                <ImageButton.Source>
+                                    <FontImageSource FontFamily="FontAwesome"
+                                         Glyph="&#xf0c5;"
+                                         Color="#a46cdc"
+                                         Size="25"/>
+                                </ImageButton.Source>
+                            </ImageButton>
                         </Grid>
                     </Border>
                 </StackLayout>
             </Border>
 
             <!-- Saved Commands Section -->
-            <Border Style="{StaticResource GradientBorderStyle}"  Margin="0, 0, 0, 40">
+            <Border Style="{StaticResource GradientBorderStyle}" Margin="0,0,0,40">
                 <StackLayout>
                     <controls:BorderTitle x:Name="SavedCommandsTitleCount"
-                                TitleText="Favorites"
-                                TitleGlyph="&#xf0f6;"
-                                Margin="0,0,0,15"/>
-                    <!--<Label x:Name="SavedCommandsTitleCount" Text="Favorites (0)" FontSize="20" FontAttributes="Bold" Margin="0,0,0,10"/>-->
+                                          TitleText="Favorites"
+                                          TitleGlyph="&#xf0f6;"
+                                          Margin="0,0,0,15"/>
 
-                    <ListView ItemsSource="{Binding SavedCommandsList}">
+                    <!-- Optimized ListView with virtualization and FormattedText -->
+                    <ListView x:Name="SavedCommandsListView"
+                              ItemsSource="{Binding SavedCommandsList}"
+                              CachingStrategy="RecycleElement"
+                              HasUnevenRows="False">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <ViewCell>
-                                    <Border Stroke="Gray" Margin="5" BackgroundColor="{StaticResource InputBackround}"  StrokeThickness="1" StrokeShape="RoundRectangle 10">
+                                    <!-- Simplified border structure -->
+                                    <Border Stroke="Gray" 
+                                            Margin="5" 
+                                            BackgroundColor="{StaticResource InputBackround}"  
+                                            StrokeThickness="1" 
+                                            StrokeShape="RoundRectangle 10">
                                         <Grid Padding="10" ColumnDefinitions="*, Auto, Auto, Auto">
                                             <Grid.GestureRecognizers>
                                                 <TapGestureRecognizer Tapped="OnCommandTapped" />
                                             </Grid.GestureRecognizers>
 
-                                            <!-- Updated Label to use the converter for colored text -->
+                                            <!-- Use FormattedText binding with CommandColorConverter -->
                                             <Label VerticalOptions="Center" 
-                                               Grid.Column="0" 
-                                               FontSize="18" 
-                                               FontAttributes="Bold"
-                                               LineBreakMode="WordWrap"
-                                               FontFamily="Courier New"
-                                               FormattedText="{Binding ., Converter={StaticResource CommandColorConverter}}" />
+                                                   Grid.Column="0" 
+                                                   FontSize="16" 
+                                                   LineBreakMode="WordWrap"
+                                                   FontFamily="Courier New"
+                                                   FormattedText="{Binding ., Converter={StaticResource CommandColorConverter}}" />
 
-
-
-                                            <controls:CustomButton 
-                                            x:Name="CopyCommand"
-                                            Grid.Column="2"
-                                            VerticalOptions="Center"
-                                            ButtonWidth="50"
-                                            Padding="0"
-                                            Margin="5, 0, 0, 0"
-                                            ButtonSize="25"
-                                            ButtonStyle="ImageButton"
-                                            ButtonGlyph="&#xf0c5;"
-                                            TooltipText="Copy command in the clipboard!"                                                
-                                            ButtonClicked="OnCopyCommand"/>
-
-                                            <controls:CustomButton 
-                                            x:Name="DeleteCommand"
-                                            Grid.Column="3"
-                                            VerticalOptions="Center"
-                                            ButtonWidth="50"
-                                            Padding="0"
-                                            Margin="5, 0, 5, 0"
-                                            ButtonSize="25"
-                                            ButtonStyle="ImageButton"
-                                            ButtonGlyph="&#xf2ed;"
-                                            TooltipText="Delete command from list!"                                                
-                                            ButtonClicked="OnDeleteCommand"/>
-
-
-                                            <!--If I add this instead of the normal button below all the buttons break.-->
-                                            <controls:CustomButton 
-                                            Grid.Column="1"
-                                            VerticalOptions="Center"
-                                            ButtonWidth="50"
-                                            Padding="0"
-                                            Margin="5, 0, 0, 0"
-                                            ButtonSize="25"
-                                            ButtonStyle="ImageButton"
-                                            ButtonGlyph="&#xf019;"
-                                            BindingContext="{Binding .}"
-                                            TooltipText="Download command as bat file!"
-                                            ButtonClicked="OnDownloadBat"/>
-
-                                            <!--With this button all the buttons work properly-->
-                                            <!--<Border x:Name="CustomButton2" Grid.Column="1" BindingContext="{Binding .}" StrokeShape="RoundRectangle 10 " StrokeThickness="0"
+                                            <!-- Replace CustomButtons with regular Buttons for better performance -->
+                                            <ImageButton
+                                                Grid.Column="1"
                                                 VerticalOptions="Center"
-                                                Stroke="Transparent"
-                                                WidthRequest="80"
-                                                HeightRequest="40">
-                                                <Border.Shadow>
-                                                    <Shadow Brush="{StaticResource PrimaryPurple}" 
-                                                    Offset="0,4" 
-                                                    Radius="12" 
-                                                    Opacity="0.3"/>
-                                                </Border.Shadow>
-                                                <Border.Background>
-                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                        <GradientStop Color="{StaticResource PrimaryPurple}" Offset="0.0"/>
-                                                        <GradientStop Color="#8A2BE2" Offset="1.0"/>
-                                                    </LinearGradientBrush>
-                                                </Border.Background>
-                                                <Button             
-                                                Text=".bat"
+                                                ToolTipProperties.Text="Download command as bat file!"
+                                                Clicked="OnDownloadBat"
+                                                HeightRequest="60"
+                                                WidthRequest="60"
                                                 BackgroundColor="Transparent"
-                                                TextColor="White"
-                                                FontAttributes="Bold"
-                                                FontSize="18"
-                                                BorderWidth="0"
-                                                WidthRequest="80"
-                                                Clicked="OnDownloadBat"/>
-                                            </Border>-->
+                                                Padding="0"
+                                                Margin="5, 0, 0, 0"
+                                                BindingContext="{Binding .}">
+                                                <ImageButton.Shadow>
+                                                    <Shadow Brush="indigo"
+                                                        Offset="0,0"
+                                                        Radius="15"
+                                                        Opacity="3"/>
+                                                </ImageButton.Shadow>
+                                                <ImageButton.Source>
+                                                    <FontImageSource FontFamily="FontAwesome"
+                                                         Glyph="&#xf019;"
+                                                         Color="#a46cdc"
+                                                         Size="25"/>
+                                                </ImageButton.Source>
+                                            </ImageButton>
+
+                                            <ImageButton
+                                                x:Name="CopyCommand"
+                                                Grid.Column="2"
+                                                VerticalOptions="Center"
+                                                ToolTipProperties.Text="Copy command in the clipboard!"
+                                                Clicked="OnCopyCommand"
+                                                HeightRequest="60"
+                                                WidthRequest="60"
+                                                BackgroundColor="Transparent"
+                                                Padding="0"
+                                                Margin="5, 0, 0, 0"
+                                                BindingContext="{Binding .}">
+                                                <ImageButton.Shadow>
+                                                    <Shadow Brush="indigo"
+                                                        Offset="0,0"
+                                                        Radius="15"
+                                                        Opacity="3"/>
+                                                </ImageButton.Shadow>
+                                                <ImageButton.Source>
+                                                    <FontImageSource FontFamily="FontAwesome"
+                                                         Glyph="&#xf0c5;"
+                                                         Color="#a46cdc"
+                                                         Size="25"/>
+                                                </ImageButton.Source>
+                                            </ImageButton>
+
+                                            <ImageButton
+                                                x:Name="DeleteCommand"
+                                                Grid.Column="3"
+                                                VerticalOptions="Center"
+                                                ToolTipProperties.Text="Delete command from list!"
+                                                Clicked="OnDeleteCommand"
+                                                HeightRequest="60"
+                                                WidthRequest="60"
+                                                BackgroundColor="Transparent"
+                                                Padding="0"
+                                                Margin="5, 0, 5, 0"
+                                                BindingContext="{Binding .}">
+                                                <ImageButton.Shadow>
+                                                    <Shadow Brush="indigo"
+                                                        Offset="0,0"
+                                                        Radius="15"
+                                                        Opacity="3"/>
+                                                </ImageButton.Shadow>
+                                                <ImageButton.Source>
+                                                    <FontImageSource FontFamily="FontAwesome"
+                                                         Glyph="&#xf2ed;"
+                                                         Color="#a46cdc"
+                                                         Size="25"/>
+                                                </ImageButton.Source>
+                                            </ImageButton>
                                         </Grid>
                                     </Border>
                                 </ViewCell>
@@ -164,7 +190,6 @@
                     </ListView>
                 </StackLayout>
             </Border>
-
         </StackLayout>
     </ScrollView>
 </ContentPage>

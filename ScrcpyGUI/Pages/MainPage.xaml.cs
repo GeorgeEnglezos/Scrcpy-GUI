@@ -48,7 +48,7 @@ namespace ScrcpyGUI
 
         private void OnSizeChanged(object sender, EventArgs e)
         {
-            if (Width < 1250) // Example threshold for switching layout
+            if (Width < 1250)
             {
                 // Switch to 1 column, 2 rows
                 MainGrid.ColumnDefinitions.Clear();
@@ -60,7 +60,7 @@ namespace ScrcpyGUI
                 Grid.SetRow(OptionsPanel, 0);
 
                 Grid.SetColumn(OutputPanel, 0);
-                Grid.SetRow(OutputPanel, 1); // Assign OutputPanel to the second row
+                Grid.SetRow(OutputPanel, 1);
             }
             else
             {
@@ -74,7 +74,7 @@ namespace ScrcpyGUI
                 Grid.SetRow(OptionsPanel, 0);
 
                 Grid.SetColumn(OutputPanel, 1);
-                Grid.SetRow(OutputPanel, 0); // Assign OutputPanel to the first row
+                Grid.SetRow(OutputPanel, 0);
             }
         }
 

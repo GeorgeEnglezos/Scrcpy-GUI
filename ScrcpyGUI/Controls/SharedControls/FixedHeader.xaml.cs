@@ -69,15 +69,12 @@ public partial class FixedHeader : ContentView
         if (selectedDevice == null)
             return;
 
-        // Now you have the full object with all properties
+        // object with all properties
         string model = selectedDevice.DeviceName;
         string deviceId = selectedDevice.DeviceId;
 
         AdbCmdService.selectedDevice = selectedDevice;
 
-        //Fire event
         DeviceChanged?.Invoke(this, "");
-
     }
-
 }

@@ -1,20 +1,21 @@
+using Microsoft.Maui.Controls;
 using System.Diagnostics;
 
-
 namespace ScrcpyGUI.Controls;
+
 public partial class BorderTitle : ContentView
 {
-	public BorderTitle()
-	{
-		InitializeComponent();
-	}
+    public BorderTitle()
+    {
+        InitializeComponent();
+    }
 
     // TitleGlyph Property
     public static readonly BindableProperty TitleGlyphProperty = BindableProperty.Create(
         nameof(TitleGlyph),
-        typeof(string), // Assuming TitleGlyph is a string (e.g., a character, icon font code, or SVG path)
+        typeof(string),
         typeof(BorderTitle),
-        ""); // Default empty string for TitleGlyph
+        "");
 
     public string TitleGlyph
     {
@@ -35,4 +36,24 @@ public partial class BorderTitle : ContentView
         set => SetValue(TitleTextProperty, value);
     }
 
+    // ShowButton Property
+    public static readonly BindableProperty ShowButtonProperty = BindableProperty.Create(
+        nameof(ShowButton),
+        typeof(bool),
+        typeof(BorderTitle),
+        false);
+
+    public bool ShowButton
+    {
+        get => (bool)GetValue(ShowButtonProperty);
+        set => SetValue(ShowButtonProperty, value);
+    }
+
+    // ButtonClicked Event
+    public event EventHandler ButtonClicked;
+
+    private void OnButtonClicked(object sender, EventArgs e)
+    {
+        ButtonClicked?.Invoke(this, e);
+    }
 }

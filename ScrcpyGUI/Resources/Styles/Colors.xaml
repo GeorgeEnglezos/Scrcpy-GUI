@@ -15,6 +15,12 @@
     <Color x:Key="ErrorRed">#E02E4F</Color>
     <Color x:Key="InputBackround">#181d25</Color>
     <Color x:Key="BlackButton">#0b0e13</Color>
+
+    <Color x:Key="RedInnerButton">#e95845</Color>
+    <Color x:Key="RedOuterButton">#380505</Color>
+
+    <Color x:Key="GreenInnerButton">#30d56c</Color>
+    <Color x:Key="GreenOuterButton">#073618</Color>
     
     <!--Panel Color Coding-->
     <Color x:Key="PackageSelector">#FFA38C</Color>

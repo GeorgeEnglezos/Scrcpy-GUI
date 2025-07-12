@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using ScrcpyGUI.Models;
 
 namespace ScrcpyGUI.Controls
@@ -14,12 +15,14 @@ namespace ScrcpyGUI.Controls
         private string _scrcpyStatusColor = "Black";
         private string _deviceStatusColor = "Black";
 
-        private const string FA_CHECK_CIRCLE = "\uf058"; // fa-check-circle
-        private const string FA_TIMES_CIRCLE = "\uf057"; // fa-times-circle
-        private const string GREEN_LIGHT = "#30d56c"; // fa-times-circle
-        private const string GREEN_DARK = "#073618"; // fa-times-circle
-        private const string RED_LIGHT = "#e95845"; // fa-times-circle
-        private const string RED_DARK = "#380505"; // fa-times-circle
+        private const string FA_USB = "\uf0c1";
+        private const string FA_WIFI = "\uf1eb";
+        private const string FA_CHECK_CIRCLE = "\uf058";
+        private const string FA_TIMES_CIRCLE = "\uf057";
+        private const string GREEN_LIGHT = "#30d56c";
+        private const string GREEN_DARK = "#073618";
+        private const string RED_LIGHT = "#e95845";
+        private const string RED_DARK = "#380505";
         public string AdbStatusColor
         {
             get => _adbStatusColor;
@@ -66,7 +69,7 @@ namespace ScrcpyGUI.Controls
             RefreshStatus();
         }
 
-        private void RefreshStatus()
+        private async Task RefreshStatus()
         {
             CheckAdbInstallation();
             CheckScrcpyInstallation();
@@ -75,7 +78,7 @@ namespace ScrcpyGUI.Controls
             InvokeRefresh("");
         }
 
-        private async void PerformInitialChecks()
+        private async Task<string> PerformInitialChecks()
         {
             bool isAdbInstalled = await CheckAdbInstallation();
             bool isScrcpyInstalled = await CheckScrcpyInstallation();
@@ -95,40 +98,36 @@ namespace ScrcpyGUI.Controls
                 finalMessage += "No device connected.\n";
             }
 
-            if(!String.IsNullOrEmpty(finalMessage)) await Application.Current.MainPage.DisplayAlert("Error", finalMessage, "OK");
-            else Application.Current.MainPage.DisplayAlert("Info", "Everything looks OK", "OK");
-
+            return finalMessage;
         }
-        // --- ADB Installation Check ---
         private async Task<bool> CheckAdbInstallation()
         {
             bool isAdbInstalled = await AdbCmdService.CheckIfAdbIsInstalled();
 
-            // Get the FontImageSource from the Image.Source
             var adbFontImageSource = AdbStatusIcon.Source as FontImageSource;
 
             if (isAdbInstalled)
             {
                 AdbStatusLabel.Text = "Yes";
-                AdbStatusBorder.Background = Color.FromHex(GREEN_DARK); // Dark green background
-                AdbStatusBorder.Stroke = Color.FromHex(GREEN_LIGHT); // Lighter green border stroke
-                AdbStatusLabel.TextColor = Color.FromHex(GREEN_LIGHT); // Lighter green text color
+                AdbStatusBorder.Background = Color.FromHex(GREEN_DARK);
+                AdbStatusBorder.Stroke = Color.FromHex(GREEN_LIGHT);
+                AdbStatusLabel.TextColor = Color.FromHex(GREEN_LIGHT);
                 if (adbFontImageSource != null)
                 {
-                    adbFontImageSource.Glyph = FA_CHECK_CIRCLE; // Set the check icon
-                    adbFontImageSource.Color = Color.FromHex(GREEN_LIGHT); // Lighter green icon color
+                    adbFontImageSource.Glyph = FA_CHECK_CIRCLE;
+                    adbFontImageSource.Color = Color.FromHex(GREEN_LIGHT);
                 }
             }
             else
             {
                 AdbStatusLabel.Text = "No";
-                AdbStatusBorder.Background = Color.FromHex(RED_DARK); // Dark red background
-                AdbStatusBorder.Stroke = Color.FromHex(RED_LIGHT); // Lighter red border stroke
-                AdbStatusLabel.TextColor = Color.FromHex(RED_LIGHT); // Lighter red text color
+                AdbStatusBorder.Background = Color.FromHex(RED_DARK);
+                AdbStatusBorder.Stroke = Color.FromHex(RED_LIGHT);
+                AdbStatusLabel.TextColor = Color.FromHex(RED_LIGHT);
                 if (adbFontImageSource != null)
                 {
-                    adbFontImageSource.Glyph = FA_TIMES_CIRCLE; // Set the cross icon
-                    adbFontImageSource.Color = Color.FromHex(RED_LIGHT); // Lighter red icon color
+                    adbFontImageSource.Glyph = FA_TIMES_CIRCLE;
+                    adbFontImageSource.Color = Color.FromHex(RED_LIGHT);
                 }
             }
             return isAdbInstalled;
@@ -137,7 +136,7 @@ namespace ScrcpyGUI.Controls
         private async Task<bool> CheckScrcpyInstallation()
         {
             bool isScrcpyInstalled = await AdbCmdService.CheckIfScrcpyIsInstalled();
-            var scrcpyFontImageSource = ScrcpyStatusIcon.Source as FontImageSource; // Get the image source
+            var scrcpyFontImageSource = ScrcpyStatusIcon.Source as FontImageSource;
 
             if (isScrcpyInstalled)
             {
@@ -145,7 +144,7 @@ namespace ScrcpyGUI.Controls
                 ScrcpyStatusBorder.Background = Color.FromHex(GREEN_DARK);
                 ScrcpyStatusBorder.Stroke = Color.FromHex(GREEN_LIGHT);
                 ScrcpyStatusLabel.TextColor = Color.FromHex(GREEN_LIGHT);
-                if (scrcpyFontImageSource != null) // Set Glyph and Color for the icon
+                if (scrcpyFontImageSource != null)
                 {
                     scrcpyFontImageSource.Glyph = FA_CHECK_CIRCLE;
                     scrcpyFontImageSource.Color = Color.FromHex(GREEN_LIGHT);
@@ -157,7 +156,7 @@ namespace ScrcpyGUI.Controls
                 ScrcpyStatusBorder.Background = Color.FromHex(RED_DARK);
                 ScrcpyStatusBorder.Stroke = Color.FromHex(RED_LIGHT);
                 ScrcpyStatusLabel.TextColor = Color.FromHex(RED_LIGHT);
-                if (scrcpyFontImageSource != null) // Set Glyph and Color for the icon
+                if (scrcpyFontImageSource != null)
                 {
                     scrcpyFontImageSource.Glyph = FA_TIMES_CIRCLE;
                     scrcpyFontImageSource.Color = Color.FromHex(RED_LIGHT);
@@ -169,7 +168,7 @@ namespace ScrcpyGUI.Controls
         private async Task<bool> CheckDeviceConnection()
         {
             AdbCmdService.ConnectionType deviceConnection = await AdbCmdService.CheckDeviceConnection();
-            var deviceFontImageSource = DeviceStatusIcon.Source as FontImageSource; // Get the image source
+            var deviceFontImageSource = DeviceStatusIcon.Source as FontImageSource; 
 
             if (deviceConnection == AdbCmdService.ConnectionType.None)
             {
@@ -177,7 +176,7 @@ namespace ScrcpyGUI.Controls
                 DeviceStatusBorder.Background = Color.FromHex(RED_DARK);
                 DeviceStatusBorder.Stroke = Color.FromHex(RED_LIGHT);
                 DeviceStatusLabel.TextColor = Color.FromHex(RED_LIGHT);
-                if (deviceFontImageSource != null) // Set Glyph and Color for the icon
+                if (deviceFontImageSource != null)
                 {
                     deviceFontImageSource.Glyph = FA_TIMES_CIRCLE;
                     deviceFontImageSource.Color = Color.FromHex(RED_LIGHT);
@@ -186,15 +185,13 @@ namespace ScrcpyGUI.Controls
             }
             else
             {
-                // Note: Your original example had "Yes (USB)" : "Yes (TCP)" for DeviceStatusLabel.Text
-                // I'm keeping that logic.
-                DeviceStatusLabel.Text = deviceConnection == AdbCmdService.ConnectionType.Usb ? "Yes (USB)" : "Yes (TCP)";
+                DeviceStatusLabel.Text = "Yes";
                 DeviceStatusBorder.Background = Color.FromHex(GREEN_DARK);
                 DeviceStatusBorder.Stroke = Color.FromHex(GREEN_LIGHT);
                 DeviceStatusLabel.TextColor = Color.FromHex(GREEN_LIGHT);
-                if (deviceFontImageSource != null) // Set Glyph and Color for the icon
+                if (deviceFontImageSource != null)
                 {
-                    deviceFontImageSource.Glyph = FA_CHECK_CIRCLE;
+                    deviceFontImageSource.Glyph = deviceConnection == AdbCmdService.ConnectionType.Usb ? FA_USB : FA_WIFI;
                     deviceFontImageSource.Color = Color.FromHex(GREEN_LIGHT);
                 }
                 return true;
@@ -203,24 +200,19 @@ namespace ScrcpyGUI.Controls
 
         private void OnSizeChanged(object sender, EventArgs e)
         {
-            double breakpointWidth = 670; // Define your breakpoint width
+            double breakpointWidth = 670;
 
-            // Check the current width of the page
-            if (Width < breakpointWidth) // Switch to vertical layout (stacked)
+            if (Width < breakpointWidth)
             {
-                // Clear existing definitions
                 StatusContainerGrid.RowDefinitions.Clear();
                 StatusContainerGrid.ColumnDefinitions.Clear();
 
-                // Define 3 rows for a stacked layout
                 StatusContainerGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                 StatusContainerGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                 StatusContainerGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-                // Define a single column that takes all available width
                 StatusContainerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
 
-                // Position panels vertically within the StatusContainerGrid
                 Grid.SetRow(AdbStatusPanel, 0);
                 Grid.SetColumn(AdbStatusPanel, 0);
                 AdbStatusBorder.HorizontalOptions = LayoutOptions.End;
@@ -234,21 +226,17 @@ namespace ScrcpyGUI.Controls
                 DeviceStatusBorder.HorizontalOptions = LayoutOptions.End;
 
             }
-            else // Horizontal layout (side by side)
+            else
             {
-                // Clear existing definitions
                 StatusContainerGrid.RowDefinitions.Clear();
                 StatusContainerGrid.ColumnDefinitions.Clear();
 
-                // Define a single row for a horizontal layout
                 StatusContainerGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-                // Define 3 columns for side-by-side layout, distributing space equally
                 StatusContainerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
                 StatusContainerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
                 StatusContainerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
 
-                // Position panels side by side within the StatusContainerGrid
                 Grid.SetRow(AdbStatusPanel, 0);
                 Grid.SetColumn(AdbStatusPanel, 0);
                 AdbStatusBorder.HorizontalOptions = LayoutOptions.Center;

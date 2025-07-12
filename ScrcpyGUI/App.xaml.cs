@@ -5,16 +5,33 @@
         public App()
         {
             InitializeComponent();
-            Application.Current.UserAppTheme = AppTheme.Dark;
-            
+            MainPage = new AppShell();
+
+            // Set up cleanup for when the app closes
+            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+        }
+
+        private void OnProcessExit(object? sender, EventArgs e)
+        {
+            MauiProgram.CleanupMutex();
+        }
+
+        protected override void OnStart()
+        {
+            base.OnStart();
             LoadSettings();
         }
 
-        protected override Window CreateWindow(IActivationState? activationState)
+        protected override void OnSleep()
         {
-            return new Window(new AppShell());
+            base.OnSleep();
         }
-    
+
+        protected override void OnResume()
+        {
+            base.OnResume();
+        }
+
         private async void LoadSettings()
         {
             DataStorage.staticSavedData = DataStorage.LoadData();
@@ -22,10 +39,18 @@
 
             // Validate and create paths, with fallbacks to Desktop
             var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string videosPath = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
 
             AdbCmdService.scrcpyPath = DataStorage.ValidateAndCreatePath(settings.ScrcpyPath);
-            AdbCmdService.recordingsPath = DataStorage.ValidateAndCreatePath(settings.RecordingPath, desktopPath);
+
+            AdbCmdService.recordingsPath = DataStorage.ValidateAndCreatePath(settings.RecordingPath, videosPath);
+            settings.RecordingPath = AdbCmdService.recordingsPath;
+
             DataStorage.staticSavedData.AppSettings.DownloadPath = DataStorage.ValidateAndCreatePath(settings.DownloadPath, desktopPath);
+            settings.DownloadPath = DataStorage.staticSavedData.AppSettings.DownloadPath;
+
+            DataStorage.staticSavedData.AppSettings = settings;
+            DataStorage.SaveData(DataStorage.staticSavedData);
         }
-    } 
+    }
 }

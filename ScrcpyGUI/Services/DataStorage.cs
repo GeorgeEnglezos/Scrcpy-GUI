@@ -88,9 +88,8 @@ public static class DataStorage
         SaveData(data);
     }
 
-    public static bool RemoveFavoriteCommandAtIndex(int index)
+    public static bool RemoveFavoriteCommandAtIndex(int index, ScrcpyGuiData data)
     {
-        var data = LoadData();
         if (index >= 0 && index < data.FavoriteCommands.Count)
         {
             data.FavoriteCommands.RemoveAt(index);
