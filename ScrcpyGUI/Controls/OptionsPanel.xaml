@@ -4,37 +4,21 @@
              xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
              x:Class="ScrcpyGUI.Controls.OptionsPanel">
 
-    <!-- Settings Panel -->
-    <Grid Padding="20" x:Name="SettingsPanel">
-        <Label Text="Scrcpy Settings"
-               TextColor="White"
-               FontSize="24"
-               FontAttributes="Bold"
-               Padding="10,0"
-               HorizontalOptions="Center"
-               VerticalOptions="Start"
-               TranslationY="-18"
-               BackgroundColor="#1f1f1f"
-               ZIndex="1" />
-
-        <Border Padding="20" StrokeThickness="2" Stroke="{StaticResource Purple4}">
-            <Grid Padding="10" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+            <Grid Padding="10" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="15">
                 
                 <!-- Settings Panel -->
-                <controls:OptionsPackageSelectionPanel x:Name="OptionsPackageSelectionPanel" Grid.Row="0" HorizontalOptions="Fill" Margin="0,20"/>
+                <controls:OptionsPackageSelectionPanel x:Name="OptionsPackageSelectionPanel" Grid.Row="0"/>
 
                 <!-- Generic Options -->
-                <controls:OptionsGeneralPanel x:Name="OptionsGeneralPanel" Grid.Row="1" HorizontalOptions="Fill" Margin="0,20"/>
+                <controls:OptionsGeneralPanel x:Name="OptionsGeneralPanel" Grid.Row="1"/>
                 
                 <!-- Audio Options -->
-                <controls:OptionsAudioPanel x:Name="OptionsAudioPanel" Grid.Row="2" HorizontalOptions="Fill" Margin="0,20"/>
+                <controls:OptionsAudioPanel x:Name="OptionsAudioPanel" Grid.Row="2"/>
 
                 <!-- Virtual Display Options -->
-                <controls:OptionsVirtualDisplayPanel x:Name="OptionsVirtualDisplayPanel" Grid.Row="3" HorizontalOptions="Fill" Margin="0,20"/>
+                <controls:OptionsVirtualDisplayPanel x:Name="OptionsVirtualDisplayPanel" Grid.Row="3"/>
 
                 <!-- Screen Recording Panel -->
-                <controls:OptionsScreenRecordingPanel x:Name="OptionsScreenRecordingPanel" Grid.Row="4" HorizontalOptions="Fill" Margin="0,20"/>
+                <controls:OptionsScreenRecordingPanel x:Name="OptionsScreenRecordingPanel" Grid.Row="4"/>
             </Grid>
-        </Border>
-    </Grid>
 </ContentView>

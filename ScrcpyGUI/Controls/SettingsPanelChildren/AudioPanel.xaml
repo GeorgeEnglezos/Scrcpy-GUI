@@ -6,101 +6,53 @@
              xmlns:controls="clr-namespace:ScrcpyGUI.Controls"             
              x:Class="ScrcpyGUI.Controls.OptionsAudioPanel">
 
-    <!-- Main Grid -->
-    <Grid RowDefinitions="Auto, *">
-            <!-- Border -->
-        <Border Grid.Row="1" StrokeThickness="2" Stroke="{StaticResource PrimaryPurple}" ZIndex="0"  StrokeShape="RoundRectangle 10" Padding="20, 10">
-            <FlexLayout x:Name="OptionsContainer"
-                Direction="Row"
-                Wrap="Wrap"
-                JustifyContent="SpaceBetween"
-                AlignItems="Center"
-                AlignContent="Start">
 
-                <!-- No Audio OK -->
-                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10">
-                    <Label Text="No Audio" WidthRequest="185" VerticalTextAlignment="Center" FontSize="16" FontAttributes="Bold" />
-                    <ur:CheckBox CheckChanged="OnNoAudioChanged" x:Name="NoAudioCheckBox" />
-                </HorizontalStackLayout>
 
-                <!-- Audio Codec -->
-                <ur:PickerField WidthRequest="210" Margin="5, 10, 0, 10"
-                    x:Name="AudioCodecEncoderPicker"
-                    Title="Audio Codec - Encoder"
-                    Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Expand_circle_down}}" />
+    <StackLayout>
+        <Border Style="{StaticResource GradientBorderStyle}" x:Name="OptionsContainer">
+            <StackLayout>
+                <controls:BorderTitle TitleText="Audio" TitleGlyph="&#xf025;" Margin="0, 0, 0, 20"
+                                      ShowButton="True" ButtonClicked="CleanSettings" />
 
-                <!-- Audio Bit Rate OK -->
-                <AbsoluteLayout>
-                <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="AudioBitRateEntry" Title="Audio Bit Rate" FontSize="16" TextChanged="OnAudioBitRateChanged"></ur:TextField>
-                <Image WidthRequest="20"
-                               HeightRequest="20"
-                               ToolTipProperties.Text="(e.g., 128K, 256K). Higher values improve audio quality at the cost of bandwidth. Default is 128K."
-                               VerticalOptions="Center"
-                               Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}"
-                               AbsoluteLayout.LayoutBounds="0.95,0.55,20,20"
-                               AbsoluteLayout.LayoutFlags="PositionProportional" />
-                </AbsoluteLayout>
-                
-                <!-- Audio Buffer OK-->
-                <AbsoluteLayout>
-                    <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="AudioBufferEntry" Title="Audio Buffer" FontSize="16" TextChanged="OnAudioBufferChanged"></ur:TextField>
-                    <Image WidthRequest="20"
-                               HeightRequest="20"
-                               ToolTipProperties.Text="Sets the audio buffer size in milliseconds (e.g., 50). Lower values reduce latency but may cause audio glitches. Higher values improve stability at the cost of delay. Default is 200"
-                               VerticalOptions="Center"
-                               Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}"
-                               AbsoluteLayout.LayoutBounds="0.95,0.55,20,20"
-                               AbsoluteLayout.LayoutFlags="PositionProportional" />
-                </AbsoluteLayout>
-                
-                <!-- Enable Audio Duplication OK -->
-                <HorizontalStackLayout WidthRequest="210" Margin="5, 10, 0, 10" ToolTipProperties.Text="Audio will play on the device while mirroring 
-                                       (Android 13+)">
-                    <Label Text="Audio Duplication" WidthRequest="185" VerticalTextAlignment="Center" FontSize="16"/>
-                    <ur:CheckBox CheckChanged="OnAudioDupChanged" x:Name="AudioDupCheckBox" />
-                </HorizontalStackLayout>
+                <!--Options-->
+                <Grid x:Name="AudioGrid" RowDefinitions="*,*" ColumnDefinitions="*,*,*" RowSpacing="20" ColumnSpacing="20">
 
-                <!-- Audio Codec Options -->
-                <AbsoluteLayout>
-                    <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="AudioCodecOptionsEntry" Title="Audio Codec Options" FontSize="16" TextChanged="OnAudioCodecOptionsChanged"></ur:TextField>
-                    <Image WidthRequest="20"
-                               HeightRequest="20"
-                               ToolTipProperties.Text="e.g., flac-compression-level=8"
-                               VerticalOptions="Center"
-                               Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}"
-                               AbsoluteLayout.LayoutBounds="0.95,0.55,20,20"
-                               AbsoluteLayout.LayoutFlags="PositionProportional" />
-                </AbsoluteLayout>
-            </FlexLayout>
+                    <!-- Audio Bit Rate -->
+                    <controls:CustomTextInput x:Name="AudioBitRateEntry" LabelText="Audio Bit Rate"
+                        TooltipText="(e.g., 128K, 256K). Higher values improve audio quality at the cost of bandwidth. Default is 128K." 
+                        TextChanged="OnAudioBitRateChanged"/>
+
+                    <!-- Audio Buffer-->
+                    <controls:CustomTextInput x:Name="AudioBufferEntry" LabelText="Audio Buffer"
+                        TooltipText="Sets the audio buffer size in milliseconds (e.g., 50). Lower values reduce latency but may cause audio glitches. Higher values improve stability at the cost of delay. Default is 200" 
+                        TextChanged="OnAudioBufferChanged"/>
+
+                    <!-- Audio Codec Options -->
+                    <controls:CustomTextInput x:Name="AudioCodecOptionsEntry" LabelText="Audio Codec Options"
+                        TooltipText="e.g., flac-compression-level=8" 
+                        TextChanged="OnAudioCodecOptionsChanged"/>
+
+                    <!-- No Audio -->
+                    <controls:CustomCheckbox x:Name="NoAudioCheckBox"
+                        LabelText="No Audio"                  
+                        IsChecked="{Binding IsNoAudioChecked}"
+                        CheckedChanged="OnNoAudioChanged"/>
+
+                    <!-- Enable Audio Duplication -->
+                    <controls:CustomCheckbox x:Name="AudioDupCheckBox"
+                        LabelText="Audio Duplication"                  
+                        IsChecked="{Binding IsNoAudioChecked}"
+                        CheckedChanged="OnAudioDupChanged"
+                        ToolTipProperties.Text="Audio will play on the device while mirroring (Android 13+)"/>
+
+                    <!-- Audio Codec - Encoder -->
+                    <ur:PickerField 
+                        x:Name="AudioCodecEncoderPicker"
+                        Title="Audio Codec - Encoder"
+                        Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Expand_circle_down}}" />
+
+                </Grid>
+            </StackLayout>
         </Border>
-
-
-        <!-- Label and Checkbox -->
-        <FlexLayout Grid.RowSpan="2" 
-            BackgroundColor= "{DynamicResource BackGroundGrey}"
-            VerticalOptions="Start"
-            HorizontalOptions="Center"
-            ZIndex="1"
-            TranslationY="-25">
-            <Label Text="Audio"
-                TextColor="{StaticResource PrimaryPurple}"
-                FontSize="22"
-                FontAttributes="Bold"
-                Padding="10,0,0,0"
-                VerticalOptions="Center"
-                HorizontalOptions="Center"/>
-            <controls:CustomButton
-                        x:Name="CleanButton"
-                        Grid.Row="2" Grid.Column="2" 
-                        VerticalOptions="Center"
-                        ButtonWidth="50"
-                        Margin="0"
-                        Padding="0"
-                        ButtonSize="25"
-                        ButtonStyle="ImageButton"
-                        ButtonGlyph="&#xf12d;"
-                        TooltipText="Clear Settings"
-                        ButtonClicked="CleanSettings"/>
-        </FlexLayout>
-    </Grid>
+    </StackLayout>
 </ContentView>

@@ -20,70 +20,45 @@
         </x:Array>
     </ContentView.Resources>
 
-            <!-- Main Grid -->
-    <Grid RowDefinitions="*">
-        <!-- Border -->
-        <Border Grid.Row="1" StrokeThickness="2" Stroke="{StaticResource PrimaryPurple}" ZIndex="0"  StrokeShape="RoundRectangle 10" Padding="20, 10">
-            <FlexLayout x:Name="OptionsContainer"
-                        Direction="Row"
-                        Wrap="Wrap"
-                        JustifyContent="SpaceBetween"
-                        AlignItems="Center"
-                        AlignContent="Start">
+    <StackLayout>
+        <Border Style="{StaticResource GradientBorderStyle}" x:Name="OptionsContainer">
+            <StackLayout>
+                <controls:BorderTitle TitleText="Recording" TitleGlyph="&#xf03d;" Margin="0, 0, 0, 20"/>
+                <!--Options-->
+                <Grid x:Name="RecordingGrid" RowDefinitions="*,*" ColumnDefinitions="*,*,*" RowSpacing="20" ColumnSpacing="20">
 
-                <!-- Max Size -->
-                <AbsoluteLayout>
-                    <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="ResolutionEntry" Title="Max Size" FontSize="16" TextChanged="OnResolutionChanged" Keyboard="Numeric" />
-                    <Image WidthRequest="20" HeightRequest="20" 
-                           ToolTipProperties.Text="Sets the maximum video height or width (in pixels) while preserving aspect ratio (e.g., 1024). Reduces resolution to lower bandwidth and improve performance. Default is no limit (use device resolution)." 
-                           VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
-                </AbsoluteLayout>
+                        <!-- Recording Toggle -->
+                        <controls:CustomCheckbox x:Name="EnableCheckbox"
+                        LabelText="Enable Recording"                  
+                        IsChecked="{Binding IsRecordingEnabled}"
+                        CheckedChanged="OnEnableRecordingChanged"/>
 
-                <!-- Max FPS -->
-                <AbsoluteLayout>
-                    <ur:TextField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="FramerateEntry" Title="Max fps" FontSize="16" TextChanged="OnFramerateChanged" Keyboard="Numeric" />
-                    <Image WidthRequest="20" HeightRequest="20" 
-                           ToolTipProperties.Text="Limits the maximum frames per second of the video stream (e.g., 30, 60). Reduces CPU/GPU load and bandwidth. Default is no limit (use device's native FPS)." VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.95,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
-                </AbsoluteLayout>
+                        <!-- Resolution Entry -->
+                        <controls:CustomTextInput x:Name="ResolutionEntry" LabelText="Max Size"
+                        TooltipText="Sets the maximum video height or width (in pixels) while preserving aspect ratio (e.g., 1024). Reduces resolution to lower bandwidth and improve performance. Default is no limit (use device resolution)." 
+                        TextChanged="OnResolutionChanged"/>
 
-                <!-- Output Format -->
-                <ur:PickerField WidthRequest="210" Margin="5, 10, 0, 10" x:Name="OutputFormatPicker" ItemsSource="{StaticResource VideoFormatArr}" Title="Output Format" 
-                                Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Expand_circle_down}}" />
+                        <!-- File Name -->
+                        <controls:CustomTextInput x:Name="FileNameEntry" LabelText="File Name"
+                        UseTooltip="False" 
+                        TextChanged="OnFileNameChanged"/>
 
-                <!-- Output File -->
-                <AbsoluteLayout>
-                    <ur:TextField WidthRequest="470" Margin="5, 10, 0, 10" x:Name="OutputFileEntry" Title="Output File" FontSize="16" TextChanged="OnOutputFileChanged" />
-                    <Image WidthRequest="20" HeightRequest="20" ToolTipProperties.Text="D:\Recordings\output.mp4" VerticalOptions="Center" Source="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Info}, Color=White}" AbsoluteLayout.LayoutBounds="0.975,0.55,20,20" AbsoluteLayout.LayoutFlags="PositionProportional" />
-                </AbsoluteLayout>
-            </FlexLayout>
+                        <!-- Max FPS -->
+                        <controls:CustomTextInput x:Name="FramerateEntry" LabelText="Max fps"
+                        TooltipText="Limits the maximum frames per second of the video stream (e.g., 30, 60). Reduces CPU/GPU load and bandwidth. Default is no limit (use device's native FPS)."
+                        TextChanged="OnFramerateChanged"/>
+
+                        <!-- Output Format -->
+                        <ur:PickerField x:Name="OutputFormatPicker" ItemsSource="{StaticResource VideoFormatArr}" Title="Output Format" FontSize="16" 
+                        Icon="{FontImageSource FontFamily=MaterialRegular, Glyph={x:Static uranium:MaterialRegular.Expand_circle_down}}" />
+
+                        <!-- Output File -->
+                        <!--<controls:CustomTextInput x:Name="OutputFileEntry" LabelText="Output File"
+                        TooltipText="D:\Recordings\output.mp4"
+                        TextChanged="OnOutputFileChanged"/>-->
+
+                </Grid>
+            </StackLayout>
         </Border>
-
-        <!-- Header -->
-        <FlexLayout Grid.RowSpan="2"
-                    BackgroundColor="{DynamicResource BackGroundGrey}"
-                    VerticalOptions="Start"
-                    HorizontalOptions="Center"
-                    ZIndex="1"
-                    TranslationY="-25">
-            <Label Text="Recording"
-                   TextColor="{StaticResource PrimaryPurple}"
-                   FontSize="24"
-                   FontAttributes="Bold"
-                   Padding="10,0,0,0"                   
-                   VerticalOptions="Center"
-                   HorizontalOptions="Center"/>
-            <controls:CustomButton
-                        x:Name="CleanButton"
-                        Grid.Row="2" Grid.Column="2" 
-                        VerticalOptions="Center"
-                        ButtonWidth="50"
-                        Margin="0"
-                        Padding="0"
-                        ButtonSize="25"
-                        ButtonStyle="ImageButton"
-                        ButtonGlyph="&#xf12d;"
-                        TooltipText="Clear Settings"
-                        ButtonClicked="CleanSettings"/>
-        </FlexLayout>
-    </Grid>
+    </StackLayout>
 </ContentView>

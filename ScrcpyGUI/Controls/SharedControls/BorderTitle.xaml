@@ -5,39 +5,63 @@
              x:Class="ScrcpyGUI.Controls.BorderTitle"
              x:Name="This">
 
-    <HorizontalStackLayout HorizontalOptions="Start" VerticalOptions="Center" Margin="0, 15">
-        <Border BackgroundColor="Transparent" Stroke="Transparent" StrokeThickness="0"  VerticalOptions="Center">
-            <Border.StrokeShape>
-                <RoundRectangle CornerRadius="12"/>
-            </Border.StrokeShape>
-            <Border.Shadow>
-                <Shadow Brush="{StaticResource PrimaryPurple}" Offset="0,4" Radius="20" Opacity="0.3"/>
-            </Border.Shadow>
-            <Border.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="{StaticResource PrimaryPurple}" Offset="0.0"/>
-                    <GradientStop Color="{StaticResource AccentPurple}" Offset="1.0"/> <!--"#FF8FF8"-->
-                </LinearGradientBrush>
-            </Border.Background>
+    <Grid ColumnDefinitions="Auto,*" VerticalOptions="Center" Margin="0, 15">
+        <StackLayout Orientation="Horizontal" Grid.Column="0">
+            <!--Image-->
+            <Border BackgroundColor="Transparent" Stroke="Transparent" StrokeThickness="0" VerticalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="{StaticResource PrimaryPurple}" Offset="0,4" Radius="20" Opacity="0.3"/>
+                </Border.Shadow>
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="{StaticResource PrimaryPurple}" Offset="0.0"/>
+                        <GradientStop Color="{StaticResource AccentPurple}" Offset="1.0"/>
+                        <!--"#FF8FF8"-->
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Image 
+                    Margin="10"                
+                    x:Name="CopyMostRecentImage"
+                    HeightRequest="20"
+                    WidthRequest="20"
+                    BackgroundColor="Transparent">
+                    <Image.Source>
+                        <FontImageSource FontFamily="FontAwesome" Glyph="{Binding Source={x:Reference This}, Path=TitleGlyph}" Color="White" Size="100"/>
+                    </Image.Source>
+                </Image>
+            </Border>
 
-            <Image 
-                Margin="10"                
-                x:Name="CopyMostRecentImage"
-                HeightRequest="20"
-                WidthRequest="20"
-                BackgroundColor="Transparent">
-                <Image.Source>
-                    <FontImageSource FontFamily="FontAwesome" Glyph="{Binding Source={x:Reference This}, Path=TitleGlyph}" Color="White" Size="100"/>
-                </Image.Source>
-            </Image>
-        </Border>
-        <Label 
-            Text="{Binding Source={x:Reference This}, Path=TitleText}"
-            Padding="10"
-            FontSize="22"
-            FontAttributes="Bold"
-            TextColor="White"
-            VerticalOptions="Center"
-            HorizontalOptions="Start"/>
-    </HorizontalStackLayout>
+            <!--Text-->
+            <Label
+                Text="{Binding Source={x:Reference This}, Path=TitleText}"
+                Padding="10"
+                FontSize="22"
+                FontAttributes="Bold"
+                TextColor="White"
+                VerticalOptions="Center"
+                HorizontalOptions="Start"/>
+        </StackLayout>
+
+        <!--Button-->
+        <StackLayout Grid.Column="1" HorizontalOptions="End">
+            <controls:CustomButton 
+                                x:Name="SaveCommand"
+                                ButtonStyle="ImageButtonBorder"                            
+                                VerticalOptions="Center"
+                                ButtonWidth="55"
+                                ButtonHeight="50"
+                                ButtonSize="25"
+                                ButtonGlyph="&#xf12d;"
+                                ButtonColor="{StaticResource PrimaryDark}"
+                                ButtonStrokeColor="{StaticResource InputBackround}"
+                                ShadowColor="indigo"                                                   
+                                ButtonClicked="OnButtonClicked"
+                                TooltipText="Clean selected options"
+                                IsVisible="{Binding Source={x:Reference This}, Path=ShowButton}"/>
+        </StackLayout>
+    </Grid>
+
 </ContentView>

@@ -1,8 +1,8 @@
 ﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:ScrcpyGUI.Controls"
-             x:Class="ScrcpyGUI.InfoPage"
-             BackgroundColor="{DynamicResource BackGroundGrey}"
+             x:Class="ScrcpyGUI.InfoPage"             
+             Background="{StaticResource PageGradientBackground}"             
              Shell.Title="">
              <!--xmlns:sharedControls="clr-namespace:ScrcpyGUI.Controls.SharedControls"-->
 
@@ -10,126 +10,127 @@
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Padding="20">
 
+
+
                 <!--Tools-->
                 <Label Text="Tools"
                        TextColor="{StaticResource Secondary}"
                        Margin="20, 5, 0,5" 
                        FontSize="30"/>
                 <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0,0, 0, 20" />
+                <Grid RowDefinitions="*" ColumnDefinitions="Auto,Auto" ColumnSpacing="20">
+                    <controls:StatusPanel Grid.Column="0" x:Name="ChecksPanel" MaximumWidthRequest="380"/>
+                    <controls:WirelessConnectionPanel Grid.Column="1" x:Name="WirelessConnectionPanel" MaximumWidthRequest="380"/>
+                </Grid>
 
-                <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start">
-                    <controls:StatusPanel x:Name="ChecksPanel" MaximumWidthRequest="380" Margin="0, 10, 20, 10"/>
-                    <controls:WirelessConnectionPanel x:Name="WirelessConnectionPanel" MinimumWidthRequest="380" Margin="0, 10"/>
-                </FlexLayout>
 
 
-                <!--Resources-->
-                <Label Text="Resources"
-                       TextColor="{StaticResource Secondary}"
-                       Margin="20, 50, 0,5" 
-                       FontSize="30"/>
-                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
+                    <!--Resources-->
+                <Border Style="{StaticResource GradientBorderStyle}" Margin="0,20" Padding="10, 0, 10, 20">
+                    <StackLayout>
+                        <controls:BorderTitle TitleText="Resources" TitleGlyph="&#xf08e;"/>
+                        <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start">
 
-                <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start">
+                            <Border BackgroundColor="Transparent" WidthRequest="300" Padding="15" Margin="5,0" StrokeThickness="0.5">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10"/>
+                                </Border.StrokeShape>
+                                <VerticalStackLayout>
+                                    <Label Text="Official Scrcpy"
+                                           FontSize="Subtitle"
+                                           FontAttributes="Bold"
+                                           Margin="0,0,0,5" />
+                                    <Label Text="Visit the official Scrcpy GitHub Repo"
+                                        FontSize="Body"
+                                        TextColor="{StaticResource Secondary}"
+                                        Margin="0,0,0,10" />
+                                    <Button Text="Open GitHub" 
+                                            BackgroundColor="{StaticResource BlackButton}"
+                                        Clicked="OpenScrcpyOfficial" />
+                                </VerticalStackLayout>
+                            </Border>
 
-                    <Border BackgroundColor="Transparent"
-                       WidthRequest="300"
-                       Padding="15"
-                       Margin="5">
-                        <VerticalStackLayout>
-                            <Label Text="Official Scrcpy"
-                               FontSize="Subtitle"
-                               FontAttributes="Bold"
-                               Margin="0,0,0,5" />
-                            <Label Text="Visit the official Scrcpy GitHub Repo"
-                               FontSize="Body"
-                               TextColor="{StaticResource Secondary}"
-                               Margin="0,0,0,10" />
-                            <Button Text="Open GitHub"
-                                Clicked="OpenScrcpyOfficial" />
-                        </VerticalStackLayout>
-                    </Border>
+                            <Border BackgroundColor="Transparent" WidthRequest="300" Padding="15" Margin="5,0" StrokeThickness="0.5">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10"/>
+                                </Border.StrokeShape>
+                                <VerticalStackLayout>
+                                    <Label Text="Official Docs"
+                                       FontSize="Subtitle"
+                                       FontAttributes="Bold"
+                                       Margin="0,0,0,5" />
+                                    <Label Text="Visit Scrcpy's Official Documentation"
+                                       FontSize="Body"
+                                       TextColor="{StaticResource Secondary}"
+                                       Margin="0,0,0,10" />
+                                    <Button Text="Open GitHub"
+                                            BackgroundColor="{StaticResource BlackButton}"
+                                        Clicked="OpenScrcpyOfficialDocs" />
+                                </VerticalStackLayout>
+                            </Border>
 
-                    <Border BackgroundColor="Transparent"
-                       WidthRequest="300"
-                       Padding="15"
-                       Margin="5">
-                        <VerticalStackLayout>
-                            <Label Text="Official Docs"
-                               FontSize="Subtitle"
-                               FontAttributes="Bold"
-                               Margin="0,0,0,5" />
-                            <Label Text="Visit Scrcpy's Official Documentation"
-                               FontSize="Body"
-                               TextColor="{StaticResource Secondary}"
-                               Margin="0,0,0,10" />
-                            <Button Text="Open GitHub"
-                                Clicked="OpenScrcpyOfficialDocs" />
-                        </VerticalStackLayout>
-                    </Border>
+                            <Border BackgroundColor="Transparent" WidthRequest="300" Padding="15" Margin="5,0" StrokeThickness="0.5">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10"/>
+                                </Border.StrokeShape>
+                                <VerticalStackLayout>
+                                    <Label Text="Scrcpy GUI"
+                                       FontSize="Subtitle"
+                                       FontAttributes="Bold"
+                                       Margin="0,0,0,5" />
+                                    <Label Text="Visit the GUI's GitHub page"
+                                       FontSize="Body"
+                                       TextColor="{StaticResource Secondary}"
+                                       Margin="0,0,0,10" />
+                                    <Button Text="Open GitHub"
+                                            BackgroundColor="{StaticResource BlackButton}"
+                                        Clicked="OpenScrcpyGui" />
+                                </VerticalStackLayout>
+                            </Border>
 
-                    <Border BackgroundColor="Transparent"
-                       WidthRequest="300"
-                       Padding="15"
-                       Margin="5">
-                        <VerticalStackLayout>
-                            <Label Text="Scrcpy GUI"
-                               FontSize="Subtitle"
-                               FontAttributes="Bold"
-                               Margin="0,0,0,5" />
-                            <Label Text="Visit the GUI's GitHub page"
-                               FontSize="Body"
-                               TextColor="{StaticResource Secondary}"
-                               Margin="0,0,0,10" />
-                            <Button Text="Open GitHub"
-                                Clicked="OpenScrcpyGui" />
-                        </VerticalStackLayout>
-                    </Border>
+                            <Border BackgroundColor="Transparent" WidthRequest="300" Padding="15" Margin="5,0"  StrokeThickness="0.5">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10"/>
+                                </Border.StrokeShape>
+                                <VerticalStackLayout>
+                                    <Label Text="Scrcpy GUI Docs"
+                                       FontSize="Subtitle"
+                                       FontAttributes="Bold"
+                                       Margin="0,0,0,5" />
+                                    <Label Text="Visit the GUI's Documentation"
+                                       FontSize="Body"
+                                       TextColor="{StaticResource Secondary}"
+                                       Margin="0,0,0,10" />
+                                    <Button Text="Open GitHub"
+                                            BackgroundColor="{StaticResource BlackButton}"
+                                        Clicked="OpenScrcpyGuiDocs" />
+                                </VerticalStackLayout>
+                            </Border>
 
-                    <Border BackgroundColor="Transparent"
-                       WidthRequest="300"
-                       Padding="15"
-                       Margin="5">
-                        <VerticalStackLayout>
-                            <Label Text="Scrcpy GUI Docs"
-                               FontSize="Subtitle"
-                               FontAttributes="Bold"
-                               Margin="0,0,0,5" />
-                            <Label Text="Visit the GUI's Documentation"
-                               FontSize="Body"
-                               TextColor="{StaticResource Secondary}"
-                               Margin="0,0,0,10" />
-                            <Button Text="Open GitHub"
-                                Clicked="OpenScrcpyGuiDocs" />
-                        </VerticalStackLayout>
-                    </Border>
+                        </FlexLayout>
+                    </StackLayout>
+                </Border>
 
-                </FlexLayout>
 
                 <!--Commands-->
-                <Label Text="Useful Commands"
-                       TextColor="{StaticResource Secondary}"
-                       Margin="20, 50, 0,5" 
-                       FontSize="30"/>
-                <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0, 0, 0, 20"  />
+                <Border Style="{StaticResource GradientBorderStyle}"  Margin="0,20" Padding="10, 0, 10, 20">
+                    <StackLayout>
+                        <controls:BorderTitle TitleText="Useful Commands" TitleGlyph="&#xf120;"/>
+                        <VerticalStackLayout Margin="0,2">
+                            <controls:CommandBorder CommandText="scrcpy --version" CommandTooltip="Check if scrcpy is installed and which version you have installed!"/>
+                            <controls:CommandBorder CommandText="adb --version" CommandTooltip="Check if ADB is installed and which version you have installed!"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Margin="0,2">
+                            <controls:CommandBorder CommandText="winget install --exact Genymobile.scrcpy" CommandTooltip="Install the latest Scrcpy version!(Will install ADB as well)"/>
+                            <controls:CommandBorder CommandText="winget install --exact  &quot;Android SDK Platform-Tools&quot;" CommandTooltip="Install the latest ADB version!" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout  Margin="0,2">
+                            <controls:CommandBorder CommandText="winget uninstall --exact Genymobile.scrcpy" CommandTooltip="Uninstall Scrcpy from your machine!" />
+                            <controls:CommandBorder CommandText="winget uninstall --exact &quot;Android SDK Platform-Tools&quot;" CommandTooltip="Uninstall ADB from your machine!" />
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout Padding="20" Spacing="16">
-
-                    <!--Command 1-->
-                    <VerticalStackLayout Margin="0,2">
-                        <controls:CommandBorder CommandText="scrcpy --version" CommandTooltip="Check if scrcpy is installed and which version you have installed!"/>
-                        <controls:CommandBorder CommandText="adb --version" CommandTooltip="Check if ADB is installed and which version you have installed!"/>
-                    </VerticalStackLayout>
-                    <VerticalStackLayout Margin="0,2">
-                        <controls:CommandBorder CommandText="winget install --exact Genymobile.scrcpy" CommandTooltip="Install the latest Scrcpy version!(Will install ADB as well)"/>
-                        <controls:CommandBorder CommandText="winget install --exact  &quot;Android SDK Platform-Tools&quot;" CommandTooltip="Install the latest ADB version!" />
-                    </VerticalStackLayout>
-                    <VerticalStackLayout  Margin="0,2">
-                        <controls:CommandBorder CommandText="winget uninstall --exact Genymobile.scrcpy" CommandTooltip="Uninstall Scrcpy from your machine!" />
-                        <controls:CommandBorder CommandText="winget uninstall --exact &quot;Android SDK Platform-Tools&quot;" CommandTooltip="Uninstall ADB from your machine!" />
-                    </VerticalStackLayout>
-
-                </VerticalStackLayout>
+                    </StackLayout>
+                </Border>
             </VerticalStackLayout>
         </ScrollView>
 

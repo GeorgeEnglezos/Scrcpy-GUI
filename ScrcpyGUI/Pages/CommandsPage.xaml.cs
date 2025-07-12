@@ -1,91 +1,32 @@
 ﻿using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Layouts;
 using ScrcpyGUI.Controls;
 using ScrcpyGUI.Models;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Text;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace ScrcpyGUI
 {
-    public partial class CommandsPage : ContentPage
+    public partial class CommandsPage : ContentPage, INotifyPropertyChanged
     {
         public ObservableCollection<string> SavedCommandsList { get; set; } = new ObservableCollection<string>();
         public static ScrcpyGuiData jsonData = new ScrcpyGuiData();
 
-        public static Dictionary<string, Color> completeColorMappings = new Dictionary<string, Color>
+        private static Dictionary<string, Color> _cachedColorMapping;
+        private static bool _colorMappingInitialized = false;
+
+        private string _mostRecentCommandText;
+        public string MostRecentCommandText
         {
-            //General
-            { "--fullscreen", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--turn-screen-off", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--crop=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--capture-orientation=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--stay-awake", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--window-title=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--video-bit-rate=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--window-borderless", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--always-on-top", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--disable-screensaver", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--video-codec=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--video-encoder=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-
-            //Audio
-            { "--audio-bit-rate=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
-            { "--audio-buffer=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
-            { "--audio-codec-options=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
-            { "--audio-codec=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
-            { "--audio-encoder=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
-            { "--audio-dup", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
-            { "--no-audio", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
-
-            //Virtual Display
-            { "--new-display", (Color)Microsoft.Maui.Controls.Application.Current.Resources["VirtualDisplay"] },
-            { "--no-vd-destroy-content", (Color)Microsoft.Maui.Controls.Application.Current.Resources["VirtualDisplay"] },
-            { "--no-vd-system-decorations", (Color)Microsoft.Maui.Controls.Application.Current.Resources["VirtualDisplay"] },
-
-            //Recording
-            { "--max-size=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
-            //{ "--video-bit-rate=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
-            { "--max-fps=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
-            { "--record-format=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
-            { "--record=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
-
-            //Package
-            { "--start-app", (Color)Microsoft.Maui.Controls.Application.Current.Resources["PackageSelector"] },
-        };
-        public static Dictionary<string, Color> partialColorMappings = new Dictionary<string, Color>
-        {
-            //General
-            { "--fullscreen", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--turn-screen-off", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-            { "--video-bit-rate=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
-
-            //Audio
-            { "--audio-bit-rate=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
-            { "--audio-buffer=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
-            { "--no-audio", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
-
-            //Virtual Display
-            { "--new-display", (Color)Microsoft.Maui.Controls.Application.Current.Resources["VirtualDisplay"] },
-
-            //Recording
-            { "--record-format=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
-            { "--record=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
-
-            //Package
-            { "--start-app", (Color)Microsoft.Maui.Controls.Application.Current.Resources["PackageSelector"] },
-        };
-        public static Dictionary<string, Color> packageOnlyColorMapping = new Dictionary<string, Color>
-        {
-            { "--start-app", (Color)Microsoft.Maui.Controls.Application.Current.Resources["PackageSelector"] },
-        };
-        public static Dictionary<string, Color> emptyColorMapping = new Dictionary<string, Color>
-        {};
+            get => _mostRecentCommandText;
+            set
+            {
+                _mostRecentCommandText = value;
+                OnPropertyChanged();
+            }
+        }
 
         public CommandsPage()
         {
@@ -104,29 +45,20 @@ namespace ScrcpyGUI
         private void ReadLastUsedCommand()
         {
             string recentCommand = jsonData.MostRecentCommand ?? "No recent command found";
-            MostRecentCommand.FormattedText = CreateColoredCommandText(recentCommand);                                
+            MostRecentCommandText = recentCommand;
             Debug.WriteLine($"Recent Command: {recentCommand}");
-        }      
+        }
 
         private void ReadSavedCommands()
         {
-            if (SavedCommandsList == null)
-            {
-                SavedCommandsList = new ObservableCollection<string>();
-            }
-            else
-            {
-                SavedCommandsList.Clear();
-            }
-
-            foreach (var command in jsonData.FavoriteCommands)
-            {
-                SavedCommandsList.Add(command);
-            }
+            SavedCommandsList.Clear();
 
             if (jsonData.FavoriteCommands != null)
             {
-                //SavedCommandsTitleCount.Text = $"Favorites ({SavedCommandsList.Count.ToString()})";
+                foreach (var command in jsonData.FavoriteCommands)
+                {
+                    SavedCommandsList.Add(command);
+                }
             }
         }
 
@@ -140,62 +72,64 @@ namespace ScrcpyGUI
 
         private async void OnRecentCommandTapped(object sender, EventArgs e)
         {
-            await AdbCmdService.RunScrcpyCommand(MostRecentCommand.FormattedText?.ToString() ?? "");
-        }
-
-
-        private void OnCopyMostRecentCommand(object sender, EventArgs e)
-        {
-            var command = MostRecentCommand.FormattedText?.ToString() ?? MostRecentCommand.Text;
-
-            Clipboard.SetTextAsync(command);
-            DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
-        }
-
-
-        private void OnCopyCommand(object sender, EventArgs e)
-        {
-            var button = (CustomButton)sender;
-            var command = (string)button.BindingContext;
-
-            Clipboard.SetTextAsync(command);
-            DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
-        }
-
-
-        private void OnDeleteCommand(object sender, EventArgs e)
-        {
-            if (sender is VisualElement element && element.BindingContext is string text)
+            var command = MostRecentCommandText ?? "";
+            if (!string.IsNullOrEmpty(command))
             {
-                // Load the current saved list
-                var data = DataStorage.LoadData();
+                await Task.Run(() => AdbCmdService.RunScrcpyCommand(command));
+            }
+        }
 
-                // Find the index of the item in the list
+        private async void OnCopyMostRecentCommand(object sender, EventArgs e)
+        {
+            var command = MostRecentCommandText ?? "";
+            if (!string.IsNullOrEmpty(command))
+            {
+                await Clipboard.SetTextAsync(command);
+                await DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
+            }
+        }
+
+        private async void OnCopyCommand(object sender, EventArgs e)
+        {
+            if (sender is ImageButton button && button.BindingContext is string command)
+            {
+                await Clipboard.SetTextAsync(command);
+                await DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
+            }
+        }
+
+        private async void OnDeleteCommand(object sender, EventArgs e)
+        {
+            if (sender is ImageButton button && button.BindingContext is string text)
+            {
+                var data = DataStorage.LoadData();
                 int indexToDelete = data.FavoriteCommands.IndexOf(text);
 
-                // If found, delete the item
                 if (indexToDelete >= 0)
                 {
-                    DataStorage.RemoveFavoriteCommandAtIndex(indexToDelete);
-                    Navigation.PushAsync(new CommandsPage());
+                    DataStorage.RemoveFavoriteCommandAtIndex(indexToDelete, data);
                     SavedCommandsList.Remove(text);
+
+                    await DisplayAlert("Success", "Command deleted successfully!", "OK");
                 }
                 else
                 {
-                    DisplayAlert("Error", "Item not found!", "OK");
+                    await DisplayAlert("Error", "Item not found!", "OK");
                 }
             }
         }
 
-        private void OnDownloadBat(object sender, EventArgs e)
+        private async void OnDownloadBat(object sender, EventArgs e)
         {
-            if (sender is VisualElement element && element.BindingContext is string text)
+            if (sender is ImageButton button && button.BindingContext is string text)
             {
                 try
-                    {
+                {
                     string baseFileName = "SavedCommand";
-                    if (text.Contains("--start-app=")) baseFileName = RenameToPackage(text);
-                    string desktopPath = DataStorage.staticSavedData.AppSettings.DownloadPath;
+                    if (text.Contains("--start-app="))
+                        baseFileName = RenameToPackage(text);
+
+                    string desktopPath = string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.DownloadPath) ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) : DataStorage.staticSavedData.AppSettings.DownloadPath;
                     string fullPath = Path.Combine(desktopPath, baseFileName + ".bat");
 
                     int counter = 1;
@@ -205,49 +139,127 @@ namespace ScrcpyGUI
                         counter++;
                     }
 
-                    // Write the file
-                    File.WriteAllText(fullPath, text);
+                    // Write the file asynchronously
+                    await File.WriteAllTextAsync(fullPath, text);
 
-                    DisplayAlert("Success", $"Saved as:\n{Path.GetFileName(fullPath)}", "OK");
+                    await DisplayAlert("Success", $"Saved as: {Path.GetFileName(fullPath)} in \n{desktopPath}", "OK");
                 }
                 catch (Exception ex)
                 {
-                    DisplayAlert("Error", $"Couldn't save file: {ex.Message}", "OK");
+                    await DisplayAlert("Error", $"Couldn't save file: {ex.Message}", "OK");
                 }
             }
         }
 
-        private static string RenameToPackage(string command) {
+        private static string RenameToPackage(string command)
+        {
             string packageName = string.Empty;
-            // Find the index of "--start-app="
             int startIndex = command.IndexOf("--start-app=");
 
-            // Move the startIndex past "--start-app="
-            startIndex += "--start-app=".Length;
+            if (startIndex == -1) return "SavedCommand";
 
-            // Find the next space to determine the end of the package name
+            startIndex += "--start-app=".Length;
             int endIndex = command.IndexOf(" ", startIndex);
 
             if (endIndex != -1)
             {
-                // Extract the substring between the start and end index
                 packageName = command.Substring(startIndex, endIndex - startIndex);
             }
             else
             {
-                // If there's no space after the package name, it means it's the last argument
                 packageName = command.Substring(startIndex);
             }
 
             return packageName;
         }
 
+        // Simplified color mapping initialization
+        private static void InitializeColorMapping()
+        {
+            if (_colorMappingInitialized) return;
+
+            _cachedColorMapping = ChooseColorMapping();
+            _colorMappingInitialized = true;
+        }
+
+        private static Dictionary<string, Color> ChooseColorMapping()
+        {
+            var colorSetting = jsonData.AppSettings?.FavoritesPageCommandColors ?? "Package Only";
+
+            return colorSetting switch
+            {
+                "None" => new Dictionary<string, Color>(),
+                "Important" => GetPartialColorMappings(),
+                "Complete" => GetCompleteColorMappings(),
+                _ => GetPackageOnlyColorMapping()
+            };
+        }
+
+        private static Dictionary<string, Color> GetCompleteColorMappings()
+        {
+            return new Dictionary<string, Color>
+            {
+                { "--fullscreen", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--turn-screen-off", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--crop=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--capture-orientation=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--stay-awake", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--window-title=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--video-bit-rate=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--window-borderless", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--always-on-top", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--disable-screensaver", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--video-codec=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--video-encoder=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--audio-bit-rate=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
+                { "--audio-buffer=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
+                { "--audio-codec-options=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
+                { "--audio-codec=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
+                { "--audio-encoder=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
+                { "--audio-dup", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
+                { "--no-audio", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
+                { "--new-display", (Color)Microsoft.Maui.Controls.Application.Current.Resources["VirtualDisplay"] },
+                { "--no-vd-destroy-content", (Color)Microsoft.Maui.Controls.Application.Current.Resources["VirtualDisplay"] },
+                { "--no-vd-system-decorations", (Color)Microsoft.Maui.Controls.Application.Current.Resources["VirtualDisplay"] },
+                { "--max-size=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
+                { "--max-fps=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
+                { "--record-format=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
+                { "--record=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
+                { "--start-app", (Color)Microsoft.Maui.Controls.Application.Current.Resources["PackageSelector"] },
+            };
+        }
+
+        private static Dictionary<string, Color> GetPartialColorMappings()
+        {
+            return new Dictionary<string, Color>
+            {
+                { "--fullscreen", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--turn-screen-off", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--video-bit-rate=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["General"] },
+                { "--audio-bit-rate=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
+                { "--audio-buffer=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
+                { "--no-audio", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Audio"] },
+                { "--new-display", (Color)Microsoft.Maui.Controls.Application.Current.Resources["VirtualDisplay"] },
+                { "--record-format=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
+                { "--record=", (Color)Microsoft.Maui.Controls.Application.Current.Resources["Recording"] },
+                { "--start-app", (Color)Microsoft.Maui.Controls.Application.Current.Resources["PackageSelector"] },
+            };
+        }
+
+        private static Dictionary<string, Color> GetPackageOnlyColorMapping()
+        {
+            return new Dictionary<string, Color>
+            {
+                { "--start-app", (Color)Microsoft.Maui.Controls.Application.Current.Resources["PackageSelector"] },
+            };
+        }
+
+        // Enhanced CreateColoredCommandText method
         public static FormattedString CreateColoredCommandText(string commandText)
         {
-            var formattedString = new FormattedString();
-            Dictionary<string, Color> colors = chooseColorMapping();            
+            InitializeColorMapping();
 
-            // Split and process the command text
+            var formattedString = new FormattedString();
             var parts = commandText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
             for (int i = 0; i < parts.Length; i++)
@@ -255,7 +267,8 @@ namespace ScrcpyGUI
                 var part = parts[i];
                 var span = new Span { Text = part };
 
-                foreach (var mapping in colors)
+                // Use cached color mapping
+                foreach (var mapping in _cachedColorMapping)
                 {
                     if (part.StartsWith(mapping.Key))
                     {
@@ -275,35 +288,25 @@ namespace ScrcpyGUI
             return formattedString;
         }
 
-        private static Dictionary<string, Color> chooseColorMapping()
-        {
+        public event PropertyChangedEventHandler PropertyChanged;
 
-            if (jsonData.AppSettings.FavoritesPageCommandColors.Equals("None")) 
-            { 
-                return emptyColorMapping; 
-            }
-            else if (jsonData.AppSettings.FavoritesPageCommandColors.Equals("Important")) 
-            {
-                return partialColorMappings; 
-            }
-            else if (jsonData.AppSettings.FavoritesPageCommandColors.Equals("Complete"))
-            { 
-                return completeColorMappings; 
-            }
-            else //(jsonData.AppSettings.FavoritesPageCommandColors == null || jsonData.AppSettings.FavoritesPageCommandColors.Equals("Package Only"))
-            {
-                return packageOnlyColorMapping;
-            }
+        protected virtual void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 
-    // Command Color Converter for ListView items
+    // Enhanced Command Color Converter
     public class CommandColorConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is not string commandText)
                 return new FormattedString();
+
+            // Check if coloring is disabled
+            //if (DataStorage.appSettings?.FavoritesPageCommandColors?.Equals("None") == true)
+            //    return new FormattedString { Spans = { new Span { Text = commandText } } };
 
             return CommandsPage.CreateColoredCommandText(commandText);
         }

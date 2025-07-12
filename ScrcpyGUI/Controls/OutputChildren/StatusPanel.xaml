@@ -6,13 +6,13 @@
 
 
     <StackLayout>
-        <Border Style="{StaticResource GradientBorderStyle}"  Margin="0, 0, 0, 40" x:Name="OptionsContainer">
+        <Border Style="{StaticResource GradientBorderStyle}" x:Name="OptionsContainer">
             <StackLayout>
                 <controls:BorderTitle TitleText="ADB - Scrcpy Status" TitleGlyph="[&#xf046;"/>
                 <Grid RowDefinitions="*,*,*" x:Name="StatusContainerGrid">
                     <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,5" x:Name="AdbStatusPanel">
                         <Label Grid.Column="0" Padding="7" Text="ADB Installed: " VerticalTextAlignment="Center" FontSize="18"/>
-                        <Border Grid.Column="1" Padding="5" HorizontalOptions="Center" x:Name="AdbStatusBorder">
+                        <Border Grid.Column="1" Padding="8" HorizontalOptions="Center" x:Name="AdbStatusBorder">
                             <Border.StrokeShape><RoundRectangle CornerRadius="10"/></Border.StrokeShape>
                             <HorizontalStackLayout Spacing="5" VerticalOptions="Center" HorizontalOptions="Center">
                                 <Image x:Name="AdbStatusIcon" HeightRequest="20" WidthRequest="20" BackgroundColor="Transparent">
@@ -27,7 +27,7 @@
 
                     <Grid x:Name="ScrcpyStatusPanel" ColumnDefinitions="Auto,*" Margin="0,5">
                         <Label Grid.Column="0" Padding="7" Text="Scrcpy Installed: " VerticalTextAlignment="Center"  FontSize="18"/>
-                        <Border Grid.Column="1" Padding="5" HorizontalOptions="End" x:Name="ScrcpyStatusBorder">
+                        <Border Grid.Column="1" Padding="8" HorizontalOptions="End" x:Name="ScrcpyStatusBorder">
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="10"/>
                             </Border.StrokeShape>
@@ -44,7 +44,7 @@
 
                     <Grid x:Name="DeviceStatusPanel" ColumnDefinitions="Auto,*" Margin="0,5">
                         <Label Grid.Column="0" Padding="7" Text="Device Connected: " VerticalTextAlignment="Center"  FontSize="18"/>
-                        <Border Grid.Column="1" Padding="5" HorizontalOptions="End" x:Name="DeviceStatusBorder">
+                        <Border Grid.Column="1" Padding="8" HorizontalOptions="End" x:Name="DeviceStatusBorder">
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="10"/>
                             </Border.StrokeShape>
@@ -59,7 +59,7 @@
                         </Border>
                     </Grid>
                 </Grid>
-                <!--<controls:CustomButton HorizontalOptions="Center" ButtonStyle="CustomButton2" ButtonText="Status Check" FontSize="17" Margin="0, 10, 0, 0" ButtonClicked="OnRefreshStatusClicked"  MaximumWidthRequest="200"/>-->
+                <controls:CustomButton HorizontalOptions="Center" ButtonStyle="BasicButton" ButtonText="Refresh" FontSize="17" Margin="0, 20, 0, 10" ButtonClicked="OnRefreshStatusClicked" WidthRequest="250"/>
             </StackLayout>
         </Border>
     </StackLayout>
@@ -93,7 +93,7 @@
                         <Label x:Name="DeviceStatusLabel" Text="Checking..." VerticalTextAlignment="Center" TextColor="{Binding DeviceStatusColor}"  FontSize="18"/>
                     </HorizontalStackLayout>
                 </FlexLayout>
-                --><!--<controls:CustomButton HorizontalOptions="Center" ButtonStyle="CustomButton2" ButtonText="Status Check" FontSize="17" Margin="0, 10, 0, 0" ButtonClicked="OnRefreshStatusClicked"  MaximumWidthRequest="200"/>--><!--
+                --><!--<controls:CustomButton HorizontalOptions="Center" ButtonStyle="BasicButton" ButtonText="Status Check" FontSize="17" Margin="0, 10, 0, 0" ButtonClicked="OnRefreshStatusClicked"  MaximumWidthRequest="200"/>--><!--
             </VerticalStackLayout>
         </Border>
 

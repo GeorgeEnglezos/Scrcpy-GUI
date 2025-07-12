@@ -15,13 +15,13 @@ namespace ScrcpyGUI.Controls
         {
             InitializeComponent();
             LoadAudioOptions();
-            AudioCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.AudioCodecEncoderPairs;
-            
+            this.SizeChanged += OnSizeChanged;
+            //AudioCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.AudioCodecEncoderPairs;
         }
 
         private void OnAudioCodecChanged(object sender, PropertyChangedEventArgs e)
         {            
-            audioSettings.AudioCodecEncoderPair = AudioCodecEncoderPicker.SelectedItem?.ToString() ?? "";
+            //audioSettings.AudioCodecEncoderPair = AudioCodecEncoderPicker.SelectedItem?.ToString() ?? "";
             OnAudioSettings_Changed();
         }
 
@@ -39,11 +39,7 @@ namespace ScrcpyGUI.Controls
 
         private void LoadAudioOptions()
         {
-            AudioBitRateEntry.Text = audioSettings.AudioBitRate;
-            AudioBufferEntry.Text = audioSettings.AudioBuffer;
             AudioDupCheckBox.IsChecked = audioSettings.AudioDup;
-            AudioCodecEncoderPicker.SelectedItem = audioSettings.AudioCodecEncoderPair;
-            AudioCodecOptionsEntry.Text = audioSettings.AudioCodecOptions;
             NoAudioCheckBox.IsChecked = audioSettings.NoAudio;
         }
 
@@ -60,17 +56,15 @@ namespace ScrcpyGUI.Controls
         }
 
         #region CheckBoxes
-        private void OnAudioDupChanged(object sender, EventArgs e)
+        private void OnAudioDupChanged(object sender, CheckedChangedEventArgs e)
         {
-            var checkBox = sender as InputKit.Shared.Controls.CheckBox;
-            audioSettings.AudioDup = checkBox?.IsChecked ?? false;
+            audioSettings.AudioDup = e.Value;
             OnAudioSettings_Changed();
         }
         
-        private void OnNoAudioChanged(object sender, EventArgs e)
+        private void OnNoAudioChanged(object sender, CheckedChangedEventArgs e)
         {
-            var checkBox = sender as InputKit.Shared.Controls.CheckBox;
-            audioSettings.NoAudio = checkBox?.IsChecked ?? false;
+            audioSettings.NoAudio = e.Value;
             OnAudioSettings_Changed();
         }
         #endregion
@@ -124,6 +118,76 @@ namespace ScrcpyGUI.Controls
             // Reset Picker
             AudioCodecEncoderPicker.SelectedIndex = -1;
             audioSettings.AudioCodecEncoderPair = "";
+        }
+
+        private void OnSizeChanged(object sender, EventArgs e)
+        {
+            double breakpointWidth = 670;
+
+            if (Width < breakpointWidth)
+            {
+                AudioGrid.RowDefinitions.Clear();
+                AudioGrid.ColumnDefinitions.Clear();
+
+                AudioGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                AudioGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                AudioGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                AudioGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+                AudioGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+                //Row 1
+                Grid.SetRow(AudioBitRateEntry, 0);
+                Grid.SetColumn(AudioBitRateEntry, 0);
+
+                Grid.SetRow(AudioBufferEntry, 0);
+                Grid.SetColumn(AudioBufferEntry, 1);
+
+                //Row 2
+                Grid.SetRow(AudioCodecEncoderPicker, 1);
+                Grid.SetColumn(AudioCodecEncoderPicker, 0);
+
+                Grid.SetRow(AudioCodecOptionsEntry, 1);
+                Grid.SetColumn(AudioCodecOptionsEntry, 1);
+                
+                //Row 2
+                Grid.SetRow(NoAudioCheckBox, 2);
+                Grid.SetColumn(NoAudioCheckBox, 0);
+
+                Grid.SetRow(AudioDupCheckBox, 2);
+                Grid.SetColumn(AudioDupCheckBox, 1);
+            }
+            else // Horizontal layout (side by side)
+            {
+                AudioGrid.RowDefinitions.Clear();
+                AudioGrid.ColumnDefinitions.Clear();
+
+                AudioGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                AudioGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                AudioGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+                AudioGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+                AudioGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+                //Row 1
+                Grid.SetRow(AudioBitRateEntry, 0);
+                Grid.SetColumn(AudioBitRateEntry, 0);
+
+                Grid.SetRow(AudioBufferEntry, 0);
+                Grid.SetColumn(AudioBufferEntry, 1);
+
+                Grid.SetRow(AudioCodecOptionsEntry, 0);
+                Grid.SetColumn(AudioCodecOptionsEntry, 2);
+                
+                //Row 2
+                Grid.SetRow(NoAudioCheckBox, 1);
+                Grid.SetColumn(NoAudioCheckBox, 0);
+
+                Grid.SetRow(AudioDupCheckBox, 1);
+                Grid.SetColumn(AudioDupCheckBox, 1);
+
+                Grid.SetRow(AudioCodecEncoderPicker, 1);
+                Grid.SetColumn(AudioCodecEncoderPicker, 2);
+
+            }
         }
     }
 }

@@ -70,7 +70,11 @@ namespace ScrcpyGUI.Models
                 fullCommand += !string.IsNullOrEmpty(Bitrate) ? $" --video-bit-rate={Bitrate}" : "";
                 fullCommand += !string.IsNullOrEmpty(Framerate) ? $" --max-fps={Framerate}" : "";
                 fullCommand += !string.IsNullOrEmpty(OutputFormat) ? $" --record-format={OutputFormat}" : "";
-                fullCommand += !string.IsNullOrEmpty(OutputFile) ? $" --record={OutputFile}" : "";
+                if (!string.IsNullOrEmpty(OutputFormat) && !string.IsNullOrEmpty(OutputFile)){
+                    fullCommand += $" --record={OutputFile}.{OutputFormat}";
+                } else if (string.IsNullOrEmpty(OutputFormat) && !string.IsNullOrEmpty(OutputFile)) {
+                    fullCommand += $" --record={OutputFile}.{OutputFormat}";
+                }                    
                 return fullCommand;
             }
             catch (Exception ex)

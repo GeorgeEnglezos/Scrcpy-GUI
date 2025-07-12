@@ -2,18 +2,17 @@ using System.Diagnostics;
 using ScrcpyGUI.Models;
 using System.ComponentModel;
 using UraniumUI.Material.Controls;
-
 namespace ScrcpyGUI.Controls;
-public partial class SettingsPageCheckboxes : ContentView
+
+public partial class CustomCheckbox : ContentView
 {
-	public SettingsPageCheckboxes()
-	{
-		InitializeComponent();
+    public CustomCheckbox()
+    {
+        InitializeComponent();
     }
 
     public static readonly BindableProperty LabelTextProperty =
-        BindableProperty.Create(nameof(LabelText), typeof(string), typeof(SettingsPageCheckboxes), string.Empty);
-
+        BindableProperty.Create(nameof(LabelText), typeof(string), typeof(CustomCheckbox), string.Empty);
     public string LabelText
     {
         get => (string)GetValue(LabelTextProperty);
@@ -21,8 +20,7 @@ public partial class SettingsPageCheckboxes : ContentView
     }
 
     public static readonly BindableProperty IsCheckedProperty =
-        BindableProperty.Create(nameof(IsChecked), typeof(bool), typeof(SettingsPageCheckboxes), false, BindingMode.TwoWay);
-
+        BindableProperty.Create(nameof(IsChecked), typeof(bool), typeof(CustomCheckbox), false, BindingMode.TwoWay);
     public bool IsChecked
     {
         get => (bool)GetValue(IsCheckedProperty);
@@ -35,5 +33,11 @@ public partial class SettingsPageCheckboxes : ContentView
     {
         var checkBox = sender as InputKit.Shared.Controls.CheckBox;
         CheckedChanged?.Invoke(this, new CheckedChangedEventArgs(checkBox?.IsChecked ?? false));
+    }
+
+    private void OnBorderTapped(object sender, EventArgs e)
+    {
+        IsChecked = !IsChecked;
+        CheckedChanged?.Invoke(this, new CheckedChangedEventArgs(IsChecked));
     }
 }

@@ -16,71 +16,70 @@ public partial class OptionsGeneralPanel : ContentView
         InitializeComponent();
 
         //Sets the initial values for Codecs-Encoders from the current selected device
-        VideoCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.VideoCodecEncoderPairs;
+        OptionVideoCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.VideoCodecEncoderPairs;
         BindingContext = this;
+        this.SizeChanged += OnSizeChanged;
+
     }
 
     public void SubscribeToEvents() {
-        VideoOrientationPicker.PropertyChanged += OnVideoOrientationChanged;
-        VideoCodecEncoderPicker.PropertyChanged += OnVideoCodecEncoderChanged;
+        OptionVideoOrientationPicker.PropertyChanged += OnVideoOrientationChanged;
+        OptionVideoCodecEncoderPicker.PropertyChanged += OnVideoCodecEncoderChanged;
     }
 
     public void UnsubscribeToEvents() {
-        VideoOrientationPicker.PropertyChanged -= OnVideoOrientationChanged;
-        VideoCodecEncoderPicker.PropertyChanged -= OnVideoCodecEncoderChanged;
+        OptionVideoOrientationPicker.PropertyChanged -= OnVideoOrientationChanged;
+        OptionVideoCodecEncoderPicker.PropertyChanged -= OnVideoCodecEncoderChanged;
     }
 
     private void OnVideoOrientationChanged(object sender, PropertyChangedEventArgs e)
     {
-        generalSettings.VideoOrientation = VideoOrientationPicker.SelectedItem?.ToString() ?? "";
+        generalSettings.VideoOrientation = OptionVideoOrientationPicker.SelectedItem?.ToString() ?? "";
         OnGenericSettings_Changed();
     }
     
     private void OnVideoCodecEncoderChanged(object sender, PropertyChangedEventArgs e)
     {
-        generalSettings.VideoCodecEncoderPair = VideoCodecEncoderPicker.SelectedItem?.ToString() ?? "";
+        generalSettings.VideoCodecEncoderPair = OptionVideoCodecEncoderPicker.SelectedItem?.ToString() ?? "";
         OnGenericSettings_Changed();
     }
 
     //Checkboxes
     #region checkboxes
-    private void OnFullscreenCheckboxChanged(object sender, EventArgs e)
+    private void OnFullscreenCheckboxChanged(object sender, CheckedChangedEventArgs e)
     {
-        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
-        generalSettings.Fullscreen = checkBox?.IsChecked ?? false;
+        generalSettings.Fullscreen = OptionFullscreenCheck.IsChecked;
         OnGenericSettings_Changed();
     }
 
-    private void OnScreenOffCheckboxChanged(object sender, EventArgs e)
+    private void OnScreenOffCheckboxChanged(object sender, CheckedChangedEventArgs e)
     {
-        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
-        generalSettings.TurnScreenOff = checkBox?.IsChecked ?? false;
+        generalSettings.TurnScreenOff = OptionTurnScreenOffCheck.IsChecked;
         OnGenericSettings_Changed();
     }
-    private void OnStayAwakeCheckboxChanged(object sender, EventArgs e)
+    private void OnStayAwakeCheckboxChanged(object sender, CheckedChangedEventArgs e)
     {
-        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
-        generalSettings.StayAwake = checkBox?.IsChecked ?? false;
+        generalSettings.StayAwake = OptionStayAwakeCheck.IsChecked;
         OnGenericSettings_Changed();
     }
-    private void OnBorderlessCheckboxChanged(object sender, EventArgs e)
+    private void OnBorderlessCheckboxChanged(object sender, CheckedChangedEventArgs e)
     {
-        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
-        generalSettings.WindowBorderless = checkBox?.IsChecked ?? false;
-        OnGenericSettings_Changed();
-    }
-
-    private void OnWindowAlwaysOnTopCheckboxChanged(object sender, EventArgs e)
-    {
-        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
-        generalSettings.WindowAlwaysOnTop = checkBox?.IsChecked ?? false;
+        
+        generalSettings.WindowBorderless = OptionWindowBorderlessCheck.IsChecked;
         OnGenericSettings_Changed();
     }
 
-    private void OnDisableScreensaverCheckboxChanged(object sender, EventArgs e)
+    private void OnWindowAlwaysOnTopCheckboxChanged(object sender, CheckedChangedEventArgs e)
     {
-        var checkBox = sender as InputKit.Shared.Controls.CheckBox;
-        generalSettings.DisableScreensaver = checkBox?.IsChecked ?? false;
+        
+        generalSettings.WindowAlwaysOnTop = OptionWindowAlwaysOnTopCheck.IsChecked;
+        OnGenericSettings_Changed();
+    }
+
+    private void OnDisableScreensaverCheckboxChanged(object sender, CheckedChangedEventArgs e)
+    {
+        
+        generalSettings.DisableScreensaver = OptionDisableScreensaverCheck.IsChecked;
         OnGenericSettings_Changed();
     }
 
@@ -126,30 +125,152 @@ public partial class OptionsGeneralPanel : ContentView
         
     //Sets the values for Codecs-Encoders from the current selected device
     public void ReloadCodecsEncoders() {
-        VideoCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.VideoCodecEncoderPairs;
+        OptionVideoCodecEncoderPicker.ItemsSource = AdbCmdService.selectedDevice.VideoCodecEncoderPairs;
     }
 
     private void ResetAllControls()
     {
         // Reset CheckBoxes
-        FullscreenCheck.IsChecked = false;
-        TurnScreenOffCheck.IsChecked = false;
-        StayAwakeCheck.IsChecked = false;
-        WindowBorderlessCheck.IsChecked = false;
-        WindowAlwaysOnTopCheck.IsChecked = false;
-        DisableScreensaverCheck.IsChecked = false;
+        OptionFullscreenCheck.IsChecked = false;
+        OptionTurnScreenOffCheck.IsChecked = false;
+        OptionStayAwakeCheck.IsChecked = false;
+        OptionWindowBorderlessCheck.IsChecked = false;
+        OptionWindowAlwaysOnTopCheck.IsChecked = false;
+        OptionDisableScreensaverCheck.IsChecked = false;
 
         // Reset Entries
-        CropEntry.Text = string.Empty;
-        WindowTitleEntry.Text = string.Empty;
-        ExtraParameterEntry.Text = string.Empty;
-        VideoBitRate.Text = "";
+        OptionCropEntry.Text = string.Empty;
+        OptionWindowTitleEntry.Text = string.Empty;
+        OptionExtraParameterEntry.Text = string.Empty;
+        OptionVideoBitRate.Text = "";
 
         // Reset Picker
-        VideoOrientationPicker.SelectedIndex = -1; // This sets it to no selection
+        OptionVideoOrientationPicker.SelectedIndex = -1;
         generalSettings.VideoOrientation = "";
-        VideoCodecEncoderPicker.SelectedIndex = -1; // This sets it to no selection
+        OptionVideoCodecEncoderPicker.SelectedIndex = -1;
         generalSettings.VideoCodecEncoderPair = "";
     }
 
+    private void OnSizeChanged(object sender, EventArgs e)
+    {
+        double breakpointWidth = 670;
+
+        if (Width < breakpointWidth) // Switch to vertical layout (stacked)
+        {
+            GeneralGrid.RowDefinitions.Clear();
+            GeneralGrid.ColumnDefinitions.Clear();
+
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            GeneralGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+            //Row 1
+            Grid.SetRow(OptionWindowTitleEntry, 0);
+            Grid.SetColumn(OptionWindowTitleEntry, 0);
+
+            Grid.SetRow(OptionFullscreenCheck, 0);
+            Grid.SetColumn(OptionFullscreenCheck, 1);
+
+            //Row 2
+            Grid.SetRow(OptionTurnScreenOffCheck, 1);
+            Grid.SetColumn(OptionTurnScreenOffCheck, 0);
+
+            Grid.SetRow(OptionStayAwakeCheck, 1);
+            Grid.SetColumn(OptionStayAwakeCheck, 1);
+
+            //Row 3
+            Grid.SetRow(OptionWindowAlwaysOnTopCheck, 2);
+            Grid.SetColumn(OptionWindowAlwaysOnTopCheck, 0);
+
+            Grid.SetRow(OptionWindowBorderlessCheck, 2);
+            Grid.SetColumn(OptionWindowBorderlessCheck, 1);
+
+            //Row 4
+            Grid.SetRow(OptionCropEntry, 3);
+            Grid.SetColumn(OptionCropEntry, 0);
+
+            Grid.SetRow(OptionDisableScreensaverCheck, 3);
+            Grid.SetColumn(OptionDisableScreensaverCheck, 1);
+
+            //Row 4
+            Grid.SetRow(OptionVideoOrientationPicker, 4);
+            Grid.SetColumn(OptionVideoOrientationPicker, 0);
+
+            Grid.SetRow(OptionVideoBitRate, 4);
+            Grid.SetColumn(OptionVideoBitRate, 1);
+
+            //Row 4
+            Grid.SetRow(OptionVideoCodecEncoderPicker, 5);
+            Grid.SetColumn(OptionVideoCodecEncoderPicker, 0);
+            Grid.SetColumnSpan(OptionVideoCodecEncoderPicker, 2);
+
+            //Row 5
+            Grid.SetRow(OptionExtraParameterEntry, 6);
+            Grid.SetColumn(OptionExtraParameterEntry, 0);
+            Grid.SetColumnSpan(OptionExtraParameterEntry, 2);
+        }
+        else // Horizontal layout (side by side)
+        {
+            GeneralGrid.RowDefinitions.Clear();
+            GeneralGrid.ColumnDefinitions.Clear();
+
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            GeneralGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            GeneralGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            GeneralGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+            //Row 1
+            Grid.SetRow(OptionWindowTitleEntry, 0);
+            Grid.SetColumn(OptionWindowTitleEntry, 0);
+
+            Grid.SetRow(OptionFullscreenCheck, 0);
+            Grid.SetColumn(OptionFullscreenCheck, 1);
+
+            Grid.SetRow(OptionTurnScreenOffCheck, 0);
+            Grid.SetColumn(OptionTurnScreenOffCheck, 2);
+
+            //Row 2
+            Grid.SetRow(OptionStayAwakeCheck, 1);
+            Grid.SetColumn(OptionStayAwakeCheck, 0);
+
+            Grid.SetRow(OptionCropEntry, 1);
+            Grid.SetColumn(OptionCropEntry, 1);
+
+            Grid.SetRow(OptionVideoOrientationPicker, 1);
+            Grid.SetColumn(OptionVideoOrientationPicker, 2);
+
+            //Row 3
+            Grid.SetRow(OptionWindowBorderlessCheck, 2);
+            Grid.SetColumn(OptionWindowBorderlessCheck, 0);
+
+            Grid.SetRow(OptionWindowAlwaysOnTopCheck, 2);
+            Grid.SetColumn(OptionWindowAlwaysOnTopCheck, 1);
+
+            Grid.SetRow(OptionDisableScreensaverCheck, 2);
+            Grid.SetColumn(OptionDisableScreensaverCheck, 2);
+
+            //Row 4
+            Grid.SetRow(OptionVideoBitRate, 3);
+            Grid.SetColumn(OptionVideoBitRate, 0);
+
+            Grid.SetRow(OptionVideoCodecEncoderPicker, 3);
+            Grid.SetColumn(OptionVideoCodecEncoderPicker, 1);
+            Grid.SetColumnSpan(OptionVideoCodecEncoderPicker, 2);
+
+            //Row 5
+            Grid.SetRow(OptionExtraParameterEntry, 4);
+            Grid.SetColumn(OptionExtraParameterEntry, 0);
+            Grid.SetColumnSpan(OptionExtraParameterEntry, 3);
+        }
+    }
 }

@@ -4,60 +4,37 @@
              x:Class="ScrcpyGUI.Controls.CustomButton"
              x:Name="CustomButtonView">
     <StackLayout>
-        
-        <!--Use case-->
-        <!-- Boring -->
-        <!--
-                    <controls:CustomButton 
-                    x:Name="BoringBtn"
-                    ButtonStyle="Boring"
-                    ButtonText="Boring Button"
-                    ButtonColor="{StaticResource PrimaryPurple}"
-                    TextColor="White"
-                    ButtonClicked="SaveChanges"/>
 
-                    -->
-        <!-- Base Button -->
-        <!--
-                    <controls:CustomButton 
-                    x:Name="BaseBtn"
-                    ButtonStyle="Base"
-                    ButtonText="Base Button"
-                    ButtonColor="{StaticResource PrimaryPurple}"
-                    TextColor="White"
-                    ButtonClicked="SaveChanges"/>-->
+        <!--Cancel Button-->
+        <Border x:Name="CancelButton" IsVisible="False"
+                Stroke="{Binding Source={x:Reference CustomButtonView}, Path=ButtonStrokeColor}" 
+                StrokeThickness="0.5" 
+                HeightRequest="{Binding Source={x:Reference CustomButtonView}, Path=ButtonHeight}">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="12"/>
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow Brush="{StaticResource RedInnerButton}" 
+                            Offset="0,4" 
+                            Radius="3" 
+                            Opacity="0.3"/>
+            </Border.Shadow>
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="{Binding Source={x:Reference CustomButtonView}, Path=GradientStartColor}" Offset="0.0"/>
+                    <GradientStop Color="{Binding Source={x:Reference CustomButtonView}, Path=GradientEndColor}"  Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Button  
+                    Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"                    
+                    TextColor="{Binding Source={x:Reference CustomButtonView}, Path=TextColor}"
+                    FontSize="{Binding Source={x:Reference CustomButtonView}, Path=FontSize}"
+                    FontAttributes="{Binding Source={x:Reference CustomButtonView}, Path=FontAttributes}"                    
+                    Clicked="OnButtonClicked"/>
+        </Border>
 
-
-        <!-- Boring Button Style -->
-        <Button x:Name="BoringButton" 
-                Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"
-                BackgroundColor="{Binding Source={x:Reference CustomButtonView}, Path=ButtonColor}"
-                TextColor="White"
-                FontSize="{Binding Source={x:Reference CustomButtonView}, Path=FontSize}"
-                FontAttributes="{Binding Source={x:Reference CustomButtonView}, Path=FontAttributes}"
-                IsVisible="False"
-                Clicked="OnButtonClicked"/>
-
-        <!-- Base Button Style -->
-        <Button x:Name="BaseButton" 
-                Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"
-                BackgroundColor="{Binding Source={x:Reference CustomButtonView}, Path=ButtonColor}"
-                TextColor="White"
-                FontSize="{Binding Source={x:Reference CustomButtonView}, Path=FontSize}"
-                FontAttributes="{Binding Source={x:Reference CustomButtonView}, Path=FontAttributes}"
-                CornerRadius="12"
-                IsVisible="False"
-                Clicked="OnButtonClicked">
-            <Button.Shadow>
-                <Shadow Brush="{Binding Source={x:Reference CustomButtonView}, Path=ButtonColor}" 
-                        Offset="0,4" 
-                        Radius="8" 
-                        Opacity="0.3"/>
-            </Button.Shadow>
-        </Button>
-
-        <!--Custom Button 2-->
-        <Border x:Name="CustomButton2"
+        <!--Basic Button-->
+        <Border x:Name="BasicButton"
                 BackgroundColor="Transparent" 
                 Stroke="Transparent"
                 StrokeThickness="0"
@@ -68,7 +45,7 @@
             <Border.Shadow>
                 <Shadow Brush="{StaticResource PrimaryPurple}" 
                             Offset="0,4" 
-                            Radius="12" 
+                            Radius="7" 
                             Opacity="0.3"/>
             </Border.Shadow>
             <Border.Background>
@@ -87,6 +64,38 @@
                 Clicked="OnButtonClicked"/>
         </Border>
 
+        <!--Text - Image Button-->
+        <Border x:Name="TextImageButton" Padding="10,0" BackgroundColor="Transparent" Stroke="Transparent" StrokeThickness="0" IsVisible="False">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="12"/>
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow Brush="{StaticResource PrimaryPurple}" Offset="0,4" Radius="12" Opacity="0.3"/>
+            </Border.Shadow>
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="{StaticResource PrimaryPurple}" Offset="0.0"/>
+                    <GradientStop Color="#8A2BE2" Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.Background>
+
+            <Grid RowDefinitions="*" ColumnDefinitions="*,Auto"  AbsoluteLayout.LayoutBounds="0,0,1,AutoSize" AbsoluteLayout.LayoutFlags="WidthProportional">
+                <Image Grid.Row="0" Grid.Column="0" HeightRequest="15" WidthRequest="15" BackgroundColor="Transparent" HorizontalOptions="End">
+                    <Image.Source>
+                        <FontImageSource FontFamily="FontAwesome" Glyph="{Binding Source={x:Reference CustomButtonView}, Path=ButtonGlyph}" Color="White" Size="100"/>
+                    </Image.Source>
+                </Image>
+                <Button Grid.Row="0" Grid.Column="1" HorizontalOptions="Start"               
+                    Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"
+                    BackgroundColor="Transparent"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    FontSize="17"
+                    Clicked="OnButtonClicked"/>
+            </Grid>
+        </Border>
+        
+        <!--Image Button-->
         <ImageButton
             x:Name="ImageButton"
             IsVisible="False"
@@ -112,25 +121,32 @@
             </ImageButton.Source>
         </ImageButton>
 
+        <!--Image Button Border-->
+        <Border x:Name="ImageButtonBorder" StrokeThickness="0.5" BackgroundColor="{StaticResource BlackButton}" IsVisible="False"                
+            Stroke="{Binding Source={x:Reference CustomButtonView}, Path=ButtonStrokeColor}"
+            HeightRequest="{Binding Source={x:Reference CustomButtonView}, Path=ButtonHeight}"
+            WidthRequest="{Binding Source={x:Reference CustomButtonView}, Path=ButtonWidth}">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="15"/>
+            </Border.StrokeShape>
 
-        <!--Custom Button 3-->
-        <Button  x:Name="CustomButton3"
-            Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"
-            BackgroundColor="{StaticResource PrimaryPurple}"
-            TextColor="White"
-            FontAttributes="Bold"
-            FontSize="16"
-            HeightRequest="50"
-            WidthRequest="170"
-            CornerRadius="12"
-            IsVisible="False"
-            Clicked="OnButtonClicked">
-            <Button.Shadow>
-                <Shadow Brush="{StaticResource PrimaryPurple}" 
-            Offset="0,4" 
-            Radius="8" 
-            Opacity="0.3"/>
-            </Button.Shadow>
-        </Button>
+            <ImageButton
+                ToolTipProperties.Text="{Binding Source={x:Reference CustomButtonView}, Path=TooltipText}"
+                Clicked="OnButtonClicked"
+                BackgroundColor="Transparent">
+                <ImageButton.Shadow>
+                    <Shadow Brush="{Binding Source={x:Reference CustomButtonView}, Path=ShadowColor}"
+                    Offset="0,0" 
+                    Radius="15" 
+                    Opacity="3"/>
+                </ImageButton.Shadow>
+                <ImageButton.Source>
+                    <FontImageSource FontFamily="FontAwesome" 
+                           Glyph="{Binding Source={x:Reference CustomButtonView}, Path=ButtonGlyph}" 
+                           Color="{Binding Source={x:Reference CustomButtonView}, Path=ButtonColor}" 
+                           Size="{Binding Source={x:Reference CustomButtonView}, Path=ButtonSize}"/>
+                </ImageButton.Source>
+            </ImageButton>
+        </Border>
     </StackLayout>
 </ContentView>

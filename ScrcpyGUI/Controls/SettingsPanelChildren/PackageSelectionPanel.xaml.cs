@@ -35,7 +35,6 @@ namespace ScrcpyGUI.Controls
                 }
             }
         }
-
         public List<string> InstalledPackageList
         {
             get => installedPackageList;
@@ -117,12 +116,14 @@ namespace ScrcpyGUI.Controls
             }
 
             PackageSuggestionsCollectionView.ItemsSource = suggestions;
+            PackageSuggestionsCollectionViewBorder.IsVisible = suggestions.Count > 0;
             PackageSuggestionsCollectionView.IsVisible = suggestions.Count > 0;
         }
 
         private void PackageSearchEntry_TextChanged(object sender, TextChangedEventArgs e)
         {
             string searchText = e.NewTextValue?.ToLower();
+            PackageSelected?.Invoke(this, searchText);
 
             if (string.IsNullOrEmpty(searchText) || settingSelectedPackage == searchText)
             {
@@ -139,8 +140,9 @@ namespace ScrcpyGUI.Controls
             {
                 string selectedPackage = e.CurrentSelection[0]?.ToString() ?? string.Empty;
                 SettingSelectedPackage = selectedPackage;
-
                 PackageSelected?.Invoke(this, selectedPackage);
+                PackageSearchEntry.Text = selectedPackage;
+                ((CollectionView)sender).SelectedItem = null;
             }
         }
 
@@ -158,13 +160,6 @@ namespace ScrcpyGUI.Controls
         public void RefreshPackages(object sender, EventArgs e)
         {
             LoadPackages();
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

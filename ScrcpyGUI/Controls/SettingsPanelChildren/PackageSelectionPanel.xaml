@@ -3,84 +3,102 @@
              xmlns:ur="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
              xmlns:controls="clr-namespace:ScrcpyGUI.Controls"             
              x:Class="ScrcpyGUI.Controls.OptionsPackageSelectionPanel">
-    <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="*, Auto, Auto,Auto">
+    <Border Style="{StaticResource GradientBorderStyle}">
+        <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="65*, Auto, Auto, Auto" Padding="0">
+            <ur:TextField
+                x:Name="PackageSearchEntry"
+                VerticalOptions="Center"
+                HorizontalOptions="FillAndExpand"
+                Title="Search Package..."
+                TextChanged="PackageSearchEntry_TextChanged"
+                BackgroundColor="Transparent"
+                Margin="0,0,10,0"/>
 
-        <!--Converted-->
-        <ur:TextField
-            x:Name="PackageSearchEntry"
-            Title="Search Package..."
-            TextChanged="PackageSearchEntry_TextChanged"
-            AccentColor="{StaticResource PrimaryPurple}"
-            Grid.Row="0"
-            Grid.Column="0"
-            Grid.ColumnSpan="1"
-            CornerRadius="0"/>
+            <controls:CustomButton
+                Grid.Column="1" 
+                x:Name="RefreshCommand"
+                ButtonStyle="ImageButtonBorder"                            
+                VerticalOptions="Center"
+                HorizontalOptions="Center"
+                ButtonWidth="56"
+                ButtonHeight="48"
+                ButtonSize="20"
+                ButtonGlyph="&#xf021;"
+                ButtonColor="{StaticResource AccentPurple}"
+                ButtonStrokeColor="{StaticResource AccentPurple}"
+                ShadowColor="indigo"
+                TooltipText="Refresh Packages"
+                ButtonClicked="RefreshPackages"
+                Margin="0,0,10,0"/>
 
-        <!--Converted-->
-        <HorizontalStackLayout
-            Padding="20, 0, 0, 0"
-            Grid.Row="0"
-            Grid.Column="1">
-            <Label Text="System Apps" VerticalTextAlignment="Center" FontSize="16" Padding="0, 0, 10, 0"/>
-            <ur:CheckBox CheckChanged="SystemAppsCheckboxChanged" />
-        </HorizontalStackLayout>
+            <controls:CustomButton 
+                Grid.Column="2" 
+                x:Name="CleanCommand"
+                ButtonStyle="ImageButtonBorder"                            
+                VerticalOptions="Center"
+                HorizontalOptions="Center"
+                ButtonWidth="56"
+                ButtonHeight="48"
+                ButtonSize="20"
+                ButtonGlyph="&#xf00d;"
+                ButtonColor="{StaticResource AccentPurple}"
+                ButtonStrokeColor="{StaticResource AccentPurple}"
+                ShadowColor="indigo"
+                TooltipText="Clear Selected Package"
+                ButtonClicked="CleanPackageSelection"
+                Margin="0,0,10,0"/>
 
-        <ImageButton
-            ToolTipProperties.Text="Refresh Packages"
-            Clicked="RefreshPackages"
-            HeightRequest="30"
-            WidthRequest="30"
-            BackgroundColor="Transparent"
-            Margin="0"
-            Padding="0"
-            Grid.Row="0"
-            Grid.Column="2"
-            HorizontalOptions="End"
-            VerticalOptions="Center">
-            <ImageButton.Source>
-                <FontImageSource
-                    FontFamily="FontAwesome" 
-                    Glyph="&#xf021;"
-                    Color="{StaticResource ButtonColor}"
-                    Size="25" />
-            </ImageButton.Source>
-        </ImageButton>
+            <Grid ColumnDefinitions="20*, auto, 50*" Grid.Row="0" Grid.Column="3" HeightRequest="80" VerticalOptions="Center" HorizontalOptions="End">
+                <Border Grid.Column="0" StrokeThickness="1" Stroke="{StaticResource AccentPurple}" VerticalOptions="FillAndExpand" WidthRequest="1"/>
+                <ur:CheckBox Margin="10, 0, 0, 0" Grid.Column="1" WidthRequest="35" HeightRequest="40" Scale="1" CheckChanged="SystemAppsCheckboxChanged" VerticalOptions="Center"/>
+                <Label Grid.Column="2"
+        Text="System Apps" 
+        VerticalTextAlignment="Center" 
+        HorizontalTextAlignment="End"
+        HorizontalOptions="End"
+        FontSize="16" 
+        FontAttributes="Bold"
+        TextColor="{StaticResource PrimaryPurple}"
+        VerticalOptions="Center"/>
+            </Grid>
 
-        <ImageButton
-            ToolTipProperties.Text="Clear Selected Package"
-            Clicked="CleanPackageSelection"
-            HeightRequest="30"
-            WidthRequest="30"
-            BackgroundColor="Transparent"
-            Margin="0"
-            Padding="0"
-            Grid.Row="0"
-            Grid.Column="3"
-            HorizontalOptions="End"
-            VerticalOptions="Center">
-            <ImageButton.Source>
-                <FontImageSource
-                    FontFamily="FontAwesome" 
-                    Glyph="&#xf12d;"
-                    Color="{StaticResource ButtonColor}"
-                    Size="25" />
-            </ImageButton.Source>
-        </ImageButton>
-
-        <CollectionView
-            x:Name="PackageSuggestionsCollectionView"
-            IsVisible="False"
-            SelectionMode="Single"
-            SelectionChanged="PackageSuggestionsCollectionView_SelectionChanged"
-            BackgroundColor="{StaticResource PrimaryPurple}"
-            Grid.Row="1"
-            Grid.Column="0">
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="x:String">
-                    <Label Text="{Binding .}" Padding="10"/>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
-    </Grid>
+            <!-- Suggestions CollectionView -->
+            <Border x:Name="PackageSuggestionsCollectionViewBorder"
+                Grid.Row="1"
+                Grid.Column="0"
+                Grid.ColumnSpan="4"
+                Margin="0,8,0,0"
+                BackgroundColor="{StaticResource PrimaryPurple}"
+                StrokeThickness="0"
+                Stroke="Transparent"
+                StrokeShape="RoundRectangle 8">
+                <CollectionView
+                    x:Name="PackageSuggestionsCollectionView"
+                    IsVisible="False"
+                    SelectionMode="Single"
+                    SelectionChanged="PackageSuggestionsCollectionView_SelectionChanged"
+                    BackgroundColor="Transparent"
+                    MaximumHeightRequest="200">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Grid>
+                                <Label 
+                                    Text="{Binding .}" 
+                                    Padding="16,12"
+                                    FontSize="14"
+                                    TextColor="White"
+                                    VerticalOptions="Center"/>
+                                <BoxView 
+                                    BackgroundColor="#40FFFFFF"
+                                    HeightRequest="1"
+                                    HorizontalOptions="FillAndExpand"
+                                    VerticalOptions="End"
+                                    Margin="16,0"/>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Border>
+        </Grid>
+    </Border>
 </ContentView>
-    

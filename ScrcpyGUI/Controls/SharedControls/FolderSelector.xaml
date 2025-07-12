@@ -52,7 +52,7 @@
                     Grid.Row="1"
                     Grid.Column="1"
                     VerticalOptions="Center"
-                    ButtonStyle="CustomButton2"
+                    ButtonStyle="BasicButton"
                     ButtonText="Browse..."                   
                     FontSize="17"
                     ButtonClicked="OnPickFolderClicked"/>

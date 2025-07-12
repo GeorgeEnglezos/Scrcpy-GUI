@@ -5,8 +5,8 @@
              xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
              xmlns:system="clr-namespace:System;assembly=netstandard"
              Background="{StaticResource PageGradientBackground}"
-             x:Class="ScrcpyGUI.SettingsPage"
              BackgroundColor="{DynamicResource BackGroundGrey}"
+             x:Class="ScrcpyGUI.SettingsPage"
              Shell.Title="">
 
     <ContentView.Resources>
@@ -36,7 +36,7 @@
                                 TitleText="Functionality"
                                 TitleGlyph="&#xf013;"
                                 Margin="0,0,0,15"/>
-                            <controls:SettingsPageCheckboxes 
+                            <controls:CustomCheckbox 
                                 x:Name="CmdCheckbox"
                                 LabelText="Open CMD windows for scrcpy commands."                  
                                 IsChecked="{Binding IsCmdChecked}"
@@ -52,27 +52,27 @@
                                 TitleGlyph="&#xf015;"
                                 Margin="0,0,0,15"/>
 
-                            <controls:SettingsPageCheckboxes x:Name="WirelessPanelCheckbox"
+                            <controls:CustomCheckbox x:Name="WirelessPanelCheckbox"
                                 LabelText="Hide Wireless options."
                                 IsChecked="False"
                                 CheckedChanged="OnWirelessPanelChanged"/>
 
-                            <controls:SettingsPageCheckboxes x:Name="StatusPanelCheckbox"
+                            <controls:CustomCheckbox x:Name="StatusPanelCheckbox"
                                 LabelText="Hide Installation - Device status."
                                 IsChecked="False"
                                 CheckedChanged="OnStatusPanelChanged"/>
 
-                            <controls:SettingsPageCheckboxes x:Name="OutputPanelCheckbox"
+                            <controls:CustomCheckbox x:Name="OutputPanelCheckbox"
                                 LabelText="Hide Output panel."
                                 IsChecked="False"
                                 CheckedChanged="OnHideOutputPanelChanged"/>
 
-                            <controls:SettingsPageCheckboxes x:Name="RecordingPanelCheckbox"
+                            <controls:CustomCheckbox x:Name="RecordingPanelCheckbox"
                                 LabelText="Hide Recording options."
                                 IsChecked="False"
                                 CheckedChanged="OnHideRecordingPanelChanged"/>
 
-                            <controls:SettingsPageCheckboxes x:Name="VirtualMonitorCheckbox"
+                            <controls:CustomCheckbox x:Name="VirtualMonitorCheckbox"
                                 LabelText="Hide Virtual Display options."
                                 IsChecked="False"
                                 CheckedChanged="OnHideVirtualDisplayPanelChanged"/>
@@ -148,7 +148,7 @@
                                 <controls:CustomButton
                                     x:Name="SaveButton"
                                     WidthRequest="250"
-                                    ButtonStyle="CustomButton2"
+                                    ButtonStyle="BasicButton"
                                     ButtonText="Apply Settings"                   
                                     HeightRequest="50"
                                     FontSize="16"

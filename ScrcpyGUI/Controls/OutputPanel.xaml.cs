@@ -160,11 +160,11 @@ public partial class OutputPanel : ContentView
 
     private async void OnLabelTapped(object sender, TappedEventArgs e)
     {
-        if (AdbOutputLabel != null && !string.IsNullOrEmpty(AdbOutputLabel.Text))
+        if (FinalCommandPreview != null && !string.IsNullOrEmpty(FinalCommandPreview.FormattedText.ToString()))
         {
             try
             {
-                await Clipboard.SetTextAsync(AdbOutputLabel.Text);
+                await Clipboard.SetTextAsync(FinalCommandPreview.FormattedText.ToString());
                 await Application.Current.MainPage.DisplayAlert("Copied!", "Text copied to clipboard.", "OK");
             }
             catch (FeatureNotSupportedException ex)
@@ -187,7 +187,7 @@ public partial class OutputPanel : ContentView
 
     private void OnSizeChanged(object sender, EventArgs e)
     {
-        if (Width < 750 || !ChecksPanel.IsVisible || !WirelessConnectionPanel.IsVisible) // Switch to vertical layout
+        if (Width < 750 || !ChecksPanel.IsVisible || !WirelessConnectionPanel.IsVisible)
         {
             ResponsiveGrid.RowDefinitions.Clear();
             ResponsiveGrid.ColumnDefinitions.Clear();
@@ -234,10 +234,6 @@ public partial class OutputPanel : ContentView
         command = e;
         if(jsonData.AppSettings.HomeCommandPreviewCommandColors.Equals("None")) FinalCommandPreview.Text = command.ToString();
         else  UpdateCommandPreview(command);
-        //if (FinalCommandPreview != null)
-        //{
-          //  FinalCommandPreview.Text = e;
-        //}
     }
 
 
@@ -245,7 +241,6 @@ public partial class OutputPanel : ContentView
     {
         var formattedString = new FormattedString();
 
-        // Split and process the command text
         var parts = commandText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var colorMappingToUse = jsonData.AppSettings.HomeCommandPreviewCommandColors.Equals("Complete") ? completeColorMappings : partialColorMappings;
 

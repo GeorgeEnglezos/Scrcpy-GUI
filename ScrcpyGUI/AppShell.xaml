@@ -9,7 +9,14 @@
     FlyoutWidth="140"
     Title="ScrcpyGUI">
 
-            <ShellContent
+    <Shell.FlyoutBackground>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#000000" Offset="0.0" />
+            <GradientStop Color="{StaticResource BlackButton}" Offset="1.0" />
+        </LinearGradientBrush>
+    </Shell.FlyoutBackground>
+
+    <ShellContent
         Title="Home"
                 ContentTemplate="{DataTemplate local:MainPage}"
         Route="MainPage">
