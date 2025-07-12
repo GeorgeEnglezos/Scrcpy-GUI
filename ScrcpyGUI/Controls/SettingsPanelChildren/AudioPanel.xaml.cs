@@ -20,8 +20,8 @@ namespace ScrcpyGUI.Controls
         }
 
         private void OnAudioCodecChanged(object sender, PropertyChangedEventArgs e)
-        {            
-            //audioSettings.AudioCodecEncoderPair = AudioCodecEncoderPicker.SelectedItem?.ToString() ?? "";
+        {
+            audioSettings.AudioCodecEncoderPair = AudioCodecEncoderPicker.SelectedItem?.ToString() ?? "";
             OnAudioSettings_Changed();
         }
 
