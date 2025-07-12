@@ -25,6 +25,12 @@ public partial class SettingsPage : ContentPage
         this.SizeChanged += OnSizeChanged;
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        scrcpyData = DataStorage.staticSavedData;
+    }
+
     private void OnCommandColorsChanged(object? sender, PropertyChangedEventArgs e)
     {
         scrcpyData.AppSettings.HomeCommandPreviewCommandColors = HomeCommandColorPicker.SelectedItem?.ToString() ?? "None";

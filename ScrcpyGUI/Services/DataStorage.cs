@@ -10,8 +10,6 @@ using System.Text;
 public static class DataStorage
 {
     public static ScrcpyGuiData staticSavedData { get; set; } = new ScrcpyGuiData();
-    public static AppSettings appSettings = new AppSettings();
-
     public static readonly string settingsPath = Path.Combine(FileSystem.AppDataDirectory, "ScrcpyGui-Data.json");
 
     public static ScrcpyGuiData LoadData()
@@ -85,7 +83,7 @@ public static class DataStorage
     {
         var data = LoadData();
         data.FavoriteCommands.Add(newCommand);
-        SaveData(data);
+        SaveData(data);        
     }
 
     public static bool RemoveFavoriteCommandAtIndex(int index, ScrcpyGuiData data)
