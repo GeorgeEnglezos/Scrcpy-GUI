@@ -80,21 +80,15 @@ namespace ScrcpyGUI
         }
 
         private async void OnCopyMostRecentCommand(object sender, EventArgs e)
-        {
-            var command = MostRecentCommandText ?? "";
-            if (!string.IsNullOrEmpty(command))
-            {
-                await Clipboard.SetTextAsync(command);
-                await DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
-            }
+        {            
+            await DataStorage.CopyToClipboardAsync(MostRecentCommandText ?? "");
         }
 
         private async void OnCopyCommand(object sender, EventArgs e)
         {
             if (sender is ImageButton button && button.BindingContext is string command)
             {
-                await Clipboard.SetTextAsync(command);
-                await DisplayAlert("Copy Command", $"Command copied: {command}", "OK");
+                await DataStorage.CopyToClipboardAsync(command);
             }
         }
 

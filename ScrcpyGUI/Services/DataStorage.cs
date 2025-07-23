@@ -77,8 +77,6 @@ public static class DataStorage
         }
     }
 
-
-
     public static void AppendFavoriteCommand(string newCommand)
     {
         var data = LoadData();
@@ -132,5 +130,33 @@ public static class DataStorage
             Debug.WriteLine($"Failed to create directory '{folderPath}': {ex.Message}");
             return fallbackPath ?? string.Empty;
         }
+    }
+
+    public static async Task<string> CopyToClipboardAsync(string text)
+    {
+        if (text != null && !string.IsNullOrEmpty(text))
+        {
+            try
+            {
+                await Clipboard.SetTextAsync(text.ToString());
+                await Application.Current.MainPage.DisplayAlert("Copied!", "Text copied to clipboard.", "OK");
+            }
+            catch (FeatureNotSupportedException ex)
+            {
+                await Application.Current.MainPage.DisplayAlert("Error", "Clipboard functionality not supported.", "OK");
+                Console.WriteLine($"Clipboard not supported: {ex.Message}");
+            }
+            catch (PermissionException ex)
+            {
+                await Application.Current.MainPage.DisplayAlert("Error", "Clipboard permission denied.", "OK");
+                Console.WriteLine($"Clipboard permission denied: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                await Application.Current.MainPage.DisplayAlert("Error", $"An unexpected error occurred: {ex.Message}", "OK");
+                Console.WriteLine($"Clipboard error: {ex.Message}");
+            }
+        }
+        return "";
     }
 }
