@@ -28,6 +28,7 @@
             <Button  
                     Text="{Binding Source={x:Reference CustomButtonView}, Path=ButtonText}"                    
                     TextColor="{Binding Source={x:Reference CustomButtonView}, Path=TextColor}"
+                    BackgroundColor="Transparent"
                     FontSize="{Binding Source={x:Reference CustomButtonView}, Path=FontSize}"
                     FontAttributes="{Binding Source={x:Reference CustomButtonView}, Path=FontAttributes}"                    
                     Clicked="OnButtonClicked"/>

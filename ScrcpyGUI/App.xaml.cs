@@ -6,9 +6,18 @@
         {
             InitializeComponent();
             MainPage = new AppShell();
+            Application.Current.UserAppTheme = AppTheme.Dark;
 
             // Set up cleanup for when the app closes
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+        }
+
+        protected override Window CreateWindow(IActivationState activationState)
+        {
+            var window = base.CreateWindow(activationState);
+
+            SetupDarkTitleBar(window);
+            return window;
         }
 
         private void OnProcessExit(object? sender, EventArgs e)
@@ -51,6 +60,17 @@
 
             DataStorage.staticSavedData.AppSettings = settings;
             DataStorage.SaveData(DataStorage.staticSavedData);
+        }
+
+        private void SetupDarkTitleBar(Window window)
+        {
+            window.TitleBar = new TitleBar
+            {
+                Title = "Scrcpy-GUI v1.5",
+                BackgroundColor = Color.FromArgb("1,1,1"), // Dark gray
+                ForegroundColor = Colors.White,
+                HeightRequest = 32
+            };
         }
     }
 }

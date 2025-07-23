@@ -44,7 +44,8 @@
                                         FontSize="Body"
                                         TextColor="{StaticResource Secondary}"
                                         Margin="0,0,0,10" />
-                                    <Button Text="Open GitHub" 
+                                    <Button Text="Open GitHub"
+                                            TextColor="White"                                            
                                             BackgroundColor="{StaticResource BlackButton}"
                                         Clicked="OpenScrcpyOfficial" />
                                 </VerticalStackLayout>
@@ -64,6 +65,7 @@
                                        TextColor="{StaticResource Secondary}"
                                        Margin="0,0,0,10" />
                                     <Button Text="Open GitHub"
+                                            TextColor="White"                                            
                                             BackgroundColor="{StaticResource BlackButton}"
                                         Clicked="OpenScrcpyOfficialDocs" />
                                 </VerticalStackLayout>
@@ -83,6 +85,7 @@
                                        TextColor="{StaticResource Secondary}"
                                        Margin="0,0,0,10" />
                                     <Button Text="Open GitHub"
+                                            TextColor="White"
                                             BackgroundColor="{StaticResource BlackButton}"
                                         Clicked="OpenScrcpyGui" />
                                 </VerticalStackLayout>
@@ -102,6 +105,7 @@
                                        TextColor="{StaticResource Secondary}"
                                        Margin="0,0,0,10" />
                                     <Button Text="Open GitHub"
+                                            TextColor="White"                                            
                                             BackgroundColor="{StaticResource BlackButton}"
                                         Clicked="OpenScrcpyGuiDocs" />
                                 </VerticalStackLayout>
