@@ -50,7 +50,7 @@
             var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             string videosPath = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
 
-            AdbCmdService.scrcpyPath = DataStorage.ValidateAndCreatePath(settings.ScrcpyPath);
+            AdbCmdService.SetScrcpyPath();                
 
             AdbCmdService.recordingsPath = DataStorage.ValidateAndCreatePath(settings.RecordingPath, videosPath);
             settings.RecordingPath = AdbCmdService.recordingsPath;

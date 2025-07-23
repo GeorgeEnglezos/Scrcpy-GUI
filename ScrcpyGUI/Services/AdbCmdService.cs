@@ -44,7 +44,7 @@ public static class AdbCmdService
 
     public static async Task<CmdCommandResponse> RunScrcpyCommand(string command)
     {
-        var scrcpyPath = (string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.ScrcpyPath)) ? "" : DataStorage.staticSavedData.AppSettings.ScrcpyPath ;
+        //var scrcpyPath = (string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.ScrcpyPath)) ? "" : DataStorage.staticSavedData.AppSettings.ScrcpyPath ;
 
         var response = new CmdCommandResponse();
         bool showCmds = DataStorage.LoadData().AppSettings.OpenCmds;
@@ -57,6 +57,7 @@ public static class AdbCmdService
         command = command.Replace("scrcpy.exe", "");
         command = $"scrcpy.exe -s {selectedDevice.DeviceId} {command} ";
 
+        // Command runs here
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = "cmd.exe",
@@ -138,9 +139,6 @@ public static class AdbCmdService
 
     public static async Task<CmdCommandResponse> RunAdbCommandAsync(CommandEnum commandType, string? command)
     {
-
-        var adbPath = (string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.ScrcpyPath)) ? "" : DataStorage.staticSavedData.AppSettings.ScrcpyPath;
-
         var response = new CmdCommandResponse();
 
         try
@@ -160,16 +158,17 @@ public static class AdbCmdService
                 command = $"adb -s {deviceToUseForCommand} {command} ";
             }
 
+            // Command runs here
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
                 Arguments = $"/c \"{command}\"",
-                WorkingDirectory = adbPath,
+                WorkingDirectory = scrcpyPath,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 UseShellExecute = false,
-                RedirectStandardOutput = true,  // Fixed: Changed to true
-                RedirectStandardError = true,   // Fixed: Changed to true
-                CreateNoWindow = true           // Fixed: Changed to true
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
             };
 
             // Prepare to capture output and error streams asynchronously
@@ -311,22 +310,22 @@ public static class AdbCmdService
         );
 
         return maskedOutput;
-
-        //return result.Output.ToString();
     }
     
     public static List<ConnectedDevice> GetAdbDevices()
     {
         var list = new List<ConnectedDevice>();
-
+       
+        // Command runs here
         try
         {
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "adb",
+                    FileName = Path.Combine(scrcpyPath, "adb"),
                     Arguments = "devices -l",
+                    //WorkingDirectory = scrcpyPath,
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -379,11 +378,13 @@ public static class AdbCmdService
 
             try
             {
+                // Command runs here
                 var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = "scrcpy",
+                        FileName = Path.Combine(scrcpyPath, "scrcpy"),                        
+                        WorkingDirectory = scrcpyPath,
                         Arguments = $"--list-encoders --serial {device.DeviceId}",
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
@@ -471,6 +472,13 @@ public static class AdbCmdService
         return null;
     }
 
-
+    public static void SetScrcpyPath()
+    {
+        if (string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.ScrcpyPath)) scrcpyPath = "";
+        else {
+            scrcpyPath = DataStorage.staticSavedData.AppSettings.ScrcpyPath;
+            DataStorage.ValidateAndCreatePath(scrcpyPath);
+        } 
+    }
 
 }

@@ -160,29 +160,8 @@ public partial class OutputPanel : ContentView
 
     private async void OnLabelTapped(object sender, TappedEventArgs e)
     {
-        if (FinalCommandPreview != null && !string.IsNullOrEmpty(FinalCommandPreview.FormattedText.ToString()))
-        {
-            try
-            {
-                await Clipboard.SetTextAsync(FinalCommandPreview.FormattedText.ToString());
-                await Application.Current.MainPage.DisplayAlert("Copied!", "Text copied to clipboard.", "OK");
-            }
-            catch (FeatureNotSupportedException ex)
-            {
-                await Application.Current.MainPage.DisplayAlert("Error", "Clipboard functionality not supported.", "OK");
-                Console.WriteLine($"Clipboard not supported: {ex.Message}");
-            }
-            catch (PermissionException ex)
-            {
-                await Application.Current.MainPage.DisplayAlert("Error", "Clipboard permission denied.", "OK");
-                Console.WriteLine($"Clipboard permission denied: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                await Application.Current.MainPage.DisplayAlert("Error", $"An unexpected error occurred: {ex.Message}", "OK");
-                Console.WriteLine($"Clipboard error: {ex.Message}");
-            }
-        }
+
+        await DataStorage.CopyToClipboardAsync(FinalCommandPreview.FormattedText.ToString());
     }
 
     private void OnSizeChanged(object sender, EventArgs e)

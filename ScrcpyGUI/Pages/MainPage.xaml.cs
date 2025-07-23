@@ -30,6 +30,9 @@ namespace ScrcpyGUI
 
             OptionsPanel.SetOutputPanelReferenceFromMainPage(OutputPanel);
             OutputPanel.SetOptionsPanelReferenceFromMainPage(OptionsPanel);
+
+            //There might be changes on the paths
+            AdbCmdService.SetScrcpyPath();
         }
 
         protected override void OnDisappearing()
