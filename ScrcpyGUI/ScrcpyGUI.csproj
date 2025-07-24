@@ -1,24 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0-windows10.0.19041.0</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
-		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
-		<!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
-
-		<!-- Note for MacCatalyst:
-		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
-		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
-		The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
-		either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
-		<!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
-
+		<TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
 		<OutputType>Exe</OutputType>
 		<RootNamespace>ScrcpyGUI</RootNamespace>
 		<UseMaui>true</UseMaui>
 		<SingleProject>true</SingleProject>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<UseWinUI>true</UseWinUI>
 
 		<!-- Display name -->
 		<ApplicationTitle>ScrcpyGUI</ApplicationTitle>
@@ -30,29 +20,18 @@
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
-		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
+		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+		<TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
 
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</SupportedOSPlatformVersion>
-		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</TargetPlatformMinVersion>
-
-		<SelfContained>true</SelfContained>
-		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>		
-
+		<!-- Self-contained settings for Release -->
+		<SelfContained Condition="'$(Configuration)' == 'Release'">true</SelfContained>
+		<EnableCompressionInSingleFile Condition="'$(Configuration)' == 'Release'">true</EnableCompressionInSingleFile>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<!-- App Icon -->
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
-
-		<!--<PackageReference Include="Microsoft.Maui.Essentials" Version="9.0.14" />-->
-
-		<!--Nugget for Ui-->
-		<!--<PackageReference Include="Xamarin.CommunityToolkit" Version="2.0.0" />-->
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
@@ -70,7 +49,7 @@
 		<!-- Custom Fonts -->
 		<MauiFont Include="Resources\Fonts\*" />
 
-		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
+		<!-- Raw Assets -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
@@ -78,139 +57,128 @@
 		<PackageReference Include="CommunityToolkit.Maui" Version="11.2.0" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="9.0.60" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.4" />
-		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="UraniumUI.Icons.FontAwesome" Version="2.12.1" />
 		<PackageReference Include="UraniumUI.Icons.MaterialIcons" Version="2.12.1" />
 		<PackageReference Include="UraniumUI.Material" Version="2.12.1" />
 	</ItemGroup>
 
+	<!-- Include all your existing Compile and MauiXaml items here -->
 	<ItemGroup>
-	  <Compile Update="Controls\OutputChildren\StatusPanel.xaml.cs">
-	    <DependentUpon>StatusPanel.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SettingsPanelChildren\AudioPanel.xaml.cs">
-	    <DependentUpon>AudioPanel.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\OutputPanel.xaml.cs">
-	    <DependentUpon>OutputPanel.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SettingsPanelChildren\GeneralPanel.xaml.cs">
-	    <DependentUpon>GeneralPanel.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml.cs">
-	    <DependentUpon>ScreenRecordingPanel.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SettingsPanelChildren\PackageSelectionPanel.xaml.cs">
-	    <DependentUpon>PackageSelectionPanel.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\OptionsPanel.xaml.cs">
-	    <DependentUpon>OptionsPanel.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml.cs">
-	    <DependentUpon>VirtualDisplayPanel.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SharedControls\BorderTitle.xaml.cs">
-	    <DependentUpon>BorderTitle.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SharedControls\CustomButton.xaml.cs">
-	    <DependentUpon>CustomButton.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SharedControls\CustomTextInput.xaml.cs">
-	    <DependentUpon>CustomTextInput.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SharedControls\FolderSelector.xaml.cs">
-	    <DependentUpon>FolderSelector.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SharedControls\FixedFooter.xaml.cs">
-	    <DependentUpon>FixedFooter.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SharedControls\FixedHeader.xaml.cs">
-	    <DependentUpon>FixedHeader.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Controls\SharedControls\CustomCheckbox.xaml.cs">
-	    <DependentUpon>CustomCheckbox.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Pages\SettingsPage.xaml.cs">
-	    <DependentUpon>SettingsPage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Pages\InfoPage.xaml.cs">
-	    <DependentUpon>InfoPage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Pages\InfoPage.xaml.cs">
-	    <DependentUpon>InfoPage.xaml</DependentUpon>
-	  </Compile>
+		<Compile Update="Controls\OutputChildren\StatusPanel.xaml.cs">
+			<DependentUpon>StatusPanel.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SettingsPanelChildren\AudioPanel.xaml.cs">
+			<DependentUpon>AudioPanel.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\OutputPanel.xaml.cs">
+			<DependentUpon>OutputPanel.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SettingsPanelChildren\GeneralPanel.xaml.cs">
+			<DependentUpon>GeneralPanel.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml.cs">
+			<DependentUpon>ScreenRecordingPanel.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SettingsPanelChildren\PackageSelectionPanel.xaml.cs">
+			<DependentUpon>PackageSelectionPanel.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\OptionsPanel.xaml.cs">
+			<DependentUpon>OptionsPanel.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml.cs">
+			<DependentUpon>VirtualDisplayPanel.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SharedControls\BorderTitle.xaml.cs">
+			<DependentUpon>BorderTitle.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SharedControls\CustomButton.xaml.cs">
+			<DependentUpon>CustomButton.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SharedControls\CustomTextInput.xaml.cs">
+			<DependentUpon>CustomTextInput.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SharedControls\FolderSelector.xaml.cs">
+			<DependentUpon>FolderSelector.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SharedControls\FixedFooter.xaml.cs">
+			<DependentUpon>FixedFooter.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SharedControls\FixedHeader.xaml.cs">
+			<DependentUpon>FixedHeader.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Controls\SharedControls\CustomCheckbox.xaml.cs">
+			<DependentUpon>CustomCheckbox.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Pages\SettingsPage.xaml.cs">
+			<DependentUpon>SettingsPage.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Pages\InfoPage.xaml.cs">
+			<DependentUpon>InfoPage.xaml</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiXaml Update="Controls\OutputChildren\StatusPanel.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\OutputChildren\WirelessConnectionPanel.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SettingsPanelChildren\AudioPanel.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\OutputPanel.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\OptionsPanel.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SettingsPanelChildren\GeneralPanel.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SettingsPanelChildren\PackageSelectionPanel.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SharedControls\BorderTitle.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SharedControls\CustomButton.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SharedControls\CustomTextInput.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SharedControls\FolderSelector.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SharedControls\FixedFooter.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SharedControls\FixedHeader.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SharedControls\CustomCheckbox.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Controls\SharedControls\CommandBorder.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Pages\SettingsPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Pages\InfoPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Pages\InfoPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Resources\Styles\BorderStyles.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
+		<MauiXaml Update="Controls\OutputChildren\StatusPanel.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\OutputChildren\WirelessConnectionPanel.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SettingsPanelChildren\AudioPanel.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\OutputPanel.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\OptionsPanel.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SettingsPanelChildren\VirtualDisplayPanel.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SettingsPanelChildren\GeneralPanel.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SettingsPanelChildren\PackageSelectionPanel.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SettingsPanelChildren\ScreenRecordingPanel.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SharedControls\BorderTitle.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SharedControls\CustomButton.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SharedControls\CustomTextInput.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SharedControls\FolderSelector.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SharedControls\FixedFooter.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SharedControls\FixedHeader.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SharedControls\CustomCheckbox.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Controls\SharedControls\CommandBorder.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Pages\SettingsPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Pages\InfoPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Resources\Styles\BorderStyles.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
 	</ItemGroup>
 
-	<!--<ItemGroup>
-	  <Compile Update="Pages\CommandsPage.xaml.cs">
-	    <DependentUpon>CommandsPage.xaml</DependentUpon>
-	  </Compile>
-	</ItemGroup>-->
 </Project>

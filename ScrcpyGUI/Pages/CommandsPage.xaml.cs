@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Controls;
+﻿using Microsoft.Graphics.Canvas.Geometry;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using ScrcpyGUI.Controls;
 using ScrcpyGUI.Models;
@@ -80,7 +81,7 @@ namespace ScrcpyGUI
         }
 
         private async void OnCopyMostRecentCommand(object sender, EventArgs e)
-        {            
+        {
             await DataStorage.CopyToClipboardAsync(MostRecentCommandText ?? "");
         }
 
@@ -115,13 +116,15 @@ namespace ScrcpyGUI
 
         private async void OnDownloadBat(object sender, EventArgs e)
         {
-            if (sender is ImageButton button && button.BindingContext is string text)
+            if (sender is ImageButton button && button.BindingContext is string command)
             {
                 try
                 {
                     string baseFileName = "SavedCommand";
-                    if (text.Contains("--start-app="))
-                        baseFileName = RenameToPackage(text);
+                    if (command.Contains("--start-app="))
+                        baseFileName = RenameToPackage(command);
+
+                    if (!string.IsNullOrEmpty(AdbCmdService.scrcpyPath)) command = Path.Combine(AdbCmdService.scrcpyPath, command);
 
                     string desktopPath = string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.DownloadPath) ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) : DataStorage.staticSavedData.AppSettings.DownloadPath;
                     string fullPath = Path.Combine(desktopPath, baseFileName + ".bat");
@@ -134,7 +137,7 @@ namespace ScrcpyGUI
                     }
 
                     // Write the file asynchronously
-                    await File.WriteAllTextAsync(fullPath, text);
+                    await File.WriteAllTextAsync(fullPath, command);
 
                     await DisplayAlert("Success", $"Saved as: {Path.GetFileName(fullPath)} in \n{desktopPath}", "OK");
                 }

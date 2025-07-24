@@ -10,7 +10,7 @@ public partial class OutputPanel : ContentView
     private string command = "";
     public event EventHandler<string>? PageRefreshed;
     const string baseScrcpyCommand = "scrcpy.exe --pause-on-exit=if-error";
-
+    private Page parentPage;
     Dictionary<string, Color> completeColorMappings = new Dictionary<string, Color>
     {
         //General
@@ -160,8 +160,91 @@ public partial class OutputPanel : ContentView
 
     private async void OnLabelTapped(object sender, TappedEventArgs e)
     {
+        try
+        {
+            string textToCopy = GetFormattedTextSafely();
 
-        await DataStorage.CopyToClipboardAsync(FinalCommandPreview.FormattedText.ToString());
+            if (string.IsNullOrEmpty(textToCopy))
+            {
+                Console.WriteLine("No text to copy, returning");
+                return;
+            }
+
+            parentPage = parentPage ?? GetParentPage();
+            if (parentPage != null)
+            {
+                await DataStorage.CopyToClipboardAsync(textToCopy);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"OnLabelTapped error: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+    }
+
+    private string GetFormattedTextSafely()
+    {
+        try
+        {
+            // Try to get text from FormattedString spans
+            if (FinalCommandPreview?.FormattedText?.Spans != null && FinalCommandPreview.FormattedText.Spans.Count > 0)
+            {
+                var allText = string.Join("", FinalCommandPreview.FormattedText.Spans.Select(span => span.Text ?? ""));
+                Console.WriteLine($"Got text from spans: '{allText}'");
+                return allText;
+            }
+
+            // Try to get the Text property directly
+            if (!string.IsNullOrEmpty(FinalCommandPreview?.Text))
+            {
+                Console.WriteLine($"Got text from Text property: '{FinalCommandPreview.Text}'");
+                return FinalCommandPreview.Text;
+            }
+
+            // Try FormattedText.ToString() as fallback
+            if (FinalCommandPreview?.FormattedText != null)
+            {
+                var formattedText = FinalCommandPreview.FormattedText.ToString();
+                Console.WriteLine($"Got text from FormattedText.ToString(): '{formattedText}'");
+                return formattedText;
+            }
+
+            Console.WriteLine("No text found in any method");
+            return "";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GetFormattedTextSafely error: {ex.Message}");
+            return "";
+        }
+    }
+
+    private ContentPage GetParentPage()
+    {
+        try
+        {
+            Element current = this;
+            int depth = 0;
+
+            while (current != null && depth < 10)
+            {
+                if (current is ContentPage page)
+                {
+                    Console.WriteLine($"Found ContentPage: {page.GetType().Name}");
+                    return page;
+                }
+
+                current = current.Parent;
+                depth++;
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GetParentPage error: {ex.Message}");
+            return null;
+        }
     }
 
     private void OnSizeChanged(object sender, EventArgs e)
