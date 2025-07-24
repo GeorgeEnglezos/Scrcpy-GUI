@@ -9,7 +9,7 @@
         Padding="10"
         StrokeThickness="0"
         HorizontalOptions="Fill">
-        <Label Text="Scrcpy GUI v1.5 - Developed by George Englezos"
+        <Label Text="Scrcpy GUI v1.5.1 - Developed by George Englezos"
             FontSize="14"
             HorizontalOptions="Center"            
             TextColor="{StaticResource Secondary}" />
