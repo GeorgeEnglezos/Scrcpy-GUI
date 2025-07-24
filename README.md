@@ -1,6 +1,6 @@
 # 📱 Scrcpy-GUI
 
-Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting with [scrcpy v3.2](https://github.com/Genymobile/scrcpy) — one of my favorite and most used open-source tools. Scrcpy by itself is a command-line project that allows you to stream and control your **Android** device on your PC in several powerful ways. This app was created both as an experiment to explore .NET MAUI and to make scrcpy more user-friendly.
+Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting with [scrcpy](https://github.com/Genymobile/scrcpy) — one of my favorite and most used open-source tools. Scrcpy by itself is a command-line project that allows you to stream and control your **Android** device on your PC in several powerful ways. This app was created both as an experiment to explore .NET MAUI and to make scrcpy more user-friendly.
 
 ## With Scrcpy-GUI, you can:
 - Easily generate complex scrcpy command-line arguments without wasting time digging through the official documentation.
