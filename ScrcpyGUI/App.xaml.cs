@@ -66,7 +66,7 @@
         {
             window.TitleBar = new TitleBar
             {
-                Title = "Scrcpy-GUI v1.5.1",
+                Title = "Scrcpy-GUI v1.5.1.1",
                 BackgroundColor = Color.FromArgb("1,1,1"), // Dark gray
                 ForegroundColor = Colors.White,
                 HeightRequest = 32

@@ -46,7 +46,7 @@ namespace ScrcpyGUI.Controls
             }
 
             var portResult = await AdbCmdService.RunTCPPort(port);
-            var ipResult = await AdbCmdService.RunPhoneIp(ip);
+            var ipResult = await AdbCmdService.RunPhoneIp(ip, port);
 
             string summary = $"\nTCP Result:\n{portResult}\n\nIP Result:\n{ipResult}";
             await ShowDialog("Auto Connection Status", summary);
@@ -76,7 +76,7 @@ namespace ScrcpyGUI.Controls
             }
 
             var portResult = await AdbCmdService.RunTCPPort(port);
-            var ipResult = await AdbCmdService.RunPhoneIp(ip);
+            var ipResult = await AdbCmdService.RunPhoneIp(ip, port);
 
             string summary = $"TCP Result:\n{portResult}\n\nIP Result:\n{ipResult}";
             await ShowDialog("Connection Status", summary);

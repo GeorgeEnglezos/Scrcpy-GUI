@@ -298,9 +298,9 @@ public static class AdbCmdService
         return result.Output.ToString();
     }
 
-    public async static Task<string> RunPhoneIp(string ip)
+    public async static Task<string> RunPhoneIp(string ip, string port)
     {
-        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"connect {ip}");
+        var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"connect {ip}:{port}");
 
         // Mask all IPv4 addresses in the output
         string maskedOutput = Regex.Replace(
