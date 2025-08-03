@@ -48,7 +48,7 @@
                     FontAttributes="Bold"
                     HorizontalTextAlignment="Start"
                     VerticalOptions="Center"/>
-                <Label Text="Scrcpy-GUI v1.5.1"
+                <Label Text="Scrcpy-GUI v1.5.1.1"
                        FontSize="14"
                        FontAttributes="Bold"
                        VerticalOptions="End"
