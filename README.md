@@ -1,4 +1,20 @@
-# 📱 Scrcpy-GUI
+# 📌 NEW SCRCPY TOOL → https://scrcpy-ui.web.app/
+
+This is a web app version of the desktop app (works on any OS). It was built as a companion app, and I’ll try to maintain both.
+
+## ✅ PROS
+- Faster
+- More accessible
+- No login or download required
+- You can still select packages, codecs, and encoders (import them into the app; data is saved locally in your browser)
+
+## ❌ CONS
+- You need to run the generated command manually
+- No one-click wireless connection
+- No multi-device selection
+<hr/>
+
+# 📌 Scrcpy-GUI
 
 Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting with [scrcpy](https://github.com/Genymobile/scrcpy) — one of my favorite and most used open-source tools. Scrcpy by itself is a command-line project that allows you to stream and control your **Android** device on your PC in several powerful ways. This app was created both as an experiment to explore .NET MAUI and to make scrcpy more user-friendly.
 
