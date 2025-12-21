@@ -12,44 +12,91 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+/// <summary>
+/// Static service class for executing ADB (Android Debug Bridge) and Scrcpy commands.
+/// DEPRECATED: This .NET MAUI application is being replaced by a Flutter version.
+/// Manages device connections, command execution, and codec/encoder detection.
+/// </summary>
 public static class AdbCmdService
 {
+    /// <summary>
+    /// ADB command to list all installed packages on the device.
+    /// </summary>
     public const string allPackagesCommand = "shell pm list packages";
+
+    /// <summary>
+    /// ADB command to list only user-installed packages (excludes system apps).
+    /// </summary>
     public const string installedPackagesCommand = "shell pm list packages -3";
+
+    /// <summary>
+    /// Gets or sets the list of currently connected Android devices.
+    /// </summary>
     public static List<ConnectedDevice> connectedDeviceList = new List<ConnectedDevice>();
+
+    /// <summary>
+    /// Gets or sets the currently selected device for command execution.
+    /// </summary>
     public static ConnectedDevice selectedDevice = new ConnectedDevice();
-    
-    // Paths
+
+    /// <summary>
+    /// Gets or sets the file system path to the Scrcpy executable directory.
+    /// </summary>
     public static string scrcpyPath = "";
+
+    /// <summary>
+    /// Gets or sets the file system path where screen recordings are saved.
+    /// </summary>
     public static string recordingsPath = "";
 
+    /// <summary>
+    /// Enumeration of command types for command execution routing.
+    /// </summary>
     public enum CommandEnum
     {
+        /// <summary>Get list of packages from device.</summary>
         GetPackages,
+        /// <summary>Execute Scrcpy screen mirroring.</summary>
         RunScrcpy,
+        /// <summary>Check ADB version.</summary>
         CheckAdbVersion,
+        /// <summary>Check Scrcpy version.</summary>
         CheckScrcpyVersion,
+        /// <summary>Check for connected devices.</summary>
         CheckConnectedDevices,
+        /// <summary>TCP/IP connection command.</summary>
         Tcp,
+        /// <summary>Get device IP address.</summary>
         PhoneIp
     }
 
+    /// <summary>
+    /// Enumeration of device connection types.
+    /// </summary>
     public enum ConnectionType
     {
+        /// <summary>No connection.</summary>
         None,
+        /// <summary>USB connection.</summary>
         Usb,
+        /// <summary>Wireless TCP/IP connection.</summary>
         TcpIp
     }
 
 
+    /// <summary>
+    /// Executes a Scrcpy command on the selected device.
+    /// Automatically prepends device selection and handles output/error redirection.
+    /// </summary>
+    /// <param name="command">The Scrcpy command string to execute.</param>
+    /// <returns>Command response containing output, errors, and exit code.</returns>
     public static async Task<CmdCommandResponse> RunScrcpyCommand(string command)
     {
-        //var scrcpyPath = (string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.ScrcpyPath)) ? "" : DataStorage.staticSavedData.AppSettings.ScrcpyPath ;
-
         var response = new CmdCommandResponse();
         bool showCmds = DataStorage.LoadData().AppSettings.OpenCmds;
         if (string.IsNullOrEmpty(selectedDevice.DeviceId))
-        { //No device connected
+        {
+            // No device connected
             response.RawError = "No ADB device connected. \nMake sure USB debugging is enabled and try again!";
             return response;
         }
@@ -137,6 +184,13 @@ public static class AdbCmdService
         return response;
     }
 
+    /// <summary>
+    /// Executes an ADB command asynchronously with automatic device selection.
+    /// Handles device-specific routing and wireless device detection.
+    /// </summary>
+    /// <param name="commandType">The type of command being executed.</param>
+    /// <param name="command">The ADB command string to execute.</param>
+    /// <returns>Command response containing output, errors, and exit code.</returns>
     public static async Task<CmdCommandResponse> RunAdbCommandAsync(CommandEnum commandType, string? command)
     {
         var response = new CmdCommandResponse();
@@ -229,13 +283,20 @@ public static class AdbCmdService
     }
 
 
+    /// <summary>
+    /// Checks if ADB (Android Debug Bridge) is installed and accessible.
+    /// </summary>
+    /// <returns>True if ADB is installed; otherwise, false.</returns>
     public static async Task<bool> CheckIfAdbIsInstalled()
     {
         var result = await RunAdbCommandAsync(CommandEnum.CheckAdbVersion, "adb version");
         return result.RawOutput.Contains("Android Debug Bridge");
     }
 
-
+    /// <summary>
+    /// Checks if Scrcpy is installed and accessible.
+    /// </summary>
+    /// <returns>True if Scrcpy is installed; otherwise, false.</returns>
     public async static Task<bool> CheckIfScrcpyIsInstalled()
     {
         try
@@ -252,6 +313,12 @@ public static class AdbCmdService
             return false;
         }
     }
+
+    /// <summary>
+    /// Determines the type of connection for currently connected devices.
+    /// Analyzes device identifiers to distinguish between USB and TCP/IP connections.
+    /// </summary>
+    /// <returns>The detected connection type (None, USB, or TCP/IP).</returns>
     public static async Task<ConnectionType> CheckDeviceConnection()
     {
         var result = await RunAdbCommandAsync(CommandEnum.CheckAdbVersion, "adb devices");
@@ -292,12 +359,24 @@ public static class AdbCmdService
         return ConnectionType.None; // No connected device found
     }
 
+    /// <summary>
+    /// Enables TCP/IP mode on the connected device at the specified port.
+    /// </summary>
+    /// <param name="port">The port number to use for TCP/IP connection (typically 5555).</param>
+    /// <returns>Command output string.</returns>
     public async static Task<string> RunTCPPort(string port)
     {
         var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"tcpip {port}");
         return result.Output.ToString();
     }
 
+    /// <summary>
+    /// Connects to a device wirelessly using TCP/IP.
+    /// Masks IP addresses in the output for privacy.
+    /// </summary>
+    /// <param name="ip">The device IP address.</param>
+    /// <param name="port">The port number (typically 5555).</param>
+    /// <returns>Command output with masked IP addresses.</returns>
     public async static Task<string> RunPhoneIp(string ip, string port)
     {
         var result = await RunAdbCommandAsync(CommandEnum.Tcp, $"connect {ip}:{port}");
@@ -312,10 +391,15 @@ public static class AdbCmdService
         return maskedOutput;
     }
     
+    /// <summary>
+    /// Retrieves a list of all connected Android devices with their details.
+    /// Queries each device for supported codec/encoder pairs.
+    /// </summary>
+    /// <returns>List of ConnectedDevice objects with codec/encoder information.</returns>
     public static List<ConnectedDevice> GetAdbDevices()
     {
         var list = new List<ConnectedDevice>();
-       
+
         // Command runs here
         try
         {
@@ -368,11 +452,16 @@ public static class AdbCmdService
         connectedDeviceList = GetCodecsEncodersForEachDevice(list);
         return connectedDeviceList;
     }
+    /// <summary>
+    /// Queries each device for its supported audio and video codec/encoder pairs.
+    /// Parses Scrcpy's --list-encoders output to populate device capabilities.
+    /// </summary>
+    /// <param name="devices">List of devices to query.</param>
+    /// <returns>The same list with codec/encoder information populated.</returns>
     private static List<ConnectedDevice> GetCodecsEncodersForEachDevice(List<ConnectedDevice> devices)
     {
         foreach (var device in devices)
         {
-
             device.VideoCodecEncoderPairs = new List<string>();
             device.AudioCodecEncoderPairs = new List<string>();
 
@@ -437,11 +526,20 @@ public static class AdbCmdService
     }
 
 
+    /// <summary>
+    /// Determines if a string is a valid IPv4 address using regex pattern matching.
+    /// </summary>
+    /// <param name="input">The string to check.</param>
+    /// <returns>True if the input is a valid IPv4 address; otherwise, false.</returns>
     public static bool IsIpAddress(string input)
     {
         return Regex.IsMatch(input, @"\b(?:\d{1,3}\.){3}\d{1,3}\b");
     }
 
+    /// <summary>
+    /// Retrieves the device's WiFi IP address from the wlan0 interface.
+    /// </summary>
+    /// <returns>The device's IP address, or empty string if not found.</returns>
     public static async Task<string> GetPhoneIp()
     {
         // This assumes you're using a shell command like: adb shell ip -f inet addr show wlan0
@@ -452,6 +550,11 @@ public static class AdbCmdService
         return match.Success ? match.Groups[1].Value : string.Empty;
     }
 
+    /// <summary>
+    /// Searches for a wirelessly connected device in the device list.
+    /// Prioritizes the currently selected device if it's wireless.
+    /// </summary>
+    /// <returns>Device ID of a wireless device, or null if none found.</returns>
     private static string FindWirelessDeviceInList()
     {
         // If the currently selected device is already wireless, return its ID directly.
@@ -472,13 +575,18 @@ public static class AdbCmdService
         return null;
     }
 
+    /// <summary>
+    /// Sets the Scrcpy executable path from saved application settings.
+    /// Validates and creates the path if necessary.
+    /// </summary>
     public static void SetScrcpyPath()
     {
-        if (string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.ScrcpyPath)) scrcpyPath = "";
-        else {
+        if (string.IsNullOrEmpty(DataStorage.staticSavedData.AppSettings.ScrcpyPath))
+            scrcpyPath = "";
+        else
+        {
             scrcpyPath = DataStorage.staticSavedData.AppSettings.ScrcpyPath;
             DataStorage.ValidateAndCreatePath(scrcpyPath);
-        } 
+        }
     }
-
 }
