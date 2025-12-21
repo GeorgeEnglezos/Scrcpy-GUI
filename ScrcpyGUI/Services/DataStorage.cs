@@ -7,11 +7,28 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
+/// <summary>
+/// Static service class for persisting and retrieving application data.
+/// DEPRECATED: This .NET MAUI application is being replaced by a Flutter version.
+/// Handles JSON serialization/deserialization of user settings, commands, and preferences.
+/// </summary>
 public static class DataStorage
 {
+    /// <summary>
+    /// Gets or sets the cached in-memory copy of saved application data.
+    /// </summary>
     public static ScrcpyGuiData staticSavedData { get; set; } = new ScrcpyGuiData();
+
+    /// <summary>
+    /// Gets the file path where application settings are stored.
+    /// </summary>
     public static readonly string settingsPath = Path.Combine(FileSystem.AppDataDirectory, "ScrcpyGui-Data.json");
 
+    /// <summary>
+    /// Loads application data from the JSON settings file.
+    /// Creates a new settings file with defaults if it doesn't exist.
+    /// </summary>
+    /// <returns>Loaded ScrcpyGuiData object, or default values if loading fails.</returns>
     public static ScrcpyGuiData LoadData()
     {
         try
@@ -19,7 +36,7 @@ public static class DataStorage
             if (!File.Exists(settingsPath))
             {
                 // File doesn't exist, create it with default data
-                SaveData(new ScrcpyGuiData()); // Ensure it's created
+                SaveData(new ScrcpyGuiData());
                 return staticSavedData;
             }
 
@@ -34,6 +51,11 @@ public static class DataStorage
         }
     }
 
+    /// <summary>
+    /// Saves application data to the JSON settings file.
+    /// Creates necessary directories if they don't exist.
+    /// </summary>
+    /// <param name="data">The data to save.</param>
     public static void SaveData(ScrcpyGuiData data)
     {
         try
@@ -54,6 +76,10 @@ public static class DataStorage
         }
     }
 
+    /// <summary>
+    /// Creates the settings file and its parent directory if they don't exist.
+    /// Initializes the file with an empty JSON object.
+    /// </summary>
     private static void CreateFile()
     {
         try
@@ -71,19 +97,28 @@ public static class DataStorage
         }
         catch (Exception ex)
         {
-            // Log or handle error as needed
             Console.WriteLine($"Failed to create file: {ex.Message}");
             throw;
         }
     }
 
+    /// <summary>
+    /// Adds a new command to the user's favorite commands list and saves the data.
+    /// </summary>
+    /// <param name="newCommand">The command string to add to favorites.</param>
     public static void AppendFavoriteCommand(string newCommand)
     {
         var data = LoadData();
         data.FavoriteCommands.Add(newCommand);
-        SaveData(data);        
+        SaveData(data);
     }
 
+    /// <summary>
+    /// Removes a favorite command at the specified index.
+    /// </summary>
+    /// <param name="index">Zero-based index of the command to remove.</param>
+    /// <param name="data">The data object containing the commands.</param>
+    /// <returns>True if the command was removed; false if the index was invalid.</returns>
     public static bool RemoveFavoriteCommandAtIndex(int index, ScrcpyGuiData data)
     {
         if (index >= 0 && index < data.FavoriteCommands.Count)
@@ -95,6 +130,10 @@ public static class DataStorage
         return false;
     }
 
+    /// <summary>
+    /// Saves the most recently executed command to persistent storage.
+    /// </summary>
+    /// <param name="command">The command string to save.</param>
     public static void SaveMostRecentCommand(string command)
     {
         var data = LoadData();
@@ -102,6 +141,9 @@ public static class DataStorage
         SaveData(data);
     }
 
+    /// <summary>
+    /// Deletes the settings file, clearing all saved application data.
+    /// </summary>
     public static void ClearAll()
     {
         if (File.Exists(settingsPath))
@@ -110,6 +152,12 @@ public static class DataStorage
         }
     }
 
+    /// <summary>
+    /// Validates that a folder path exists, creating it if necessary.
+    /// </summary>
+    /// <param name="folderPath">The folder path to validate/create.</param>
+    /// <param name="fallbackPath">Optional fallback path if validation fails.</param>
+    /// <returns>The validated folder path, or the fallback path if validation fails.</returns>
     public static string ValidateAndCreatePath(string folderPath, string fallbackPath = null)
     {
         // If the path is null or empty, use fallback or return empty string
@@ -132,6 +180,12 @@ public static class DataStorage
         }
     }
 
+    /// <summary>
+    /// Copies text to the system clipboard and displays a confirmation dialog.
+    /// Handles platform-specific clipboard errors gracefully.
+    /// </summary>
+    /// <param name="text">The text to copy to clipboard.</param>
+    /// <returns>Empty string on completion.</returns>
     public static async Task<string> CopyToClipboardAsync(string text)
     {
         if (text != null && !string.IsNullOrEmpty(text))

@@ -13,11 +13,21 @@ using Windows.Graphics;
 
 namespace ScrcpyGUI
 {
+    /// <summary>
+    /// Entry point and configuration class for the Scrcpy-GUI MAUI application.
+    /// DEPRECATED: This .NET MAUI application is being replaced by a Flutter version.
+    /// Handles single-instance enforcement, application bootstrapping, and platform-specific configuration.
+    /// </summary>
     public static class MauiProgram
     {
         private static Mutex? _mutex;
         private const string MutexName = "ScrcpyGUI_SingleInstance_Mutex";
 
+        /// <summary>
+        /// Creates and configures the MAUI application with all required services and handlers.
+        /// Enforces single-instance application behavior.
+        /// </summary>
+        /// <returns>Configured MauiApp instance, or exits if another instance is running.</returns>
         public static MauiApp CreateMauiApp()
         {
             // Check for single instance before creating the app
@@ -84,6 +94,10 @@ namespace ScrcpyGUI
             return builder.Build();
         }
 
+        /// <summary>
+        /// Checks if another instance of the application is already running using a named mutex.
+        /// </summary>
+        /// <returns>True if this is the first instance, false if another instance exists.</returns>
         private static bool CheckSingleInstance()
         {
             try
@@ -113,6 +127,10 @@ namespace ScrcpyGUI
             }
         }
 
+        /// <summary>
+        /// Attempts to bring the existing application instance to the foreground.
+        /// Platform-specific implementation for Windows.
+        /// </summary>
         private static void BringExistingInstanceToForeground()
         {
             try
@@ -139,7 +157,9 @@ namespace ScrcpyGUI
             }
         }
 
-        // Clean up the mutex when the application exits
+        /// <summary>
+        /// Cleans up and releases the single-instance mutex when the application exits.
+        /// </summary>
         public static void CleanupMutex()
         {
             _mutex?.ReleaseMutex();
@@ -149,7 +169,10 @@ namespace ScrcpyGUI
     }
 
 #if WINDOWS
-    // Helper class for Windows-specific operations
+    /// <summary>
+    /// Helper class providing Windows-specific native interop operations.
+    /// Uses P/Invoke to access Win32 APIs for window management.
+    /// </summary>
     internal static class Win32Helper
     {
         [System.Runtime.InteropServices.DllImport("user32.dll")]
@@ -164,6 +187,10 @@ namespace ScrcpyGUI
         private const int SW_RESTORE = 9;
         private const int SW_SHOW = 5;
 
+        /// <summary>
+        /// Brings a window to the foreground, restoring it if minimized.
+        /// </summary>
+        /// <param name="windowHandle">Handle to the window to bring to foreground.</param>
         public static void BringWindowToForeground(IntPtr windowHandle)
         {
             if (IsIconic(windowHandle))
