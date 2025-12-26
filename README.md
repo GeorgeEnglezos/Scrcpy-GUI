@@ -1,59 +1,224 @@
-# 📌 NEW SCRCPY TOOL → https://scrcpy-ui.web.app/
+# Scrcpy GUI
 
-This is a web app version of the desktop app (works on any OS). It was built as a companion app, and I’ll try to maintain both.
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)]()
 
-## ✅ PROS
-- Faster
-- More accessible
-- No login or download required
-- You can still select packages, codecs, and encoders (import them into the app; data is saved locally in your browser)
+A modern, cross-platform graphical user interface for [scrcpy](https://github.com/Genymobile/scrcpy) - the powerful Android screen mirroring and control tool.
 
-## ❌ CONS
-- You need to run the generated command manually
-- No one-click wireless connection
-- No multi-device selection
-<hr/>
+---
 
-# 📌 Scrcpy-GUI
+## 🎯 Overview
 
-Scrcpy-GUI is a lightweight user interface built with .NET MAUI for interacting with [scrcpy](https://github.com/Genymobile/scrcpy) — one of my favorite and most used open-source tools. Scrcpy by itself is a command-line project that allows you to stream and control your **Android** device on your PC in several powerful ways. This app was created both as an experiment to explore .NET MAUI and to make scrcpy more user-friendly.
+Scrcpy GUI transforms the command-line scrcpy experience into an intuitive graphical interface, making Android device mirroring and control accessible to everyone. Built with Flutter, this application provides a seamless experience across Windows, macOS, and Linux platforms.
 
-## With Scrcpy-GUI, you can:
-- Easily generate complex scrcpy command-line arguments without wasting time digging through the official documentation.
-- Take full control of virtual displays, including the ability to launch apps like launchers or gaming frontends.
-- Save and manage shortcuts for your favorite commands, with the option to download them locally to your PC.
-- Connect wirelessly with a single click—no hassle.
-- Stream from multiple Android devices at the same time effortlessly.
+### What is scrcpy?
 
-## Screenshots (1.5):
+[scrcpy](https://github.com/Genymobile/scrcpy) is an open-source tool that provides display and control of Android devices connected via USB or TCP/IP. It's lightweight, high-performance, and requires no root access.
+
+### What does Scrcpy GUI add?
+
+- **Visual Command Builder** - Generate complex scrcpy commands without memorizing flags
+- **Multi-Device Management** - Control multiple Android devices simultaneously
+- **Wireless Setup** - One-click wireless connection configuration
+- **Process Monitoring** - Track and manage all running scrcpy instances
+- **Command Favorites** - Save and reuse your frequently used configurations
+- **Real-time Preview** - See generated commands with syntax highlighting
+- **Cross-Platform** - Native support for Windows, macOS, and Linux
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+1. **scrcpy** - Install from [official repository](https://github.com/Genymobile/scrcpy#get-the-app)
+   - Windows: `scoop install scrcpy` or `choco install scrcpy`
+   - macOS: `brew install scrcpy`
+   - Linux: `sudo apt install scrcpy`
+
+2. **ADB (Android Debug Bridge)** - Usually included with scrcpy
+
+3. **Android Device** - With USB debugging enabled
+   - Go to Settings → About Phone → Tap "Build Number" 7 times
+   - Go to Settings → Developer Options → Enable "USB Debugging"
+
+### Installation
+
+Download the latest release for your platform from the [Releases](https://github.com/GeorgeEnglezos/Scrcpy-GUI/releases) page:
+
+- **Windows**: `scrcpy-gui-windows-vX.X.X.zip`
+- **macOS**: `scrcpy-gui-macos-vX.X.X.zip`
+- **Linux**: `scrcpy-gui-linux-vX.X.X.zip`
+
+Extract and run the executable for your platform.
+
+### First Use
+
+1. Connect your Android device via USB
+2. Accept the USB debugging authorization prompt on your device
+3. Launch Scrcpy GUI
+4. Your device should appear in the dropdown within 2 seconds
+5. Click **Run** to start mirroring
+
+That's it! Your Android screen should now be mirroring on your computer.
+
+---
+
+## ✨ Key Features
+
+### 🎨 Visual Command Builder
+
+Configure all scrcpy options through an intuitive interface organized into themed panels:
+
+- **General Commands** - Window settings, display options, video encoding
+- **Audio Commands** - Audio quality, codec selection, source configuration
+- **Recording Commands** - Screen recording with format and quality controls
+- **Camera Commands** - Mirror device cameras instead of screen
+- **Virtual Display** - Create and manage virtual displays
+- **Input Control** - Keyboard and mouse configuration
+- **Network Connection** - Wireless setup and SSH tunneling
+- **Advanced Options** - Developer settings and debugging tools
+
+### 📱 Device Management
+
+- **Automatic Detection** - Devices discovered every 2 seconds
+- **USB and Wireless** - Support for both connection types
+- **Multi-Device** - Control multiple devices simultaneously
+- **Device Information** - Cached codecs, packages, and capabilities
+
+### 🔄 Wireless Connection
+
+Set up wireless mirroring with a single click:
+
+1. Connect device via USB initially
+2. Click "Connect Wirelessly"
+3. Disconnect USB cable
+4. Continue mirroring over WiFi
+
+No manual ADB commands required!
+
+### 🎬 Process Management
+
+Monitor and control all running scrcpy instances:
+
+- View process details (PID, device, connection type)
+- Kill individual or all processes
+- Reconnect with the same command
+- Auto-refresh every 5 seconds
+
+### ⭐ Favorites System
+
+- Save unlimited command configurations
+- Track execution frequency
+- Quick access from dedicated page
+- Export as executable scripts
+
+---
+
+## 📖 Documentation
+
+Comprehensive documentation is available in the [`Docs`](Docs/) folder:
+
+| Document | Description |
+|----------|-------------|
+| [User Guide](Docs/USER_GUIDE.md) | Complete usage instructions and workflows |
+| [Features](Docs/FEATURES.md) | Detailed feature list and capabilities |
+| [Troubleshooting](Docs/TROUBLESHOOTING.md) | Common issues and solutions |
+| [Build Instructions](Docs/BUILD.md) | How to build from source for all platforms |
+| [API Reference](Docs/API_REFERENCE.md) | Developer API documentation |
+| [Changelog](Docs/CHANGELOG.md) | Version history and changes |
+
+---
+
+## 🖼️ Screenshots
+
 <div align="center">
-  <img width="48%" alt="New Home 1" src="https://github.com/user-attachments/assets/15f0b0ef-0001-4109-9ae3-edff8db9cdab" />
-  <img width="48%" alt="New Home 2" src="https://github.com/user-attachments/assets/1014bd4c-1288-489f-8484-2e336df90649" />
+  <img width="48%" alt="Home - Command Builder" src="https://github.com/user-attachments/assets/15f0b0ef-0001-4109-9ae3-edff8db9cdab" />
+  <img width="48%" alt="Home - Options Panel" src="https://github.com/user-attachments/assets/1014bd4c-1288-489f-8484-2e336df90649" />
 </div>
+
 <div align="center">
-  <img width="48%" alt="New Favorites" src="https://github.com/user-attachments/assets/bd664d7a-238c-4df8-9d5e-1965c36830d1" />
-  <img width="48%" alt="New Resources" src="https://github.com/user-attachments/assets/b30c3009-ae19-4f7e-b7e9-37d1dc4c26d1" />
+  <img width="48%" alt="Favorites - Saved Commands" src="https://github.com/user-attachments/assets/bd664d7a-238c-4df8-9d5e-1965c36830d1" />
+  <img width="48%" alt="Resources - Help & Links" src="https://github.com/user-attachments/assets/b30c3009-ae19-4f7e-b7e9-37d1dc4c26d1" />
 </div>
+
 <div align="center">
-  <img width="48%" alt="New Settings" src="https://github.com/user-attachments/assets/ae23ccf2-9347-4dc3-924d-6f61a133ac33" />
-  <img width="48%" alt="Opened Apps" src="https://github.com/user-attachments/assets/d3dd5620-daad-4676-a397-8e9a5418ab66" />
+  <img width="48%" alt="Settings - Configuration" src="https://github.com/user-attachments/assets/ae23ccf2-9347-4dc3-924d-6f61a133ac33" />
+  <img width="48%" alt="Running Instances" src="https://github.com/user-attachments/assets/d3dd5620-daad-4676-a397-8e9a5418ab66" />
 </div>
 
+---
 
+## 💻 Platform Support
 
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Windows | ✅ Fully Supported | Windows 10/11 |
+| macOS | ✅ Fully Supported | macOS 10.15+ (Intel & Apple Silicon) |
+| Linux | ✅ Fully Supported | Ubuntu 20.04+, Debian, Fedora, Arch |
 
-# 🛠️ Installation Steps (for windows):</h2>
+---
 
-For the installation and setup of both your Windows and Android devices, refer to the [Installation.md](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Installation.md).
+## 🌐 Web Version
 
-For a small tour to the application without downloading it, you can read the [Application Tour](https://github.com/GeorgeEnglezos/Scrcpy-GUI/blob/main/Docs/Application-Tour.md) documentation.
+Looking for a browser-based alternative? Check out the web companion app:
 
-# FAQs
-- Is there a Linux port?
-No unfortunately, .NET MAUI doesn't support Linux builds. To create a Linux port, I would need to migrate the project to another library.
+**🔗 [https://scrcpy-ui.web.app/](https://scrcpy-ui.web.app/)**
 
-- Is there a macOS port?
-It's something I will explore soon. I don't own a macOS-powered machine, so I'll have to experiment with a VM, for which I'mm unsure of the compatibility.
+### Web App Advantages
 
-- What's next for the project?
-With the release of v1.5 I completely emptied my to-do list. Feel free to suggest any features.
+- ✅ No installation required
+- ✅ Works on any operating system
+- ✅ Faster and more accessible
+- ✅ Package, codec, and encoder selection
+
+### Desktop App Advantages
+
+- ✅ One-click command execution
+- ✅ Wireless connection wizard
+- ✅ Multi-device management
+- ✅ Process monitoring
+- ✅ Native performance
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how you can help:
+
+1. **Report Bugs** - Open an issue with detailed reproduction steps
+2. **Suggest Features** - Share your ideas in the discussions
+3. **Submit Pull Requests** - Fix bugs or add features
+4. **Improve Documentation** - Help make the docs clearer
+5. **Share** - Tell others about the project
+
+### Development Guidelines
+
+- Follow the existing code style
+- Write clear commit messages
+- Test on multiple platforms when possible
+- Update documentation for new features
+
+---
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/GeorgeEnglezos/Scrcpy-GUI/issues)
+- **scrcpy Documentation**: [Official Docs](https://github.com/Genymobile/scrcpy)
+
+---
+
+## 🗺️ Project History
+
+This project began as a .NET MAUI experiment to make scrcpy more user-friendly on Windows. With version 1.6, it has been completely ported in Flutter to provide true cross-platform support for Windows, macOS, and Linux.
+
+The original .NET MAUI version (v1.5.1) is archived in the repository for reference but is no longer maintained.
+
+---
+
+<div align="center">
+
+**Made with ❤️ for the Android enthusiast community**
+
+[⬆ Back to Top](#scrcpy-gui)
+
+</div>
