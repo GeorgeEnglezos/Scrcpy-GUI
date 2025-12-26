@@ -4,27 +4,7 @@ All notable changes to the Scrcpy GUI project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Planned
-- Multi-device simultaneous control
-- Command templates and presets system
-- Built-in recording player/organizer
-- Global keyboard shortcuts
-- Command validation before execution
-- scrcpy version management
-- Export/import settings functionality
-- Localization support (i18n)
-- Dark/light theme toggle
-- Plugin system for extensions
-- Auto-update mechanism
-- Command scheduling
-- Macro recording and playback
-
 ---
-
-## [1.0.0] - 2024-XX-XX
 
 ### Added
 
@@ -303,7 +283,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
 ## Notes
 
-- This is the initial release (1.0.0) preparing for public launch
+- This is the initial release (1.6.0) preparing for public launch
 - All core features are implemented and tested
 - Documentation is comprehensive and complete
 - Future versions will follow this changelog format
