@@ -1,706 +1,645 @@
-# Scrcpy-GUI API Reference
+# API Reference - Scrcpy GUI Flutter
 
-> **DEPRECATION NOTICE**: This .NET MAUI application is being replaced by a Flutter version. This documentation serves as a reference for the legacy codebase.
+This document provides detailed API documentation for the core services and models in the Scrcpy GUI Flutter application.
 
 ## Table of Contents
+
 - [Services](#services)
-  - [DataStorage](#datastorage)
-  - [AdbCmdService](#adbcmdservice)
+  - [TerminalService](#terminalservice)
+  - [DeviceManagerService](#devicemanagerservice)
+  - [CommandBuilderService](#commandbuilderservice)
+  - [CommandsService](#commandsservice)
+  - [SettingsService](#settingsservice)
 - [Models](#models)
-  - [ScrcpyGuiData](#scrcpyguidata)
-  - [ConnectedDevice](#connecteddevice)
-  - [CmdCommandResponse](#cmdcommandresponse)
-- [Controls](#controls)
-  - [OptionsPanel](#optionspanel)
-  - [OutputPanel](#outputpanel)
+  - [PhoneInfoModel](#phoneinfomodel)
+  - [Option Classes](#option-classes)
+  - [AppSettings](#appsettings)
+- [Workflows](#workflows)
 
 ---
 
 ## Services
 
-### DataStorage
+### TerminalService
 
-Static service class for persisting and retrieving application data using JSON serialization.
+**Location:** `lib/services/terminal_service.dart`
 
-#### Properties
+Static service for executing terminal commands and managing system processes.
 
-##### `settingsPath`
-```csharp
-public static readonly string settingsPath
+#### Key Methods
+
+##### Command Execution
+
+```dart
+static Future<String> runCommand(String command)
 ```
-**Description**: File path where application settings are stored.
-**Value**: `{AppDataDirectory}/ScrcpyGui-Data.json`
+Executes a command synchronously and returns stdout.
+- **Parameters:** `command` - Shell command to execute
+- **Returns:** Command output as trimmed string, or empty string on error
+- **Platform:** Windows (`cmd /c`), Unix (`bash -c`)
 
-##### `staticSavedData`
-```csharp
-public static ScrcpyGuiData staticSavedData
+```dart
+static Future<void> runCommandInNewTerminal(String command)
 ```
-**Description**: Cached instance of loaded application data.
-**Access**: Public static
+Opens a new terminal window and executes the command.
+- **Parameters:** `command` - Shell command to execute in new window
+- **Platform-specific:**
+  - Windows: `cmd /k` (keeps window open)
+  - Linux: Auto-detects terminal (gnome-terminal, konsole, etc.)
+  - macOS: Uses AppleScript with Terminal.app
+- **Side effects:** Tracks process in `_runningProcesses` map
 
-#### Methods
+##### Process Management
 
-##### `LoadData()`
-```csharp
-public static ScrcpyGuiData LoadData()
+```dart
+static Future<List<Map<String, String>>> getScrcpyProcesses()
 ```
-**Description**: Loads application data from the JSON settings file. Creates a new file with defaults if it doesn't exist.
+Detects all running scrcpy processes system-wide.
+- **Returns:** List of process detail maps containing:
+  - `pid`: Process ID
+  - `name`: Process name
+  - `fullCommand`: Complete command line
+  - `deviceId`: Device ID from `-s` flag
+  - `windowTitle`: Title from `--window-title` flag
+  - `connectionType`: 'wireless' or 'usb'
+  - `startTime`: Creation timestamp (Windows only)
+  - `memoryUsage`: Working set in MB (Windows only)
 
-**Returns**: `ScrcpyGuiData` - Loaded or default application data
-
-**Example**:
-```csharp
-var data = DataStorage.LoadData();
-Console.WriteLine($"Recent command: {data.MostRecentCommand}");
+```dart
+static Future<void> killProcess(int pid)
 ```
+Terminates a process by PID.
+- **Parameters:** `pid` - Process ID to kill
+- **Behavior:**
+  - If tracked: Sends SIGTERM and removes from tracking
+  - Otherwise: Uses system kill command
 
-##### `SaveData(ScrcpyGuiData data)`
-```csharp
-public static void SaveData(ScrcpyGuiData data)
+##### ADB Integration
+
+```dart
+static Future<List<String>> adbDevices()
 ```
-**Description**: Serializes and saves application data to JSON file.
+Returns list of connected device IDs via `adb devices`.
+- **Returns:** List of device IDs (e.g., `['abc123', '192.168.1.100:5555']`)
 
-**Parameters**:
-- `data` (ScrcpyGuiData): Data object to persist
-
-**Example**:
-```csharp
-data.AppSettings.ScrcpyPath = "C:\\scrcpy";
-DataStorage.SaveData(data);
+```dart
+static Future<List<String>> listPackages({
+  required String deviceId,
+  bool includeSystemApps = false,
+})
 ```
+Lists installed packages on a device.
+- **Parameters:**
+  - `deviceId`: Target device
+  - `includeSystemApps`: If false, only shows user apps (-3 flag)
+- **Returns:** List of package names
 
-##### `AppendFavoriteCommand(string command)`
-```csharp
-public static void AppendFavoriteCommand(string command)
+```dart
+static Future<String> loadScrcpyEncoders({required String deviceId})
 ```
-**Description**: Adds a command to the favorites list if not already present.
+Retrieves available codecs via `scrcpy --list-encoders`.
+- **Parameters:** `deviceId` - Target device
+- **Returns:** Raw scrcpy encoder output
 
-**Parameters**:
-- `command` (string): Scrcpy command to save
-
-**Example**:
-```csharp
-DataStorage.AppendFavoriteCommand("scrcpy.exe --fullscreen");
+```dart
+static List<String> parseVideoEncoders(String scrcpyOutput)
+static List<String> parseAudioEncoders(String scrcpyOutput)
 ```
+Parses encoder output to extract codec options.
+- **Parameters:** `scrcpyOutput` - Raw output from `loadScrcpyEncoders`
+- **Returns:** List of encoder flags (e.g., `['--video-codec=h264']`)
 
-##### `RemoveFavoriteCommandAtIndex(int index, ScrcpyGuiData data)`
-```csharp
-public static void RemoveFavoriteCommandAtIndex(int index, ScrcpyGuiData data)
+##### Wireless Connection
+
+```dart
+static Future<String> enableTcpip(String deviceId, int port)
 ```
-**Description**: Removes a favorite command at the specified index and saves changes.
+Enables TCP/IP mode on device (requires USB connection).
+- **Parameters:**
+  - `deviceId`: Device ID (USB)
+  - `port`: TCP/IP port (typically 5555)
+- **Returns:** Command output
 
-**Parameters**:
-- `index` (int): Zero-based index of command to remove
-- `data` (ScrcpyGuiData): Current data instance
-
-**Example**:
-```csharp
-var data = DataStorage.LoadData();
-DataStorage.RemoveFavoriteCommandAtIndex(2, data);
+```dart
+static Future<String?> getDeviceIpAddress(String deviceId)
 ```
+Retrieves device WiFi IP address from wlan0 interface.
+- **Parameters:** `deviceId` - Target device
+- **Returns:** IP address or null if not found
 
-##### `SaveMostRecentCommand(string command)`
-```csharp
-public static void SaveMostRecentCommand(string command)
+```dart
+static Future<String> connectWireless(String ipAddress, int port)
 ```
-**Description**: Updates the most recently executed command.
+Establishes wireless ADB connection.
+- **Parameters:**
+  - `ipAddress`: Device IP
+  - `port`: TCP/IP port
+- **Returns:** Connection result message
 
-**Parameters**:
-- `command` (string): Command that was just executed
-
-**Example**:
-```csharp
-DataStorage.SaveMostRecentCommand("scrcpy.exe --record=output.mp4");
+```dart
+static Future<Map<String, dynamic>> setupWirelessConnection(
+  String deviceId,
+  int port,
+)
 ```
-
-##### `ValidateAndCreatePath(string folderPath, string fallbackPath = null)`
-```csharp
-public static string ValidateAndCreatePath(string folderPath, string fallbackPath = null)
-```
-**Description**: Validates that a folder exists, creating it if necessary. Uses fallback if creation fails.
-
-**Parameters**:
-- `folderPath` (string): Primary path to validate
-- `fallbackPath` (string, optional): Alternative path if primary fails
-
-**Returns**: `string` - Valid existing path
-
-**Example**:
-```csharp
-string recordPath = DataStorage.ValidateAndCreatePath(
-    userPath,
-    Environment.GetFolderPath(Environment.SpecialFolder.MyVideos)
-);
-```
-
-##### `CopyToClipboardAsync(string text)`
-```csharp
-public static async Task<string> CopyToClipboardAsync(string text)
-```
-**Description**: Copies text to clipboard and displays a confirmation dialog. Handles platform-specific errors.
-
-**Parameters**:
-- `text` (string): Text to copy
-
-**Returns**: `Task<string>` - Empty string on completion
-
-**Example**:
-```csharp
-await DataStorage.CopyToClipboardAsync("scrcpy.exe --max-size=1920");
-```
+Complete wireless setup workflow.
+- **Parameters:**
+  - `deviceId`: Device ID (USB initially)
+  - `port`: TCP/IP port
+- **Returns:** Map with:
+  - `success`: bool
+  - `message`: String
+  - `ipAddress`: String (if successful)
 
 ---
 
-### AdbCmdService
+### DeviceManagerService
 
-Static service class for executing ADB and Scrcpy commands, managing device connections.
+**Location:** `lib/services/device_manager_service.dart`
 
-#### Enumerations
-
-##### `CommandEnum`
-```csharp
-public enum CommandEnum
-{
-    GetPackages,
-    RunScrcpy,
-    CheckAdbVersion,
-    CheckScrcpyVersion,
-    GetCodecsEncoders,
-    ListDevices,
-    InstallApk,
-    UninstallPackage,
-    ConnectTCP,
-    DisconnectTCP,
-    RestartServer,
-    PairDevice
-}
-```
-**Description**: Enumeration of supported command types.
+Manages device detection, selection, and information caching. Extends `ChangeNotifier`.
 
 #### Properties
 
-##### `scrcpyPath`
-```csharp
-public static string scrcpyPath
+```dart
+static final Map<String, PhoneInfoModel> devicesInfo
 ```
-**Description**: Path to the scrcpy executable directory.
+Global registry mapping device ID to cached device information.
+
+```dart
+String? selectedDevice
+```
+Currently selected device ID. Setting this triggers `notifyListeners()`.
+
+```dart
+final ValueNotifier<String?> selectedDeviceNotifier
+```
+Fine-grained notifier for device selection changes.
 
 #### Methods
 
-##### `RunScrcpyCommand(string command)`
-```csharp
-public static async Task<CmdCommandResponse> RunScrcpyCommand(string command)
+```dart
+Future<void> initialize()
 ```
-**Description**: Executes a Scrcpy command on the selected device. Automatically prepends device selection.
+Initializes service and starts device polling.
+- **Call once:** During app startup in `main()`
+- **Side effects:**
+  - Loads initial device data
+  - Starts 2-second polling timer
 
-**Parameters**:
-- `command` (string): Scrcpy command parameters
-
-**Returns**: `Task<CmdCommandResponse>` - Command execution results
-
-**Example**:
-```csharp
-var result = await AdbCmdService.RunScrcpyCommand("--fullscreen --turn-screen-off");
-if (string.IsNullOrEmpty(result.RawError))
-{
-    Console.WriteLine("Scrcpy started successfully");
-}
+```dart
+PhoneInfoModel? getDeviceInfo(String deviceId)
 ```
+Retrieves cached device information.
+- **Parameters:** `deviceId` - Device to query
+- **Returns:** Cached info or null
 
-##### `RunAdbCommandAsync(CommandEnum commandType, string arguments = "")`
-```csharp
-public static async Task<CmdCommandResponse> RunAdbCommandAsync(
-    CommandEnum commandType,
-    string arguments = ""
-)
+```dart
+void dispose()
 ```
-**Description**: Executes an ADB command with the specified type and arguments.
+Cleanup method (cancels timer, disposes notifier).
+- **Called by:** Provider automatically on app close
 
-**Parameters**:
-- `commandType` (CommandEnum): Type of command to execute
-- `arguments` (string, optional): Additional command arguments
+---
 
-**Returns**: `Task<CmdCommandResponse>` - Command execution results
+### CommandBuilderService
 
-**Example**:
-```csharp
-var result = await AdbCmdService.RunAdbCommandAsync(
-    CommandEnum.InstallApk,
-    "C:\\app.apk"
-);
+**Location:** `lib/services/command_builder_service.dart`
+
+Builds scrcpy commands from panel options. Extends `ChangeNotifier`.
+
+#### Properties
+
+```dart
+String baseCommand
 ```
+Base scrcpy command (default: `"scrcpy.exe --pause-on-exit=if-error"`)
 
-##### `GetAdbDevices()`
-```csharp
-public static List<ConnectedDevice> GetAdbDevices()
+```dart
+AudioOptions audioOptions
+ScreenRecordingOptions recordingOptions
+VirtualDisplayOptions virtualDisplayOptions
+GeneralCastOptions generalCastOptions
 ```
-**Description**: Retrieves a list of all connected Android devices with their codec/encoder capabilities.
+Option objects for each command category.
 
-**Returns**: `List<ConnectedDevice>` - List of connected devices
+#### Methods
 
-**Example**:
-```csharp
-var devices = AdbCmdService.GetAdbDevices();
-foreach (var device in devices)
-{
-    Console.WriteLine($"Device: {device.DisplayName} ({device.DeviceId})");
-}
+```dart
+void updateAudioOptions(AudioOptions options)
+void updateRecordingOptions(ScreenRecordingOptions options)
+void updateVirtualDisplayOptions(VirtualDisplayOptions options)
+void updateGeneralCastOptions(GeneralCastOptions options)
 ```
+Update respective option groups and notify listeners.
+- **Parameters:** New options object
+- **Side effects:** Triggers `notifyListeners()`
 
-##### `GetPackageList(string selectedDevice)`
-```csharp
-public static async Task<List<string>> GetPackageList(string selectedDevice)
+```dart
+String get fullCommand
 ```
-**Description**: Queries all installed packages on the specified device.
+Generates complete scrcpy command.
+- **Returns:** Full command string ready for execution
+- **Logic:**
+  - Combines all option parts
+  - Generates dynamic window title
+  - Adds 'record-' prefix if recording
+  - Falls back to package name or "ScrcpyGui"
 
-**Parameters**:
-- `selectedDevice` (string): Device ID (serial or IP:port)
+---
 
-**Returns**: `Task<List<string>>` - List of package names
+### CommandsService
 
-**Example**:
-```csharp
-var packages = await AdbCmdService.GetPackageList("192.168.1.100:5555");
-var gamePackages = packages.Where(p => p.Contains("game")).ToList();
+**Location:** `lib/services/commands_service.dart`
+
+Manages command favorites and execution history.
+
+#### Methods
+
+```dart
+Future<CommandsData> loadCommands()
 ```
+Loads saved commands from JSON file.
+- **Returns:** `CommandsData` object with favorites and history
 
-##### `ConnectWireless(string ipAddress, string port)`
-```csharp
-public static async Task<CmdCommandResponse> ConnectWireless(
-    string ipAddress,
-    string port
-)
+```dart
+Future<void> saveCommands(CommandsData data)
 ```
-**Description**: Establishes wireless ADB connection to a device.
+Persists commands to JSON file.
+- **Parameters:** `data` - Commands data to save
 
-**Parameters**:
-- `ipAddress` (string): Device IP address
-- `port` (string): ADB port (typically "5555")
-
-**Returns**: `Task<CmdCommandResponse>` - Connection result
-
-**Example**:
-```csharp
-var result = await AdbCmdService.ConnectWireless("192.168.1.100", "5555");
-if (result.Output.Contains("connected"))
-{
-    Console.WriteLine("Wireless connection established");
-}
+```dart
+void trackExecution(String command)
 ```
+Records command execution (updates last-command and increments counter).
+- **Parameters:** `command` - Executed command string
 
-##### `SetScrcpyPath()`
-```csharp
-public static void SetScrcpyPath()
+```dart
+void addFavorite(String command)
+void removeFavorite(String command)
 ```
-**Description**: Updates the scrcpy executable path from saved settings.
+Manage favorite commands.
 
-**Example**:
-```csharp
-AdbCmdService.SetScrcpyPath();
-// Now scrcpyPath is set from DataStorage.staticSavedData
+```dart
+List<MostUsedCommand> getMostUsed(int count)
 ```
+Gets top N most-used commands (excluding favorites).
+- **Parameters:** `count` - Number of commands to return
+- **Returns:** List of commands with execution counts
 
-##### `CheckAdbVersion()`
-```csharp
-public static async Task<string> CheckAdbVersion()
+---
+
+### SettingsService
+
+**Location:** `lib/services/settings_service.dart`
+
+Manages application settings persistence.
+
+#### Methods
+
+```dart
+Future<AppSettings> loadSettings()
 ```
-**Description**: Retrieves the installed ADB version.
+Loads settings from JSON file.
+- **Returns:** `AppSettings` object (or defaults if file doesn't exist)
 
-**Returns**: `Task<string>` - ADB version string
-
-**Example**:
-```csharp
-string version = await AdbCmdService.CheckAdbVersion();
-Console.WriteLine($"ADB Version: {version}");
+```dart
+Future<void> saveSettings(AppSettings settings)
 ```
-
-##### `CheckScrcpyVersion()`
-```csharp
-public static async Task<string> CheckScrcpyVersion()
-```
-**Description**: Retrieves the installed Scrcpy version.
-
-**Returns**: `Task<string>` - Scrcpy version string
-
-**Example**:
-```csharp
-string version = await AdbCmdService.CheckScrcpyVersion();
-Console.WriteLine($"Scrcpy Version: {version}");
-```
+Persists settings to JSON file.
+- **Parameters:** `settings` - Settings object to save
 
 ---
 
 ## Models
 
-### ScrcpyGuiData
+### PhoneInfoModel
 
-Root data model containing all application settings and user data.
+**Location:** `lib/models/phone_info_model.dart`
 
-#### Properties
+Represents cached device information.
 
-##### `MostRecentCommand`
-```csharp
-public string MostRecentCommand { get; set; }
+```dart
+class PhoneInfoModel {
+  final String deviceId;
+  final List<String> packages;        // Installed user apps
+  final List<String> audioCodecs;     // Available audio codecs
+  final List<String> videoCodecs;     // Available video codecs
+}
 ```
-**Description**: The most recently executed Scrcpy command.
 
-##### `FavoriteCommands`
-```csharp
-public List<string> FavoriteCommands { get; set; }
-```
-**Description**: List of user-saved favorite commands.
+---
 
-##### `AppSettings`
-```csharp
-public AppSettings AppSettings { get; set; }
-```
-**Description**: Application configuration and preferences.
+### Option Classes
 
-##### `ScreenRecordingOptions`
-```csharp
-public ScreenRecordingOptions ScreenRecordingOptions { get; set; }
-```
-**Description**: Screen recording configuration.
+**Location:** `lib/models/panel_models.dart`
 
-##### `VirtualDisplayOptions`
-```csharp
-public VirtualDisplayOptions VirtualDisplayOptions { get; set; }
-```
-**Description**: Virtual display settings.
+Each option class has a `generateCommandPart()` method that returns the command flags as a string.
 
-##### `AudioOptions`
-```csharp
-public AudioOptions AudioOptions { get; set; }
-```
-**Description**: Audio streaming configuration.
+#### AudioOptions
 
-##### `GeneralCastOptions`
-```csharp
-public GeneralCastOptions GeneralCastOptions { get; set; }
+```dart
+class AudioOptions {
+  String audioBitrate;      // '64k', '128k', '192k', '256k', '320k'
+  String audioBuffer;       // '256', '512', '1024', '2048'
+  String audioCodecOption;  // '--audio-codec=...'
+  String audioEncoder;      // '--audio-encoder=...'
+  bool noAudio;            // Disable audio
+  bool audioDuplication;   // Enable audio duplication
+}
 ```
-**Description**: General Scrcpy casting options.
+
+#### ScreenRecordingOptions
+
+```dart
+class ScreenRecordingOptions {
+  String maxSize;        // Max recording size
+  String videoBitrate;   // Video bitrate
+  String maxFps;         // Frame rate limit
+  String format;         // 'mkv', 'mp4', 'm4a', 'mka', 'opus'
+  String outputFile;     // Output filename
+}
+```
+
+#### VirtualDisplayOptions
+
+```dart
+class VirtualDisplayOptions {
+  bool newDisplay;           // Create virtual display
+  String displayResolution;  // Resolution (WxH)
+  String displayDpi;        // DPI value
+  bool destroyContentOnDisconnect;  // Cleanup on disconnect
+  bool systemDecorations;   // Show system decorations
+}
+```
+
+#### GeneralCastOptions
+
+```dart
+class GeneralCastOptions {
+  String windowTitle;          // Custom window title
+  bool fullscreen;            // Launch fullscreen
+  bool turnScreenOff;         // Turn device screen off
+  bool stayAwake;            // Keep device awake
+  String crop;               // Crop area (W:H:X:Y)
+  String orientation;        // Screen rotation (0, 90, 180, 270)
+  bool borderless;           // Borderless window
+  bool alwaysOnTop;          // Window always on top
+  bool disableScreensaver;   // Disable screensaver
+  String videoBitrate;       // Video bitrate
+  String videoCodecOption;   // '--video-codec=...'
+  String videoEncoder;       // '--video-encoder=...'
+  String selectedPackage;    // App package to launch
+  String extraParams;        // Additional flags
+}
+```
 
 ---
 
 ### AppSettings
 
-Application-level settings for UI and paths.
+**Location:** `lib/models/settings_model.dart`
 
-#### Properties
+Application configuration model.
 
-```csharp
-public bool OpenCmds { get; set; }
-public bool HideTcpPanel { get; set; }
-public bool HideStatusPanel { get; set; }
-public bool HideOutputPanel { get; set; }
-public bool HideRecordingPanel { get; set; }
-public bool HideVirtualMonitorPanel { get; set; }
-public string HomeCommandPreviewCommandColors { get; set; }
-public string FavoritesPageCommandColors { get; set; }
-public string ScrcpyPath { get; set; }
-public string RecordingPath { get; set; }
-public string DownloadPath { get; set; }
+```dart
+class AppSettings {
+  List<PanelConfig> panelOrder;   // Panel layout configuration
+  String scrcpyDirectory;         // scrcpy installation path
+  String recordingsDirectory;     // Recordings output path
+  String downloadsDirectory;      // Downloads path for .bat files
+  bool openCmdWindows;           // Open in new terminal vs same
+  String bootTab;                // 'Home' or 'Favorites'
+}
 ```
 
-**Color Settings Values**:
-- `"None"` - No syntax highlighting
-- `"Important"` - Highlight key parameters only
-- `"Complete"` - Full syntax highlighting
-- `"Package Only"` - Only highlight package selection
+#### PanelConfig
 
----
-
-### ConnectedDevice
-
-Represents a connected Android device.
-
-#### Properties
-
-##### `DeviceId`
-```csharp
-public string DeviceId { get; set; }
-```
-**Description**: Unique device identifier (serial number or IP:port for wireless).
-
-##### `DisplayName`
-```csharp
-public string DisplayName { get; set; }
-```
-**Description**: Human-readable device name for UI display.
-
-##### `VideoCodecEncoderPairs`
-```csharp
-public List<string> VideoCodecEncoderPairs { get; set; }
-```
-**Description**: List of supported video codec/encoder combinations.
-
-##### `AudioCodecEncoderPairs`
-```csharp
-public List<string> AudioCodecEncoderPairs { get; set; }
-```
-**Description**: List of supported audio codec/encoder combinations.
-
-#### Methods
-
-##### `AreDeviceListsEqual(List<ConnectedDevice> a, List<ConnectedDevice> b)`
-```csharp
-public static bool AreDeviceListsEqual(
-    List<ConnectedDevice> a,
-    List<ConnectedDevice> b
-)
-```
-**Description**: Compares two device lists to determine if they contain the same device IDs.
-
-**Parameters**:
-- `a` (List<ConnectedDevice>): First list
-- `b` (List<ConnectedDevice>): Second list
-
-**Returns**: `bool` - True if lists contain identical device IDs
-
-**Example**:
-```csharp
-var oldDevices = GetDevices();
-// ... wait for device change
-var newDevices = GetDevices();
-if (!ConnectedDevice.AreDeviceListsEqual(oldDevices, newDevices))
-{
-    Console.WriteLine("Device list changed!");
+```dart
+class PanelConfig {
+  String id;              // Panel identifier
+  String displayName;     // UI display name
+  bool visible;          // Show/hide panel
+  bool isFullWidth;      // Span both columns
 }
 ```
 
 ---
 
-### CmdCommandResponse
+## Workflows
 
-Encapsulates the result of a command-line execution.
+### Device Connection Workflow
 
-#### Properties
+```dart
+// 1. Service initialization (in main())
+final deviceManager = DeviceManagerService();
+await deviceManager.initialize();
 
-##### `Output`
-```csharp
-public string Output { get; set; }
+// 2. Automatic polling starts (every 2 seconds)
+// 3. On device detected:
+//    - Loads packages via TerminalService.listPackages()
+//    - Loads encoders via TerminalService.loadScrcpyEncoders()
+//    - Parses encoders via parse* methods
+//    - Stores in DeviceManagerService.devicesInfo
+//    - Auto-selects if none selected
+
+// 4. Access device info
+final info = deviceManager.getDeviceInfo(deviceId);
+print('Packages: ${info?.packages.length}');
 ```
-**Description**: Processed output (prioritizes error output if present).
 
-##### `RawOutput`
-```csharp
-public string RawOutput { get; set; }
+### Command Building Workflow
+
+```dart
+// 1. Get command builder from Provider
+final builder = Provider.of<CommandBuilderService>(context, listen: false);
+
+// 2. Panel updates options
+builder.updateAudioOptions(AudioOptions(
+  audioBitrate: '128k',
+  noAudio: false,
+));
+
+// 3. Get complete command
+final command = builder.fullCommand;
+// "scrcpy.exe --pause-on-exit=if-error --window-title=ScrcpyGui --audio-bitrate=128k"
+
+// 4. Execute command
+await TerminalService.runCommandInNewTerminal(command);
+
+// 5. Track execution
+final commandsService = CommandsService();
+commandsService.trackExecution(command);
 ```
-**Description**: Raw standard output stream.
 
-##### `RawError`
-```csharp
-public string RawError { get; set; }
-```
-**Description**: Raw standard error stream.
+### Wireless Setup Workflow
 
-##### `ExitCode`
-```csharp
-public int ExitCode { get; set; }
-```
-**Description**: Process exit code (0 = success).
+```dart
+// 1. Connect device via USB
+// 2. Setup wireless connection
+final result = await TerminalService.setupWirelessConnection(
+  'deviceId123',
+  5555,
+);
 
-**Example**:
-```csharp
-var result = await AdbCmdService.RunScrcpyCommand("--fullscreen");
-if (result.ExitCode == 0 && string.IsNullOrEmpty(result.RawError))
-{
-    Console.WriteLine("Success!");
+// 3. Check result
+if (result['success']) {
+  print('Connected to ${result['ipAddress']}:5555');
+  // Device now shows as '192.168.1.100:5555' in device list
+} else {
+  print('Error: ${result['message']}');
 }
-else
-{
-    Console.WriteLine($"Error: {result.RawError}");
+
+// 4. Disconnect USB cable
+// 5. Use wirelessly with scrcpy
+```
+
+### Process Management Workflow
+
+```dart
+// 1. Get all running scrcpy processes
+final processes = await TerminalService.getScrcpyProcesses();
+
+// 2. Display process information
+for (var proc in processes) {
+  print('PID: ${proc['pid']}');
+  print('Device: ${proc['deviceId']}');
+  print('Type: ${proc['connectionType']}');
+  print('Memory: ${proc['memoryUsage']} MB');
 }
+
+// 3. Kill a process
+await TerminalService.killProcess(int.parse(proc['pid']));
+
+// 4. Reconnect (re-execute same command)
+final fullCommand = proc['fullCommand'];
+await TerminalService.runCommandInNewTerminal(fullCommand);
 ```
 
 ---
 
-## Controls
+## Data Persistence
 
-### OptionsPanel
+### Storage Locations
 
-Control for building Scrcpy commands through UI inputs.
-
-#### Events
-
-##### `ScrcpyCommandChanged`
-```csharp
-public event EventHandler<string> ScrcpyCommandChanged
+**Windows:**
 ```
-**Description**: Raised when the generated command changes.
-
-**Event Args**: `string` - The new complete command
-
-**Example**:
-```csharp
-optionsPanel.ScrcpyCommandChanged += (sender, command) => {
-    Console.WriteLine($"Command updated: {command}");
-};
+%APPDATA%\ScrcpyGui\
+├── settings.json
+└── commands.json
 ```
 
-#### Methods
-
-##### `ApplySavedVisibilitySettings()`
-```csharp
-public void ApplySavedVisibilitySettings()
+**macOS/Linux:**
 ```
-**Description**: Shows/hides child panels based on user preferences.
-
-##### `SubscribeToEvents()`
-```csharp
-public void SubscribeToEvents()
-```
-**Description**: Subscribes to child panel events and initializes data.
-
-##### `UnsubscribeToEvents()`
-```csharp
-public void UnsubscribeToEvents()
-```
-**Description**: Unsubscribes from events to prevent memory leaks.
-
-##### `SetOutputPanelReferenceFromMainPage(OutputPanel outputPanel)`
-```csharp
-public void SetOutputPanelReferenceFromMainPage(OutputPanel outputPanel)
-```
-**Description**: Establishes reference to OutputPanel for cross-panel communication.
-
-**Parameters**:
-- `outputPanel` (OutputPanel): The OutputPanel instance
-
----
-
-### OutputPanel
-
-Control for displaying command preview and execution controls.
-
-#### Events
-
-##### `PageRefreshed`
-```csharp
-public event EventHandler<string> PageRefreshed
-```
-**Description**: Raised when the page needs to be refreshed.
-
-#### Methods
-
-##### `UpdateCommandPreview(string commandText)`
-```csharp
-public void UpdateCommandPreview(string commandText)
-```
-**Description**: Updates the command preview with syntax highlighting.
-
-**Parameters**:
-- `commandText` (string): Command to display
-
-**Example**:
-```csharp
-outputPanel.UpdateCommandPreview("scrcpy.exe --fullscreen --max-fps=60");
+~/Documents/ScrcpyGui/
+├── settings.json
+└── commands.json
 ```
 
-##### `ApplySavedVisibilitySettings()`
-```csharp
-public void ApplySavedVisibilitySettings()
-```
-**Description**: Applies visibility settings to child panels (status, wireless, output).
+### File Formats
 
-##### `SubscribeToEvents()`
-```csharp
-public void SubscribeToEvents()
-```
-**Description**: Subscribes to child panel events.
-
-##### `UnsubscribeToEvents()`
-```csharp
-public void UnsubscribeToEvents()
-```
-**Description**: Unsubscribes from events.
-
-##### `SetOptionsPanelReferenceFromMainPage(OptionsPanel optionsPanel)`
-```csharp
-public void SetOptionsPanelReferenceFromMainPage(OptionsPanel optionsPanel)
-```
-**Description**: Establishes event subscription to OptionsPanel.
-
-**Parameters**:
-- `optionsPanel` (OptionsPanel): The OptionsPanel instance
-
----
-
-## Usage Examples
-
-### Complete Workflow Example
-
-```csharp
-// 1. Load saved data
-var data = DataStorage.LoadData();
-
-// 2. Get connected devices
-var devices = AdbCmdService.GetAdbDevices();
-if (devices.Count == 0)
+**settings.json:**
+```json
 {
-    Console.WriteLine("No devices connected");
-    return;
-}
-
-// 3. Select first device
-var device = devices[0];
-Console.WriteLine($"Using device: {device.DisplayName}");
-
-// 4. Get installed packages
-var packages = await AdbCmdService.GetPackageList(device.DeviceId);
-var launcher = packages.FirstOrDefault(p => p.Contains("launcher"));
-
-// 5. Build command
-string command = "scrcpy.exe --fullscreen --turn-screen-off";
-if (!string.IsNullOrEmpty(launcher))
-{
-    command += $" --start-app={launcher}";
-}
-
-// 6. Execute command
-var result = await AdbCmdService.RunScrcpyCommand(command);
-if (result.ExitCode == 0)
-{
-    // 7. Save to favorites and recent
-    DataStorage.AppendFavoriteCommand(command);
-    DataStorage.SaveMostRecentCommand(command);
-    Console.WriteLine("Command executed and saved!");
-}
-else
-{
-    Console.WriteLine($"Error: {result.RawError}");
-}
-```
-
-### Wireless Connection Example
-
-```csharp
-// 1. Connect to device wirelessly
-var connectResult = await AdbCmdService.ConnectWireless("192.168.1.100", "5555");
-if (!connectResult.Output.Contains("connected"))
-{
-    Console.WriteLine($"Connection failed: {connectResult.Output}");
-    return;
-}
-
-// 2. Refresh device list
-var devices = AdbCmdService.GetAdbDevices();
-var wirelessDevice = devices.FirstOrDefault(d => d.DeviceId.Contains("192.168.1.100"));
-
-if (wirelessDevice != null)
-{
-    Console.WriteLine($"Wireless device ready: {wirelessDevice.DisplayName}");
-
-    // 3. Check supported codecs
-    Console.WriteLine("Video codecs:");
-    foreach (var codec in wirelessDevice.VideoCodecEncoderPairs)
+  "panelOrder": [
     {
-        Console.WriteLine($"  - {codec}");
+      "id": "actions",
+      "displayName": "Command Actions",
+      "visible": true,
+      "isFullWidth": true
     }
+  ],
+  "scrcpyDirectory": "C:\\path\\to\\scrcpy",
+  "recordingsDirectory": "C:\\path\\to\\recordings",
+  "downloadsDirectory": "C:\\path\\to\\downloads",
+  "openCmdWindows": false,
+  "bootTab": "Home"
+}
+```
+
+**commands.json:**
+```json
+{
+  "last-command": "scrcpy.exe --pause-on-exit=if-error ...",
+  "favorites": [
+    "scrcpy.exe --start-app=com.example.app"
+  ],
+  "most-used": [
+    {
+      "command": "scrcpy.exe --fullscreen",
+      "count": 25
+    }
+  ]
 }
 ```
 
 ---
 
-**Last Updated**: 2025-12-22
-**Version**: 1.5 (.NET MAUI - Legacy)
+## Error Handling
+
+### TerminalService
+
+- Command execution errors return empty string
+- Process not found errors silently fail
+- Platform-specific commands fall back gracefully
+
+### DeviceManagerService
+
+- Missing devices removed from cache
+- Failed codec loading logged but not fatal
+- Invalid device IDs skipped
+
+### File Operations
+
+- Missing files trigger default value creation
+- JSON parsing errors fall back to defaults
+- File write errors logged to stderr
+
+---
+
+## Platform Differences
+
+### Terminal Commands
+
+| Feature | Windows | Linux | macOS |
+|---------|---------|-------|-------|
+| Command execution | `cmd /c` | `bash -c` | `bash -c` |
+| New terminal | `cmd /k start` | Auto-detect terminal | AppleScript |
+| Process list | `tasklist` | `ps aux` | `ps aux` |
+| Process details | WMIC | ps columns | ps columns |
+| Kill process | `taskkill /F` | `kill` | `kill` |
+
+### File Paths
+
+| Feature | Windows | macOS/Linux |
+|---------|---------|-------------|
+| Settings | `%APPDATA%\ScrcpyGui\` | `~/Documents/ScrcpyGui/` |
+| Path separator | `\` | `/` |
+| Executable | `scrcpy.exe` | `scrcpy` |
+
+---
+
+## Best Practices
+
+### Service Usage
+
+1. **Initialize once:** Call `DeviceManagerService.initialize()` in `main()`
+2. **Use Provider:** Access services via `Provider.of<T>(context)`
+3. **Listen selectively:** Use `listen: false` for one-time access
+4. **Dispose properly:** Let Provider handle disposal
+
+### Error Handling
+
+1. **Check nulls:** Device info may be null if not loaded
+2. **Validate commands:** Ensure device selected before execution
+3. **Handle platform differences:** Test on all target platforms
+
+### Performance
+
+1. **Avoid rebuilds:** Use ValueNotifier for targeted updates
+2. **Cache data:** Device info cached in `devicesInfo` map
+3. **Batch updates:** Update multiple options then rebuild command
+
+---
+
+**For more information, see the main [README.md](README.md) and inline code documentation.**

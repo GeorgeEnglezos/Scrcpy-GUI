@@ -1,0 +1,316 @@
+name: Build Multi-Platform
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ScrcpyGui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Archive Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: ScrcpyGui/build/windows/x64/runner/Release/
+
+  build-linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ScrcpyGui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libgtk-3-dev
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Linux
+        run: flutter build linux --release
+
+      - name: Archive Linux build
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: ScrcpyGui/build/linux/x64/release/bundle/
+
+  build-macos:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ScrcpyGui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS
+        run: flutter build macos --release
+
+      - name: Fix macOS app permissions and code signing
+        run: |
+          # Set the app name
+          APP_NAME="scrcpy_gui_prod"
+          APP_PATH="build/macos/Build/Products/Release/${APP_NAME}.app"
+
+          # Ensure the main executable has execute permissions
+          chmod +x "${APP_PATH}/Contents/MacOS/${APP_NAME}"
+
+          # Remove resource forks and extended attributes that prevent signing
+          dot_clean -m "${APP_PATH}"
+          find "${APP_PATH}" -name "._*" -delete
+          xattr -cr "${APP_PATH}"
+
+          # Sign all frameworks first (don't use --deep on frameworks)
+          find "${APP_PATH}/Contents/Frameworks" -name "*.framework" -maxdepth 1 | while read framework; do
+            echo "Signing framework: ${framework}"
+            /usr/bin/codesign --force --sign - --timestamp=none "${framework}"
+          done
+
+          # Sign the main app bundle
+          echo "Signing app bundle"
+          /usr/bin/codesign --force --sign - --timestamp=none "${APP_PATH}"
+
+          # Verify the signature
+          /usr/bin/codesign --verify --verbose "${APP_PATH}"
+
+          # Display app info
+          echo "App signed successfully:"
+          ls -lh "${APP_PATH}/Contents/MacOS/"
+          du -sh "${APP_PATH}"
+
+      - name: Create DMG and installation package
+        run: |
+          # Set the app name
+          APP_NAME="scrcpy_gui_prod"
+          APP_PATH="build/macos/Build/Products/Release/${APP_NAME}.app"
+          DMG_NAME="${APP_NAME}.dmg"
+
+          # Create a temporary directory for DMG contents
+          mkdir -p dmg_temp
+
+          # Use ditto instead of cp to preserve all metadata, permissions, and signatures
+          ditto "${APP_PATH}" "dmg_temp/${APP_NAME}.app"
+
+          # Create the DMG with proper flags to preserve code signatures
+          hdiutil create -volname "${APP_NAME}" -srcfolder dmg_temp -ov -format UDZO "${DMG_NAME}"
+
+          # Create package directory for final distribution
+          mkdir -p macos_package
+
+          # Move DMG to package directory
+          mv "${DMG_NAME}" macos_package/
+
+          # Create installation script
+          cat > macos_package/install.sh << 'SCRIPT_EOF'
+          #!/bin/bash
+
+          # macOS App Installer for scrcpy_gui_prod
+          # This script removes quarantine flags and installs the app
+
+          set -e
+
+          APP_NAME="scrcpy_gui_prod"
+          DMG_FILE="${APP_NAME}.dmg"
+          INSTALL_DIR="/Applications"
+
+          echo "======================================"
+          echo "  macOS App Installer"
+          echo "======================================"
+          echo ""
+
+          # Check if DMG exists
+          if [ ! -f "$DMG_FILE" ]; then
+              echo "Error: $DMG_FILE not found in current directory"
+              echo "Please run this script from the extracted folder"
+              exit 1
+          fi
+
+          echo "Step 1: Removing quarantine flags from DMG..."
+          xattr -cr "$DMG_FILE" 2>/dev/null || true
+          echo "✓ Quarantine removed"
+          echo ""
+
+          echo "Step 2: Mounting DMG..."
+          MOUNT_POINT=$(hdiutil attach "$DMG_FILE" | grep Volumes | awk '{print $3}')
+
+          if [ -z "$MOUNT_POINT" ]; then
+              echo "Error: Failed to mount DMG"
+              exit 1
+          fi
+
+          echo "✓ DMG mounted at: $MOUNT_POINT"
+          echo ""
+
+          echo "Step 3: Removing quarantine from app..."
+          xattr -cr "$MOUNT_POINT/${APP_NAME}.app" 2>/dev/null || true
+          echo "✓ App quarantine removed"
+          echo ""
+
+          echo "Step 4: Copying app to Applications folder..."
+          if [ -d "${INSTALL_DIR}/${APP_NAME}.app" ]; then
+              echo "Warning: App already exists in Applications. Removing old version..."
+              rm -rf "${INSTALL_DIR}/${APP_NAME}.app"
+          fi
+
+          cp -R "$MOUNT_POINT/${APP_NAME}.app" "$INSTALL_DIR/"
+          echo "✓ App copied to $INSTALL_DIR"
+          echo ""
+
+          echo "Step 5: Unmounting DMG..."
+          hdiutil detach "$MOUNT_POINT" -quiet
+          echo "✓ DMG unmounted"
+          echo ""
+
+          echo "======================================"
+          echo "  Installation Complete!"
+          echo "======================================"
+          echo ""
+          echo "The app has been installed to:"
+          echo "  $INSTALL_DIR/${APP_NAME}.app"
+          echo ""
+          echo "You can now open it from:"
+          echo "  - Spotlight: Press Cmd+Space and type '${APP_NAME}'"
+          echo "  - Applications folder in Finder"
+          echo "  - Or run: open '${INSTALL_DIR}/${APP_NAME}.app'"
+          echo ""
+          echo "Opening the app now..."
+          sleep 1
+          open "${INSTALL_DIR}/${APP_NAME}.app"
+          SCRIPT_EOF
+
+          # Make the script executable
+          chmod +x macos_package/install.sh
+
+          # Create README
+          cat > macos_package/README.txt << 'README_EOF'
+          macOS Installation Instructions
+          ================================
+
+          EASY INSTALLATION (Recommended):
+          ---------------------------------
+          1. Open Terminal (Applications -> Utilities -> Terminal)
+          2. Type: cd ~/Downloads/scrcpy-gui-macos
+             (or wherever you extracted this folder)
+          3. Type: chmod +x install.sh
+          4. Type: ./install.sh
+          5. The app will be installed and launched automatically!
+
+          ALTERNATIVE - One-line installation:
+          ------------------------------------
+          Copy and paste this into Terminal:
+
+          cd ~/Downloads/scrcpy-gui-macos && chmod +x install.sh && ./install.sh
+
+          MANUAL INSTALLATION:
+          --------------------
+          1. Open Terminal and run:
+             xattr -cr scrcpy_gui_prod.dmg
+          2. Double-click the DMG file
+          3. Drag the app to your Applications folder
+          4. Right-click the app -> Open (first time only)
+
+          WHY IS THIS NECESSARY?
+          ----------------------
+          This app is not signed with an Apple Developer ID certificate ($99/year).
+          macOS adds "quarantine" flags to downloaded files for security.
+          The install.sh script safely removes these flags.
+
+          This is normal for free/open-source macOS apps.
+          README_EOF
+
+          # Move to artifacts directory
+          mkdir -p artifacts
+          mv macos_package artifacts/
+
+          # Show package contents
+          echo "Package contents:"
+          ls -lh artifacts/macos_package/
+
+      - name: Archive macOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: ScrcpyGui/artifacts/macos_package/
+
+  create-release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create ZIP archives
+        run: |
+          # Extract version from tag (e.g., refs/tags/v1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF#refs/tags/v}
+
+          cd artifacts
+          # Windows build
+          zip -r ../scrcpy-gui-windows-v${VERSION}.zip windows-build/
+
+          # Linux build
+          zip -r ../scrcpy-gui-linux-v${VERSION}.zip linux-build/
+
+          # macOS build - create ZIP with DMG, install script, and README
+          cd macos-build
+          zip -r ../../scrcpy-gui-macos-v${VERSION}.zip .
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            scrcpy-gui-windows-v*.zip
+            scrcpy-gui-linux-v*.zip
+            scrcpy-gui-macos-v*.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
