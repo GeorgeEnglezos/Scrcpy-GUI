@@ -1,62 +1,29 @@
-/// Application color palette and theme colors.
-///
-/// This file defines all colors used throughout the application including
-/// base colors, semantic colors, and panel-specific theme colors.
+/// App color palette - dark theme with purple accents
 library;
 
 import 'package:flutter/material.dart';
 
-/// Centralized color palette for the Scrcpy GUI application.
-///
-/// The [AppColors] class provides a comprehensive dark theme color scheme
-/// with semantic naming for different UI elements and panel categories.
-///
-/// The color scheme includes:
-/// - Base colors for backgrounds and surfaces
-/// - Primary purple palette for accents and interactions
-/// - Text colors for primary and secondary content
-/// - State colors (success, warning, error)
-/// - Category-specific colors for different command panels
 class AppColors {
-  // Base colors
-  /// Main background color for the application
+  // Base
   static const background = Color(0xFF0E0E0E);
-
-  /// Surface color for cards and elevated elements
   static const surface = Color(0xFF161616);
-
-  /// Color for dividers and separators
   static const divider = Color(0xFF1F1F1F);
-
-  /// Grey background for command display areas
   static const commandGrey = Color.fromARGB(255, 31, 31, 31);
 
-  // Primary palette (Purple - Default)
-  /// Primary accent color (purple)
+  // Primary (Purple)
   static const primary = Color(0xFF8B5CF6);
-
-  /// Light variant of primary color
   static const primaryLight = Color(0xFFB794F4);
-
-  /// Dark variant of primary color
   static const primaryDark = Color(0xFF6D28D9);
 
   // Secondary
-  /// Secondary accent color (indigo)
   static const secondary = Color(0xFF6366F1);
-
-  /// Accent color for highlights
   static const accent = Color(0xFF9333EA);
 
   // Text
-  /// Primary text color (white)
   static const textPrimary = Color(0xFFFFFFFF);
-
-  /// Secondary text color (grey)
   static const textSecondary = Color(0xFFB3B3B3);
 
   // States
-  /// Success state color (green)
   static const success = Color(0xFF22C55E);
 
   /// Warning state color (yellow)

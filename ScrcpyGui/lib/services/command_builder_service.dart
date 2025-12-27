@@ -62,141 +62,69 @@ class CommandBuilderService extends ChangeNotifier {
   /// Reference to DeviceManagerService to get selected device
   DeviceManagerService? deviceManagerService;
 
-  /// Update audio options from the Audio Commands Panel
-  ///
-  /// [options] New audio options containing bitrate, codec, buffer, etc.
-  ///
-  /// Triggers [notifyListeners] to update the command display.
   void updateAudioOptions(AudioOptions options) {
     audioOptions = options;
     _log('Audio options updated: $audioOptions');
     notifyListeners();
   }
 
-  /// Update recording options from the Recording Commands Panel
-  ///
-  /// [options] New recording options containing output file, format, bitrate, etc.
-  ///
-  /// Triggers [notifyListeners] to update the command display.
-  /// Also affects window title generation (adds 'record-' prefix).
+  /// Also affects window title (adds 'record-' prefix)
   void updateRecordingOptions(ScreenRecordingOptions options) {
     recordingOptions = options;
     _log('Recording options updated: $recordingOptions');
     notifyListeners();
   }
 
-  /// Update virtual display options from the Virtual Display Commands Panel
-  ///
-  /// [options] New virtual display options containing resolution, DPI, decorations, etc.
-  ///
-  /// Triggers [notifyListeners] to update the command display.
   void updateVirtualDisplayOptions(VirtualDisplayOptions options) {
     virtualDisplayOptions = options;
     _log('Virtual display options updated: $virtualDisplayOptions');
     notifyListeners();
   }
 
-  /// Update general cast options from the Common Commands Panel
-  ///
-  /// [options] New general options containing window settings, video codec, package, etc.
-  ///
-  /// Triggers [notifyListeners] to update the command display.
   void updateGeneralCastOptions(GeneralCastOptions options) {
     generalCastOptions = options;
     _log('General cast options updated: $generalCastOptions');
     notifyListeners();
   }
 
-  /// Update camera options from the Camera Commands Panel
-  ///
-  /// [options] New camera options containing camera ID, size, facing, FPS, etc.
-  ///
-  /// Triggers [notifyListeners] to update the command display.
   void updateCameraOptions(CameraOptions options) {
     cameraOptions = options;
     _log('Camera options updated: $cameraOptions');
     notifyListeners();
   }
 
-  /// Update input control options from the Input Control Panel
-  ///
-  /// [options] New input control options containing mouse, keyboard, paste settings, etc.
-  ///
-  /// Triggers [notifyListeners] to update the command display.
   void updateInputControlOptions(InputControlOptions options) {
     inputControlOptions = options;
     _log('Input control options updated: $inputControlOptions');
     notifyListeners();
   }
 
-  /// Update display/window options from the Display/Window Configuration Panel
-  ///
-  /// [options] New display/window options containing position, size, rotation, etc.
-  ///
-  /// Triggers [notifyListeners] to update the command display.
   void updateDisplayWindowOptions(DisplayWindowOptions options) {
     displayWindowOptions = options;
     _log('Display/Window options updated: $displayWindowOptions');
     notifyListeners();
   }
 
-  /// Update network/connection options from the Network/Connection Panel
-  ///
-  /// [options] New network options containing TCP/IP, tunnel, ADB forward settings, etc.
-  ///
-  /// Triggers [notifyListeners] to update the command display.
   void updateNetworkConnectionOptions(NetworkConnectionOptions options) {
     networkConnectionOptions = options;
     _log('Network/Connection options updated: $networkConnectionOptions');
     notifyListeners();
   }
 
-  /// Update advanced options from the Advanced/Developer Panel
-  ///
-  /// [options] New advanced options containing verbosity, cleanup, V4L2 settings, etc.
-  ///
-  /// Triggers [notifyListeners] to update the command display.
   void updateAdvancedOptions(AdvancedOptions options) {
     advancedOptions = options;
     _log('Advanced options updated: $advancedOptions');
     notifyListeners();
   }
 
-  /// Update OTG mode options from the OTG Mode Panel
-  ///
-  /// [options] New OTG options containing OTG, HID keyboard/mouse settings
-  ///
-  /// Triggers [notifyListeners] to update the command display.
   void updateOtgModeOptions(OtgModeOptions options) {
     otgModeOptions = options;
     _log('OTG mode options updated: $otgModeOptions');
     notifyListeners();
   }
 
-  /// Generates the complete scrcpy command from all option groups
-  ///
-  /// Combines all command parts in the correct order:
-  /// 1. Base command with error handling
-  /// 2. Device serial (--serial flag for selected device)
-  /// 3. Dynamic window title (includes recording prefix and package name)
-  /// 4. General options (fullscreen, orientation, video codec, etc.)
-  /// 5. Virtual display options
-  /// 6. Recording options
-  /// 7. Audio options
-  ///
-  /// Window title generation logic:
-  /// - If recording: Prefixes with 'record-'
-  /// - Uses custom window title if provided
-  /// - Falls back to package name if selected
-  /// - Defaults to "ScrcpyGui" if nothing else specified
-  ///
-  /// Returns the complete command string ready for execution
-  ///
-  /// Example output:
-  /// ```
-  /// scrcpy --pause-on-exit=if-error --serial=abc123 --window-title=record-MyApp
-  /// --fullscreen --video-codec=h264 --record=output.mkv --audio-bitrate=128k
-  /// ```
+  /// Builds complete scrcpy command from all panels
+  /// Window title: auto-prefixed with 'record-' when recording, defaults to "ScrcpyGui"
   String get fullCommand {
     final generalPart = generalCastOptions.generateCommandPart();
     final virtualPart = virtualDisplayOptions.generateCommandPart();
@@ -249,10 +177,7 @@ class CommandBuilderService extends ChangeNotifier {
     return cmd;
   }
 
-  /// Resets all options to their default values
-  ///
-  /// Called when switching away from the Home page to clear the command state.
-  /// This ensures that the command builder starts fresh when returning to the Home page.
+  /// Reset all options to defaults
   void resetToDefaults() {
     audioOptions = AudioOptions();
     recordingOptions = ScreenRecordingOptions();

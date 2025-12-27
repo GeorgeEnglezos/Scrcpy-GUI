@@ -1,17 +1,6 @@
-/// Scrcpy GUI Flutter Port
-///
-/// A comprehensive cross-platform desktop GUI application for managing and controlling
-/// Android devices via scrcpy (Screen Copy). This application provides an intuitive
-/// interface for building and executing scrcpy commands without memorizing command-line
-/// flags and parameters.
-///
+/// Scrcpy GUI - Cross-platform GUI for scrcpy
 /// Author: George Englezos
-/// Repository: https://github.com/GeorgeEnglezos/Scrcpy-GUI
-///
-/// Platform Support:
-/// - Windows
-/// - macOS
-/// - Linux
+/// https://github.com/GeorgeEnglezos/Scrcpy-GUI
 library;
 
 import 'package:flutter/material.dart';
@@ -30,18 +19,6 @@ import 'services/settings_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/sidebar.dart';
 
-/// Application entry point
-///
-/// Initializes the desktop window manager, device detection service, and settings,
-/// then launches the application with state management providers.
-///
-/// Initialization sequence:
-/// 1. Ensures Flutter bindings are initialized
-/// 2. Configures desktop window (size: 1200x900, min: 900x700)
-/// 3. Initializes DeviceManagerService (starts ADB polling)
-/// 4. Loads user settings from persistent storage
-/// 5. Sets up Provider state management
-/// 6. Launches the main application
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

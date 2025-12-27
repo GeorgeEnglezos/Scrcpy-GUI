@@ -107,16 +107,8 @@ No manual ADB commands required!
 
 ## 📖 Documentation
 
-Comprehensive documentation is available in the [`Docs`](Docs/) folder:
-
-| Document | Description |
-|----------|-------------|
-| [User Guide](Docs/USER_GUIDE.md) | Complete usage instructions and workflows |
-| [Features](Docs/FEATURES.md) | Detailed feature list and capabilities |
-| [Troubleshooting](Docs/TROUBLESHOOTING.md) | Common issues and solutions |
-| [Build Instructions](Docs/BUILD.md) | How to build from source for all platforms |
-| [API Reference](Docs/API_REFERENCE.md) | Developer API documentation |
-| [Changelog](Docs/CHANGELOG.md) | Version history and changes |
+- **[Troubleshooting](Docs/TROUBLESHOOTING.md)** - Quick fixes for common issues
+- **[API Reference](Docs/API_REFERENCE.md)** - Developer documentation
 
 ---
 
