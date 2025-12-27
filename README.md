@@ -96,15 +96,6 @@ Set up wireless mirroring with a single click:
 
 No manual ADB commands required!
 
-### 🎬 Process Management
-
-Monitor and control all running scrcpy instances:
-
-- View process details (PID, device, connection type)
-- Kill individual or all processes
-- Reconnect with the same command
-- Auto-refresh every 5 seconds
-
 ### ⭐ Favorites System
 
 - Save unlimited command configurations
@@ -132,19 +123,20 @@ Comprehensive documentation is available in the [`Docs`](Docs/) folder:
 ## 🖼️ Screenshots
 
 <div align="center">
-  <img width="48%" alt="Home - Command Builder" src="https://github.com/user-attachments/assets/15f0b0ef-0001-4109-9ae3-edff8db9cdab" />
-  <img width="48%" alt="Home - Options Panel" src="https://github.com/user-attachments/assets/1014bd4c-1288-489f-8484-2e336df90649" />
+   <img width="48%" alt="Home - Command Builder" src="https://github.com/user-attachments/assets/a48c313d-3698-44c9-8e82-eb8ddb9e65bd" />
+   <img width="48%" alt="Home - Command Builder" src="https://github.com/user-attachments/assets/25998933-f750-43c0-aa96-5fbc6a125683" />
 </div>
 
 <div align="center">
-  <img width="48%" alt="Favorites - Saved Commands" src="https://github.com/user-attachments/assets/bd664d7a-238c-4df8-9d5e-1965c36830d1" />
-  <img width="48%" alt="Resources - Help & Links" src="https://github.com/user-attachments/assets/b30c3009-ae19-4f7e-b7e9-37d1dc4c26d1" />
+   <img width="48%" alt="Favorites" src="https://github.com/user-attachments/assets/e583ca97-e79c-471c-a7db-3d35b27c02b7" />
+   <img width="48%" alt="New Scripts Tab" src="https://github.com/user-attachments/assets/2ba6a651-674b-4654-8f4e-f218e80c7841" />
 </div>
 
 <div align="center">
-  <img width="48%" alt="Settings - Configuration" src="https://github.com/user-attachments/assets/ae23ccf2-9347-4dc3-924d-6f61a133ac33" />
-  <img width="48%" alt="Running Instances" src="https://github.com/user-attachments/assets/d3dd5620-daad-4676-a397-8e9a5418ab66" />
+   <img width="48%" alt="Resources - Help" src="https://github.com/user-attachments/assets/80e9ea8a-af7b-4581-ae13-4b0919cddb52" />
+   <img width="48%" alt="Settings - Configuration" src="https://github.com/user-attachments/assets/eba260da-066c-4f3d-83be-624886ed4951" />
 </div>
+<img width="2559" height="1405" alt="6 - Running instances" src="https://github.com/user-attachments/assets/6bd0145a-63c6-4812-b565-16c90664d3c6" />
 
 ---
 
