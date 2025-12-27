@@ -183,6 +183,11 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
               selectedIndex: selectedIndex,
               showBatFilesTab: _currentSettings.showBatFilesTab,
               onItemSelected: (index) {
+                // Clear command builder when leaving Home page (index 0)
+                if (selectedIndex == 0 && index != 0) {
+                  final commandService = Provider.of<CommandBuilderService>(context, listen: false);
+                  commandService.resetToDefaults();
+                }
                 setState(() => selectedIndex = index);
               },
             ),

@@ -249,6 +249,25 @@ class CommandBuilderService extends ChangeNotifier {
     return cmd;
   }
 
+  /// Resets all options to their default values
+  ///
+  /// Called when switching away from the Home page to clear the command state.
+  /// This ensures that the command builder starts fresh when returning to the Home page.
+  void resetToDefaults() {
+    audioOptions = AudioOptions();
+    recordingOptions = ScreenRecordingOptions();
+    virtualDisplayOptions = VirtualDisplayOptions();
+    generalCastOptions = GeneralCastOptions();
+    cameraOptions = CameraOptions();
+    inputControlOptions = InputControlOptions();
+    displayWindowOptions = DisplayWindowOptions();
+    networkConnectionOptions = NetworkConnectionOptions();
+    advancedOptions = AdvancedOptions();
+    otgModeOptions = OtgModeOptions();
+    _log('All options reset to defaults');
+    notifyListeners();
+  }
+
   /// Internal logging helper for debugging
   void _log(String message) {
     debugPrint('[CommandBuilderService] $message');
