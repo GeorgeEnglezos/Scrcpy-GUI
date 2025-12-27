@@ -163,14 +163,6 @@ Looking for a browser-based alternative? Check out the web companion app:
 - ✅ Faster and more accessible
 - ✅ Package, codec, and encoder selection
 
-### Desktop App Advantages
-
-- ✅ One-click command execution
-- ✅ Wireless connection wizard
-- ✅ Multi-device management
-- ✅ Process monitoring
-- ✅ Native performance
-
 ---
 
 ## 🤝 Contributing
@@ -179,16 +171,9 @@ Contributions are welcome! Here's how you can help:
 
 1. **Report Bugs** - Open an issue with detailed reproduction steps
 2. **Suggest Features** - Share your ideas in the discussions
-3. **Submit Pull Requests** - Fix bugs or add features
-4. **Improve Documentation** - Help make the docs clearer
-5. **Share** - Tell others about the project
-
-### Development Guidelines
-
-- Follow the existing code style
-- Write clear commit messages
-- Test on multiple platforms when possible
-- Update documentation for new features
+3. **Improve Documentation** - Help make the docs clearer
+4. **Share** - Tell others about the project
+5. **Donation** - Make a small donation in paypal
 
 ---
 
