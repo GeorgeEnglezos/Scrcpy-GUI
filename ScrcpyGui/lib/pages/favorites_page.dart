@@ -145,15 +145,33 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
       String baseFilename = nameParts.isEmpty ? 'scrcpy' : nameParts.join('_');
 
+      // Determine file extension and content based on platform
+      String fileExtension;
+      String fileContent;
+
+      if (Platform.isWindows) {
+        fileExtension = '.bat';
+        fileContent = '@echo off\n$command\npause';
+      } else {
+        // macOS/Linux - use shell script
+        fileExtension = Platform.isMacOS ? '.command' : '.sh';
+        fileContent = '#!/bin/bash\n$command\nread -p "Press any key to continue..."';
+      }
+
       String filename = baseFilename;
       int counter = 1;
-      while (await File('$downloadsDir/$filename.bat').exists()) {
+      while (await File('$downloadsDir/$filename$fileExtension').exists()) {
         filename = '$baseFilename ($counter)';
         counter++;
       }
 
-      final file = File('$downloadsDir/$filename.bat');
-      await file.writeAsString('@echo off\n$command\npause');
+      final file = File('$downloadsDir/$filename$fileExtension');
+      await file.writeAsString(fileContent);
+
+      // Make executable on Unix systems
+      if (!Platform.isWindows) {
+        await Process.run('chmod', ['+x', file.path]);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
