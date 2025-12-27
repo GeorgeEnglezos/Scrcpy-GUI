@@ -1,68 +1,20 @@
-/// A custom search bar widget with autocomplete suggestions.
-///
-/// This widget provides a search input field with dropdown suggestions,
-/// supporting features like clear button, reload button, and tooltip.
-/// The suggestions are filtered as the user types.
+/// Search bar with autocomplete dropdown and optional clear/reload buttons
 library;
 
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_constants.dart'; // new constants file
+import '../theme/app_constants.dart';
 
-/// A sophisticated search bar with autocomplete and suggestion filtering.
-///
-/// The [CustomSearchBar] provides a text input field with an overlay showing
-/// filtered suggestions based on user input. It supports optional clear and
-/// reload buttons, and can be enabled or disabled.
-///
-/// Features:
-/// - Real-time suggestion filtering based on user input
-/// - Dropdown overlay showing matching suggestions
-/// - Optional clear and reload action buttons
-/// - Tooltip support for additional context
-/// - Enable/disable state management
-///
-/// Example:
-/// ```dart
-/// CustomSearchBar(
-///   hintText: 'Select device',
-///   value: 'device-123',
-///   suggestions: ['device-123', 'device-456', 'device-789'],
-///   onChanged: (value) => print('Selected: $value'),
-///   onClear: () => print('Cleared'),
-///   onReload: () => refreshDeviceList(),
-///   tooltip: 'Search for connected devices',
-/// )
-/// ```
 class CustomSearchBar extends StatefulWidget {
-  /// The hint text displayed when the field is empty
   final String hintText;
-
-  /// The current value of the search field
   final String? value;
-
-  /// Callback invoked when the search text changes
   final Function(String) onChanged;
-
-  /// Optional callback for the clear button
   final VoidCallback? onClear;
-
-  /// Optional callback for the reload button
   final VoidCallback? onReload;
-
-  /// List of suggestions to show in the dropdown
   final List<String> suggestions;
-
-  /// Whether the search bar is enabled or disabled
   final bool enabled;
-
-  /// Optional tooltip message displayed on hover
   final String? tooltip;
 
-  /// Creates a custom search bar.
-  ///
-  /// The [hintText] and [onChanged] parameters are required.
-  /// All other parameters are optional and provide additional functionality.
   const CustomSearchBar({
     super.key,
     required this.hintText,
