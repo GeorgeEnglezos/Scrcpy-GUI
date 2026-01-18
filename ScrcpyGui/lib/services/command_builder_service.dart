@@ -60,7 +60,33 @@ class CommandBuilderService extends ChangeNotifier {
   OtgModeOptions otgModeOptions = OtgModeOptions();
 
   /// Reference to DeviceManagerService to get selected device
-  DeviceManagerService? deviceManagerService;
+  DeviceManagerService? _deviceManagerService;
+
+  /// Gets the device manager service reference
+  DeviceManagerService? get deviceManagerService => _deviceManagerService;
+
+  /// Sets the device manager service and listens for device selection changes
+  set deviceManagerService(DeviceManagerService? service) {
+    // Remove old listener if exists
+    _deviceManagerService?.removeListener(_onDeviceChanged);
+
+    _deviceManagerService = service;
+
+    // Add new listener if service is not null
+    _deviceManagerService?.addListener(_onDeviceChanged);
+  }
+
+  /// Called when device selection changes in DeviceManagerService
+  void _onDeviceChanged() {
+    notifyListeners(); // Rebuild command when device changes
+  }
+
+  @override
+  void dispose() {
+    // Clean up listener
+    _deviceManagerService?.removeListener(_onDeviceChanged);
+    super.dispose();
+  }
 
   void updateAudioOptions(AudioOptions options) {
     audioOptions = options;
@@ -154,7 +180,9 @@ class CommandBuilderService extends ChangeNotifier {
 
     // Add device serial if selected
     final deviceSerial = deviceManagerService?.selectedDevice;
-    final serialPart = deviceSerial != null ? '--serial=$deviceSerial' : '';
+    final serialPart = (deviceSerial != null && deviceSerial.isNotEmpty)
+        ? '--serial=$deviceSerial'
+        : '';
 
     final parts = [
       baseCommand,
