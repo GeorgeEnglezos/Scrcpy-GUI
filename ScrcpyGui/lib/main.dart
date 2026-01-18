@@ -42,6 +42,10 @@ Future<void> main() async {
   final deviceManager = DeviceManagerService();
   await deviceManager.initialize();
 
+  // Initialize CommandBuilderService with reference to DeviceManagerService
+  final commandBuilder = CommandBuilderService();
+  commandBuilder.deviceManagerService = deviceManager;
+
   // Load settings
   final settingsService = SettingsService();
   final settings = await settingsService.loadSettings();
@@ -52,7 +56,9 @@ Future<void> main() async {
         ChangeNotifierProvider<DeviceManagerService>.value(
           value: deviceManager,
         ),
-        ChangeNotifierProvider(create: (_) => CommandBuilderService()),
+        ChangeNotifierProvider<CommandBuilderService>.value(
+          value: commandBuilder,
+        ),
       ],
       child: ScrcpyGuiApp(settings: settings),
     ),
