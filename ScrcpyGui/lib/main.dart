@@ -9,6 +9,7 @@ import 'package:scrcpy_gui_prod/pages/scripts_page.dart';
 import 'package:scrcpy_gui_prod/pages/favorites_page.dart';
 import 'package:scrcpy_gui_prod/pages/resources_page.dart';
 import 'package:scrcpy_gui_prod/pages/settings_page.dart';
+import 'package:scrcpy_gui_prod/pages/shortcuts_page.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'models/settings_model.dart';
@@ -137,18 +138,21 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
   /// - 1: FavoritesPage - Saved commands and most used commands
   /// - 2: ScriptsPage - File explorer for scripts (.bat/.cmd on Windows, .sh/.command on macOS/Linux)
   /// - 3: ResourcesPage - Documentation, links, and helpful commands
-  /// - 4: SettingsPage - Application preferences and panel customization
+  /// - 4: ShortcutsPage - Scrcpy keyboard and mouse shortcuts
+  /// - 5: SettingsPage - Application preferences and panel customization
   ///
   /// Index mapping (when Scripts tab is hidden):
   /// - 0: HomePage - Command builder with configurable panels
   /// - 1: FavoritesPage - Saved commands and most used commands
   /// - 2: ResourcesPage - Documentation, links, and helpful commands
-  /// - 3: SettingsPage - Application preferences and panel customization
+  /// - 3: ShortcutsPage - Scrcpy keyboard and mouse shortcuts
+  /// - 4: SettingsPage - Application preferences and panel customization
   List<Widget> get pages => [
         HomePage(panelOrder: _currentSettings.panelOrder),
         const FavoritesPage(),
         if (_currentSettings.showBatFilesTab) const ScriptsPage(),
         const ResourcesPage(),
+        const ShortcutsPage(),
         const SettingsPage(),
       ];
 

@@ -350,6 +350,7 @@ class InputControlOptions {
   String mouseBind;
   String keyboardMode;
   String mouseMode;
+  List<String> shortcutMod;
 
   InputControlOptions({
     this.noControl = false,
@@ -362,6 +363,7 @@ class InputControlOptions {
     this.mouseBind = '',
     this.keyboardMode = '',
     this.mouseMode = '',
+    this.shortcutMod = const [],
   });
 
   InputControlOptions copyWith({
@@ -375,6 +377,7 @@ class InputControlOptions {
     String? mouseBind,
     String? keyboardMode,
     String? mouseMode,
+    List<String>? shortcutMod,
   }) {
     return InputControlOptions(
       noControl: noControl ?? this.noControl,
@@ -387,6 +390,7 @@ class InputControlOptions {
       mouseBind: mouseBind ?? this.mouseBind,
       keyboardMode: keyboardMode ?? this.keyboardMode,
       mouseMode: mouseMode ?? this.mouseMode,
+      shortcutMod: shortcutMod ?? this.shortcutMod,
     );
   }
 
@@ -402,6 +406,7 @@ class InputControlOptions {
     if (rawKeyEvents) cmd += ' --raw-key-events';
     if (preferText) cmd += ' --prefer-text';
     if (mouseBind.isNotEmpty) cmd += ' --mouse-bind=$mouseBind';
+    if (shortcutMod.isNotEmpty) cmd += ' --shortcut-mod=${shortcutMod.join(',')}';
     debugPrint('[InputControlOptions] => $cmd');
     return cmd.trim();
   }

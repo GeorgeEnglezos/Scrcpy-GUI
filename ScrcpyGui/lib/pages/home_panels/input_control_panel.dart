@@ -5,9 +5,11 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:multi_dropdown/multi_dropdown.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/command_builder_service.dart';
+import '../../theme/app_colors.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_checkbox.dart';
 import '../../widgets/custom_searchbar.dart';
@@ -47,6 +49,19 @@ class _InputControlPanelState extends State<InputControlPanel> {
   String? mouseBind;
   String? keyboardMode;
   String? mouseMode;
+  List<String> shortcutMod = [];
+
+  final MultiSelectController<String> _shortcutModController =
+      MultiSelectController<String>();
+
+  final List<DropdownItem<String>> _shortcutModItems = [
+    DropdownItem(label: 'lctrl', value: 'lctrl'),
+    DropdownItem(label: 'rctrl', value: 'rctrl'),
+    DropdownItem(label: 'lalt', value: 'lalt'),
+    DropdownItem(label: 'ralt', value: 'ralt'),
+    DropdownItem(label: 'lsuper', value: 'lsuper'),
+    DropdownItem(label: 'rsuper', value: 'rsuper'),
+  ];
 
   final List<String> mouseBindOptions = [
     'bhsm',
@@ -88,6 +103,7 @@ class _InputControlPanelState extends State<InputControlPanel> {
       rawKeyEvents: rawKeyEvents,
       preferText: preferText,
       mouseBind: mouseBind ?? '',
+      shortcutMod: shortcutMod,
     );
 
     cmdService.updateInputControlOptions(options);
@@ -109,7 +125,9 @@ class _InputControlPanelState extends State<InputControlPanel> {
       rawKeyEvents = false;
       preferText = false;
       mouseBind = null;
+      shortcutMod = [];
     });
+    _shortcutModController.clearAll();
     _updateService(context);
   }
 
@@ -275,6 +293,59 @@ class _InputControlPanelState extends State<InputControlPanel> {
                   tooltip: 'Configure bindings of secondary clicks. Each character maps a mouse button: + (forward), - (ignore), b (BACK), h (HOME), s (APP_SWITCH), n (notifications).',
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Tooltip(
+                  message: 'Select one or more modifier keys used for scrcpy shortcuts (e.g. lctrl+rctrl). Defaults to left Alt or left Super if not set.',
+                  child: MultiDropdown<String>(
+              items: _shortcutModItems,
+              controller: _shortcutModController,
+              onSelectionChange: (selected) {
+                setState(() {
+                  shortcutMod = selected.toList();
+                });
+                _updateService(context);
+              },
+              fieldDecoration: FieldDecoration(
+                hintText: 'Shortcut Mod Key',
+                hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary),
+                ),
+                backgroundColor: AppColors.background,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              dropdownDecoration: DropdownDecoration(
+                backgroundColor: AppColors.surface,
+                maxHeight: 250,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              dropdownItemDecoration: DropdownItemDecoration(
+                selectedBackgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                textColor: Colors.white70,
+                selectedTextColor: Colors.white,
+              ),
+              chipDecoration: ChipDecoration(
+                backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                labelStyle: const TextStyle(color: Colors.white, fontSize: 13),
+                borderRadius: BorderRadius.circular(6),
+                deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white70),
+                spacing: 6,
+                runSpacing: 6,
+              ),
+              ),
+            ),
+          ),
+              const Spacer(flex: 2),
             ],
           ),
         ],
