@@ -29,10 +29,12 @@ class CommandActionsPanel extends StatefulWidget {
 
 class _CommandActionsPanelState extends State<CommandActionsPanel> {
   final TextEditingController _portController = TextEditingController(text: '5555');
+  final TextEditingController _ipController = TextEditingController();
 
   @override
   void dispose() {
     _portController.dispose();
+    _ipController.dispose();
     super.dispose();
   }
 
@@ -70,10 +72,10 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                   return LayoutBuilder(
                     builder: (context, constraints) {
                       // Calculate if we have enough width for all items in one row
-                      // Dropdown (200) + Run (48) + Favorite (48) + Spacing (24) = ~320
-                      // Port section needs: Divider (1) + Port (100) + Wifi (48) + Stop (48) + Spacing (48) = ~245
-                      // Total needed: ~565px for one row
-                      final bool showDivider = constraints.maxWidth > 565;
+                      // Dropdown (170) + Run (48) + Favorite (48) + Spacing (24) = ~290
+                      // Connection section: Divider (1) + IP (160) + Port (100) + Wifi (48) + Stop (48) + Spacing (60) = ~417
+                      // Total needed: ~707px for one row
+                      final bool showDivider = constraints.maxWidth > 707;
 
                       return Wrap(
                         spacing: 12,
@@ -151,9 +153,44 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                                 ),
                               ],
                               SizedBox(
+                                width: 160,
+                                child: TextField(
+                                  controller: _ipController,
+                                  onTap: () => _ipController.selection = TextSelection(
+                                    baseOffset: 0,
+                                    extentOffset: _ipController.text.length,
+                                  ),
+                                  decoration: InputDecoration(
+                                    labelText: 'IP Address',
+                                    hintText: '192.168.1.100',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Colors.grey.shade400),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  keyboardType: TextInputType.text,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              SizedBox(
                                 width: 100,
                                 child: TextField(
                                   controller: _portController,
+                                  onTap: () => _portController.selection = TextSelection(
+                                    baseOffset: 0,
+                                    extentOffset: _portController.text.length,
+                                  ),
                                   decoration: InputDecoration(
                                     labelText: 'Port',
                                     hintText: '5555',
@@ -178,15 +215,25 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                               ),
                               const SizedBox(width: 12),
                               IconButton(
-                                onPressed: isDeviceSelected
-                                    ? () => _connectWirelessly(context, selected)
-                                    : null,
+                                onPressed: () {
+                                  final ip = _ipController.text.trim();
+                                  if (ip.isNotEmpty) {
+                                    _connectManually(context, ip);
+                                  } else if (isDeviceSelected) {
+                                    _connectWirelessly(context, selected);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Enter an IP address or connect a device via USB'),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                  }
+                                },
                                 icon: const Icon(Icons.wifi, size: 22),
                                 style: IconButton.styleFrom(
                                   backgroundColor: AppColors.connectGreen,
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor: Colors.grey.shade300,
-                                  disabledForegroundColor: Colors.grey.shade500,
                                   padding: const EdgeInsets.all(12),
                                   elevation: 2,
                                   shadowColor: AppColors.connectGreen.withValues(alpha: 0.3),
@@ -396,6 +443,68 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
           content: Text('Error setting up wireless connection: $e'),
           backgroundColor: Colors.red.shade700,
           duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  Future<void> _connectManually(BuildContext context, String ipAddress) async {
+    final port = _portController.text.trim();
+    final portNum = int.tryParse(port);
+    if (portNum == null || portNum < 1 || portNum > 65535) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Invalid port number: $port'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
+    final ipRegex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
+    if (!ipRegex.hasMatch(ipAddress)) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Invalid IP address: $ipAddress'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Connecting to $ipAddress:$portNum...'),
+        backgroundColor: Colors.blue,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    try {
+      final result = await TerminalService.connectWireless(ipAddress, portNum);
+
+      if (!context.mounted) return;
+      final success = result.contains('connected') ||
+          result.contains('already connected');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success
+              ? 'Connected to $ipAddress:$portNum'
+              : 'Connection failed: $result'),
+          backgroundColor:
+              success ? Colors.green.shade700 : Colors.red.shade700,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error connecting: $e'),
+          backgroundColor: Colors.red.shade700,
         ),
       );
     }
