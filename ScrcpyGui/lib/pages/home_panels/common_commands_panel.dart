@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/command_builder_service.dart';
+import '../../models/scrcpy_options.dart';
 import '../../services/device_manager_service.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_checkbox.dart';
@@ -38,22 +39,6 @@ class CommonCommandsPanel extends StatefulWidget {
 }
 
 class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
-  String windowTitle = '';
-  bool fullscreen = false;
-  bool screenOff = false;
-  bool stayAwake = false;
-  String cropScreen = '';
-  String? videoOrientation;
-  bool windowBorderless = false;
-  bool windowAlwaysOnTop = false;
-  bool disableScreensaver = false;
-  String videoBitRate = '';
-  String videoCodec = '';
-  String extraParameters = '';
-  bool printFps = false;
-  String timeLimit = '';
-  bool powerOffOnClose = false;
-
   List<String> videoCodecOptions = [];
   final List<String> orientationOptions = ['0', '90', '180', '270'];
 
@@ -64,6 +49,7 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
     super.initState();
     _loadVideoCodecs();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _deviceManager = Provider.of<DeviceManagerService>(
         context,
         listen: false,
@@ -72,7 +58,9 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
     });
   }
 
-  void _onDeviceChanged() => _loadVideoCodecs();
+  void _onDeviceChanged() {
+    _loadVideoCodecs();
+  }
 
   Future<void> _loadVideoCodecs() async {
     final deviceManager = Provider.of<DeviceManagerService>(
@@ -82,79 +70,16 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
     final deviceId = deviceManager.selectedDevice;
 
     if (deviceId == null) {
-      setState(() {
-        videoCodecOptions = [];
-        videoCodec = '';
-      });
+      if (mounted) setState(() => videoCodecOptions = []);
       return;
     }
 
     final info = DeviceManagerService.devicesInfo[deviceId];
     if (info != null) {
-      setState(() {
-        videoCodecOptions = info.videoCodecs;
-        if (!videoCodecOptions.contains(videoCodec)) {
-          videoCodec = '';
-        }
-      });
+      if (mounted) setState(() => videoCodecOptions = info.videoCodecs);
     } else {
-      setState(() {
-        videoCodecOptions = [];
-        videoCodec = '';
-      });
+      if (mounted) setState(() => videoCodecOptions = []);
     }
-  }
-
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-
-    final options = cmdService.generalCastOptions.copyWith(
-      fullscreen: fullscreen,
-      turnScreenOff: screenOff,
-      stayAwake: stayAwake,
-      windowTitle: windowTitle,
-      crop: cropScreen,
-      videoOrientation: videoOrientation ?? '',
-      windowBorderless: windowBorderless,
-      windowAlwaysOnTop: windowAlwaysOnTop,
-      disableScreensaver: disableScreensaver,
-      videoBitRate: videoBitRate,
-      videoCodecEncoderPair: videoCodec,
-      extraParameters: extraParameters,
-      printFps: printFps,
-      timeLimit: timeLimit,
-      powerOffOnClose: powerOffOnClose,
-    );
-
-    cmdService.updateGeneralCastOptions(options);
-
-    debugPrint(
-      '[CommonPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}',
-    );
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      windowTitle = '';
-      fullscreen = false;
-      screenOff = false;
-      stayAwake = false;
-      cropScreen = '';
-      videoOrientation = null;
-      windowBorderless = false;
-      windowAlwaysOnTop = false;
-      disableScreensaver = false;
-      videoBitRate = '';
-      videoCodec = '';
-      extraParameters = '';
-      printFps = false;
-      timeLimit = '';
-      powerOffOnClose = false;
-    });
-    _updateService(context);
   }
 
   @override
@@ -166,13 +91,20 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
   @override
   Widget build(BuildContext context) {
     final hasDevices = videoCodecOptions.isNotEmpty;
+    final opts = context.select<CommandBuilderService, GeneralCastOptions>(
+      (s) => s.generalCastOptions,
+    );
+    final cmdService = context.read<CommandBuilderService>();
 
     return SurroundingPanel(
       icon: Icons.desktop_windows,
       title: 'General',
       showButton: true,
       panelType: "General",
-      onClearPressed: _clearAllFields,
+      onClearPressed: () {
+        cmdService.updateGeneralCastOptions(const GeneralCastOptions());
+        debugPrint('[CommonCommandsPanel] Fields cleared!');
+      },
       clearController: widget.clearController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,10 +115,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Window Title',
-                  value: windowTitle,
+                  value: opts.windowTitle,
                   onChanged: (val) {
-                    setState(() => windowTitle = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(windowTitle: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Set a custom window title.',
                 ),
@@ -195,10 +127,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Fullscreen',
-                  value: fullscreen,
+                  value: opts.fullscreen,
                   onChanged: (val) {
-                    setState(() => fullscreen = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(fullscreen: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Start in fullscreen.',
                 ),
@@ -207,10 +139,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Screen off',
-                  value: screenOff,
+                  value: opts.turnScreenOff,
                   onChanged: (val) {
-                    setState(() => screenOff = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(turnScreenOff: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Turn the device screen off immediately.',
                 ),
@@ -223,10 +155,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Stay Awake',
-                  value: stayAwake,
+                  value: opts.stayAwake,
                   onChanged: (val) {
-                    setState(() => stayAwake = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(stayAwake: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Keep the device on while scrcpy is running, when the device is plugged in.',
                 ),
@@ -235,10 +167,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Crop Screen (W:H:X:Y)',
-                  value: cropScreen,
+                  value: opts.crop,
                   onChanged: (val) {
-                    setState(() => cropScreen = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(crop: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Crop the device screen on the server. The values are expressed in the device natural orientation (typically, portrait for a phone, landscape for a tablet).',
                 ),
@@ -247,15 +179,15 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: "Orientation",
-                  value: videoOrientation,
+                  value: opts.videoOrientation.isNotEmpty ? opts.videoOrientation : null,
                   suggestions: orientationOptions,
                   onChanged: (val) {
-                    setState(() => videoOrientation = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(videoOrientation: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => videoOrientation = '');
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(videoOrientation: ''));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Set the initial display orientation. The number represents the clockwise rotation in degrees. Default is 0.',
                 ),
@@ -268,10 +200,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Window Borderless',
-                  value: windowBorderless,
+                  value: opts.windowBorderless,
                   onChanged: (val) {
-                    setState(() => windowBorderless = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(windowBorderless: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Disable window decorations (display borderless window).',
                 ),
@@ -280,10 +212,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Window Always on Top',
-                  value: windowAlwaysOnTop,
+                  value: opts.windowAlwaysOnTop,
                   onChanged: (val) {
-                    setState(() => windowAlwaysOnTop = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(windowAlwaysOnTop: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Make scrcpy window always on top (above other windows).',
                 ),
@@ -292,10 +224,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Disable Screensaver',
-                  value: disableScreensaver,
+                  value: opts.disableScreensaver,
                   onChanged: (val) {
-                    setState(() => disableScreensaver = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(disableScreensaver: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Disable screensaver while scrcpy is running.',
                 ),
@@ -308,10 +240,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Video Bit Rate',
-                  value: videoBitRate,
+                  value: opts.videoBitRate,
                   onChanged: (val) {
-                    setState(() => videoBitRate = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(videoBitRate: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Encode the video at the given bit rate, expressed in bits/s. Unit suffixes are supported: \'K\' (x1000) and \'M\' (x1000000). Default is 8M (8000000).',
                 ),
@@ -327,15 +259,15 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
                       hintText: hasDevices
                           ? "Search Codec..."
                           : "No device connected",
-                      value: videoCodec.isNotEmpty ? videoCodec : null,
+                      value: opts.videoCodecEncoderPair.isNotEmpty ? opts.videoCodecEncoderPair : null,
                       suggestions: videoCodecOptions,
                       onChanged: (val) {
-                        setState(() => videoCodec = val);
-                        _updateService(context);
+                        cmdService.updateGeneralCastOptions(opts.copyWith(videoCodecEncoderPair: val));
+                        debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                       },
                       onClear: () {
-                        setState(() => videoCodec = '');
-                        _updateService(context);
+                        cmdService.updateGeneralCastOptions(opts.copyWith(videoCodecEncoderPair: ''));
+                        debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                       },
                       onReload: _loadVideoCodecs,
                       tooltip: 'Select a video codec (h264, h265 or av1). Default is h264. The available encoders can be listed from the device.',
@@ -351,10 +283,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Print FPS',
-                  value: printFps,
+                  value: opts.printFps,
                   onChanged: (val) {
-                    setState(() => printFps = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(printFps: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Start FPS counter, to print framerate logs to the console. It can be started or stopped at any time with MOD+i.',
                 ),
@@ -363,10 +295,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Power Off on Close',
-                  value: powerOffOnClose,
+                  value: opts.powerOffOnClose,
                   onChanged: (val) {
-                    setState(() => powerOffOnClose = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(powerOffOnClose: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Turn the device screen off when closing scrcpy.',
                 ),
@@ -375,10 +307,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Time Limit (seconds)',
-                  value: timeLimit,
+                  value: opts.timeLimit,
                   onChanged: (val) {
-                    setState(() => timeLimit = val);
-                    _updateService(context);
+                    cmdService.updateGeneralCastOptions(opts.copyWith(timeLimit: val));
+                    debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Set the maximum mirroring time, in seconds.',
                 ),
@@ -388,10 +320,10 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
           const SizedBox(height: 16),
           CustomTextField(
             label: 'Extra Parameters',
-            value: extraParameters,
+            value: opts.extraParameters,
             onChanged: (val) {
-              setState(() => extraParameters = val);
-              _updateService(context);
+              cmdService.updateGeneralCastOptions(opts.copyWith(extraParameters: val));
+              debugPrint('[CommonCommandsPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
             },
             tooltip: 'Add any additional scrcpy command-line parameters not covered by the GUI options above.',
           ),

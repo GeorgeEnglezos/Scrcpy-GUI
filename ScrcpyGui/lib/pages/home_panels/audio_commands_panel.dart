@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/command_builder_service.dart';
+import '../../models/scrcpy_options.dart';
 import '../../services/device_manager_service.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_checkbox.dart';
@@ -37,14 +38,6 @@ class AudioCommandsPanel extends StatefulWidget {
 }
 
 class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
-  String audioBitRate = '';
-  String audioBuffer = '';
-  String audioCodecOptions = '';
-  String audioSource = '';
-  String audioCodec = '';
-  bool noAudio = false;
-  bool audioDuplication = false;
-
   final List<String> audioBitRateOptions = [
     '64k',
     '128k',
@@ -73,6 +66,7 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
     _loadAudioCodecs();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _deviceManager = Provider.of<DeviceManagerService>(
         context,
         listen: false,
@@ -94,22 +88,13 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
     final selectedDevice = deviceManager.selectedDevice;
 
     if (selectedDevice == null) {
-      setState(() {
-        audioCodecEncoders = [];
-        audioCodec = '';
-      });
+      if (mounted) setState(() => audioCodecEncoders = []);
       return;
     }
 
     final info = DeviceManagerService.devicesInfo[selectedDevice];
     if (info != null) {
-      setState(() {
-        audioCodecEncoders = info.audioCodecs;
-
-        if (!audioCodecEncoders.contains(audioCodec)) {
-          audioCodec = '';
-        }
-      });
+      if (mounted) setState(() => audioCodecEncoders = info.audioCodecs);
     }
   }
 
@@ -119,52 +104,23 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
     super.dispose();
   }
 
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-
-    final options = cmdService.audioOptions.copyWith(
-      audioBitRate: audioBitRate,
-      audioBuffer: audioBuffer,
-      audioCodecOptions: audioCodecOptions,
-      audioSource: audioSource,
-      audioCodecEncoderPair: audioCodec,
-      audioDup: audioDuplication,
-      noAudio: noAudio,
-    );
-
-    cmdService.updateAudioOptions(options);
-
-    debugPrint(
-      '[AudioPanel] Updated AudioOptions → ${cmdService.fullCommand}',
-    );
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      audioBitRate = '';
-      audioBuffer = '';
-      audioCodecOptions = '';
-      audioSource = '';
-      audioCodec = '';
-      noAudio = false;
-      audioDuplication = false;
-    });
-    _updateService(context);
-    debugPrint('[AudioPanel] Fields cleared!');
-  }
-
   @override
   Widget build(BuildContext context) {
+    final opts = context.select<CommandBuilderService, AudioOptions>(
+      (s) => s.audioOptions,
+    );
+    final cmdService = context.read<CommandBuilderService>();
+
     return SurroundingPanel(
       icon: Icons.headphones,
       title: 'Audio',
       showButton: true,
       panelType: "Audio",
       clearController: widget.clearController,
-      onClearPressed: _clearAllFields,
+      onClearPressed: () {
+        cmdService.updateAudioOptions(const AudioOptions());
+        debugPrint('[AudioCommandsPanel] Fields cleared!');
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -174,15 +130,15 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Audio Bit Rate',
-                  value: audioBitRate.isNotEmpty ? audioBitRate : null,
+                  value: opts.audioBitRate.isNotEmpty ? opts.audioBitRate : null,
                   suggestions: audioBitRateOptions,
                   onChanged: (val) {
-                    setState(() => audioBitRate = val);
-                    _updateService(context);
+                    cmdService.updateAudioOptions(opts.copyWith(audioBitRate: val));
+                    debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => audioBitRate = '');
-                    _updateService(context);
+                    cmdService.updateAudioOptions(opts.copyWith(audioBitRate: ''));
+                    debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Encode the audio at the given bit rate, expressed in bits/s. Unit suffixes are supported: \'K\' (x1000) and \'M\' (x1000000). Default is 128K (128000).',
                 ),
@@ -191,15 +147,15 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Audio Buffer',
-                  value: audioBuffer.isNotEmpty ? audioBuffer : null,
+                  value: opts.audioBuffer.isNotEmpty ? opts.audioBuffer : null,
                   suggestions: audioBufferOptions,
                   onChanged: (val) {
-                    setState(() => audioBuffer = val);
-                    _updateService(context);
+                    cmdService.updateAudioOptions(opts.copyWith(audioBuffer: val));
+                    debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => audioBuffer = '');
-                    _updateService(context);
+                    cmdService.updateAudioOptions(opts.copyWith(audioBuffer: ''));
+                    debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Configure the audio buffering delay (in milliseconds). Lower values decrease the latency, but increase the likelihood of buffer underrun (causing audio glitches). Default is 50.',
                 ),
@@ -208,17 +164,17 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Audio Codec Options',
-                  value: audioCodecOptions.isNotEmpty
-                      ? audioCodecOptions
+                  value: opts.audioCodecOptions.isNotEmpty
+                      ? opts.audioCodecOptions
                       : null,
                   suggestions: audioCodecOptionsList,
                   onChanged: (val) {
-                    setState(() => audioCodecOptions = val);
-                    _updateService(context);
+                    cmdService.updateAudioOptions(opts.copyWith(audioCodecOptions: val));
+                    debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => audioCodecOptions = '');
-                    _updateService(context);
+                    cmdService.updateAudioOptions(opts.copyWith(audioCodecOptions: ''));
+                    debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Set codec-specific options for the device audio encoder. The list of possible codec options is available in the Android documentation.',
                 ),
@@ -231,15 +187,15 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Audio Source',
-                  value: audioSource.isNotEmpty ? audioSource : null,
+                  value: opts.audioSource.isNotEmpty ? opts.audioSource : null,
                   suggestions: audioSources,
                   onChanged: (val) {
-                    setState(() => audioSource = val);
-                    _updateService(context);
+                    cmdService.updateAudioOptions(opts.copyWith(audioSource: val));
+                    debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => audioSource = '');
-                    _updateService(context);
+                    cmdService.updateAudioOptions(opts.copyWith(audioSource: ''));
+                    debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Select the audio source: output (whole audio output), playback (audio playback), mic (microphone), mic-unprocessed, mic-camcorder, mic-voice-recognition, mic-voice-communication. Default is output.',
                 ),
@@ -248,10 +204,10 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'No Audio',
-                  value: noAudio,
+                  value: opts.noAudio,
                   onChanged: (val) {
-                    setState(() => noAudio = val);
-                    _updateService(context);
+                    cmdService.updateAudioOptions(opts.copyWith(noAudio: val));
+                    debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Disable audio forwarding.',
                 ),
@@ -260,10 +216,10 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Audio Duplication',
-                  value: audioDuplication,
+                  value: opts.audioDup,
                   onChanged: (val) {
-                    setState(() => audioDuplication = val);
-                    _updateService(context);
+                    cmdService.updateAudioOptions(opts.copyWith(audioDup: val));
+                    debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Duplicate audio (capture and keep playing on the device). This feature is only available with --audio-source=playback.',
                 ),
@@ -273,15 +229,17 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
           const SizedBox(height: 16),
           CustomSearchBar(
             hintText: 'Audio Codec - Encoder',
-            value: audioCodec.isNotEmpty ? audioCodec : null,
+            value: opts.audioCodecEncoderPair.isNotEmpty
+                ? opts.audioCodecEncoderPair
+                : null,
             suggestions: audioCodecEncoders,
             onChanged: (val) {
-              setState(() => audioCodec = val);
-              _updateService(context);
+              cmdService.updateAudioOptions(opts.copyWith(audioCodecEncoderPair: val));
+              debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
             },
             onClear: () {
-              setState(() => audioCodec = '');
-              _updateService(context);
+              cmdService.updateAudioOptions(opts.copyWith(audioCodecEncoderPair: ''));
+              debugPrint('[AudioCommandsPanel] Updated AudioOptions → ${cmdService.fullCommand}');
             },
             onReload: _loadAudioCodecs,
             tooltip: 'Select an audio codec (opus, aac, flac or raw). Default is opus. Use a specific MediaCodec audio encoder (depending on the codec).',

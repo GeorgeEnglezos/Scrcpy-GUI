@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/command_builder_service.dart';
+import '../../models/scrcpy_options.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_checkbox.dart';
 import '../../widgets/custom_searchbar.dart';
@@ -36,16 +37,6 @@ class DisplayWindowPanel extends StatefulWidget {
 }
 
 class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
-  String windowX = '';
-  String windowY = '';
-  String windowWidth = '';
-  String windowHeight = '';
-  String? rotation;
-  String displayId = '';
-  String displayBuffer = '';
-  String? renderDriver;
-  bool forceAdbForward = false;
-
   final List<String> rotationOptions = ['0', '1', '2', '3'];
   final List<String> renderDriverOptions = [
     'direct3d',
@@ -58,54 +49,22 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
     'software',
   ];
 
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-
-    final options = cmdService.displayWindowOptions.copyWith(
-      windowX: windowX,
-      windowY: windowY,
-      windowWidth: windowWidth,
-      windowHeight: windowHeight,
-      rotation: rotation ?? '',
-      displayId: displayId,
-      displayBuffer: displayBuffer,
-      renderDriver: renderDriver ?? '',
-      forceAdbForward: forceAdbForward,
-    );
-
-    cmdService.updateDisplayWindowOptions(options);
-
-    debugPrint(
-      '[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}',
-    );
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      windowX = '';
-      windowY = '';
-      windowWidth = '';
-      windowHeight = '';
-      rotation = null;
-      displayId = '';
-      displayBuffer = '';
-      renderDriver = null;
-      forceAdbForward = false;
-    });
-    _updateService(context);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final opts = context.select<CommandBuilderService, DisplayWindowOptions>(
+      (s) => s.displayWindowOptions,
+    );
+    final cmdService = context.read<CommandBuilderService>();
+
     return SurroundingPanel(
       icon: Icons.crop_square,
       title: 'Display/Window',
       showButton: true,
       panelType: "Display/Window",
-      onClearPressed: _clearAllFields,
+      onClearPressed: () {
+        cmdService.updateDisplayWindowOptions(const DisplayWindowOptions());
+        debugPrint('[DisplayWindowPanel] Fields cleared!');
+      },
       clearController: widget.clearController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,10 +75,10 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Window X Position',
-                  value: windowX,
+                  value: opts.windowX,
                   onChanged: (val) {
-                    setState(() => windowX = val);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(windowX: val));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Set the initial window horizontal position. Default is "auto".',
                 ),
@@ -128,10 +87,10 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Window Y Position',
-                  value: windowY,
+                  value: opts.windowY,
                   onChanged: (val) {
-                    setState(() => windowY = val);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(windowY: val));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Set the initial window vertical position. Default is "auto".',
                 ),
@@ -140,10 +99,10 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Window Width',
-                  value: windowWidth,
+                  value: opts.windowWidth,
                   onChanged: (val) {
-                    setState(() => windowWidth = val);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(windowWidth: val));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Set the initial window width. Default is 0 (automatic).',
                 ),
@@ -152,10 +111,10 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Window Height',
-                  value: windowHeight,
+                  value: opts.windowHeight,
                   onChanged: (val) {
-                    setState(() => windowHeight = val);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(windowHeight: val));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Set the initial window height. Default is 0 (automatic).',
                 ),
@@ -168,15 +127,15 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Rotation (0=0°, 1=90°, 2=180°, 3=270°)',
-                  value: rotation,
+                  value: opts.rotation.isNotEmpty ? opts.rotation : null,
                   suggestions: rotationOptions,
                   onChanged: (val) {
-                    setState(() => rotation = val);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(rotation: val));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => rotation = null);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(rotation: ''));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Rotate the video content by 90° increments (0, 1, 2, or 3 for 0°, 90°, 180°, 270° clockwise).',
                 ),
@@ -185,10 +144,10 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Display ID',
-                  value: displayId,
+                  value: opts.displayId,
                   onChanged: (val) {
-                    setState(() => displayId = val);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(displayId: val));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Specify the device display id to mirror. The available display ids can be listed by: scrcpy --list-displays. Default is 0.',
                 ),
@@ -197,10 +156,10 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Display Buffer (ms)',
-                  value: displayBuffer,
+                  value: opts.displayBuffer,
                   onChanged: (val) {
-                    setState(() => displayBuffer = val);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(displayBuffer: val));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Add a buffering delay (in milliseconds) before displaying video frames. This increases latency to compensate for jitter. Default is 0 (no buffering).',
                 ),
@@ -214,15 +173,15 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
                 flex: 2,
                 child: CustomSearchBar(
                   hintText: 'Render Driver',
-                  value: renderDriver,
+                  value: opts.renderDriver.isNotEmpty ? opts.renderDriver : null,
                   suggestions: renderDriverOptions,
                   onChanged: (val) {
-                    setState(() => renderDriver = val);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(renderDriver: val));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => renderDriver = null);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(renderDriver: ''));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Request SDL to use the given render driver (this is just a hint). Supported names: direct3d, opengl, opengles2, opengles, metal, software.',
                 ),
@@ -231,10 +190,10 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Force ADB Forward',
-                  value: forceAdbForward,
+                  value: opts.forceAdbForward,
                   onChanged: (val) {
-                    setState(() => forceAdbForward = val);
-                    _updateService(context);
+                    cmdService.updateDisplayWindowOptions(opts.copyWith(forceAdbForward: val));
+                    debugPrint('[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Do not attempt to use "adb reverse" to connect to the device.',
                 ),

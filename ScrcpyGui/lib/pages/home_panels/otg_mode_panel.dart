@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/command_builder_service.dart';
+import '../../models/scrcpy_options.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_checkbox.dart';
 import '../../widgets/surrounding_panel.dart';
@@ -34,46 +35,22 @@ class OtgModePanel extends StatefulWidget {
 }
 
 class _OtgModePanelState extends State<OtgModePanel> {
-  bool otg = false;
-  bool hidKeyboard = false;
-  bool hidMouse = false;
-
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-
-    final options = cmdService.otgModeOptions.copyWith(
-      otg: otg,
-      hidKeyboard: hidKeyboard,
-      hidMouse: hidMouse,
-    );
-
-    cmdService.updateOtgModeOptions(options);
-
-    debugPrint(
-      '[OtgModePanel] Updated OtgModeOptions → ${cmdService.fullCommand}',
-    );
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      otg = false;
-      hidKeyboard = false;
-      hidMouse = false;
-    });
-    _updateService(context);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final opts = context.select<CommandBuilderService, OtgModeOptions>(
+      (s) => s.otgModeOptions,
+    );
+    final cmdService = context.read<CommandBuilderService>();
+
     return SurroundingPanel(
       icon: Icons.usb,
       title: 'OTG Mode',
       showButton: true,
       panelType: "OTG Mode",
-      onClearPressed: _clearAllFields,
+      onClearPressed: () {
+        cmdService.updateOtgModeOptions(const OtgModeOptions());
+        debugPrint('[OtgModePanel] Fields cleared!');
+      },
       clearController: widget.clearController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,10 +61,10 @@ class _OtgModePanelState extends State<OtgModePanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Enable OTG Mode',
-                  value: otg,
+                  value: opts.otg,
                   onChanged: (val) {
-                    setState(() => otg = val);
-                    _updateService(context);
+                    cmdService.updateOtgModeOptions(opts.copyWith(otg: val));
+                    debugPrint('[OtgModePanel] Updated OtgModeOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Run in OTG mode: simulate physical keyboard and mouse, as if the computer keyboard and mouse were plugged directly to the device via an OTG cable. In this mode, adb (USB debugging) is not necessary, and mirroring is disabled.',
                 ),
@@ -96,10 +73,10 @@ class _OtgModePanelState extends State<OtgModePanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'HID Keyboard',
-                  value: hidKeyboard,
+                  value: opts.hidKeyboard,
                   onChanged: (val) {
-                    setState(() => hidKeyboard = val);
-                    _updateService(context);
+                    cmdService.updateOtgModeOptions(opts.copyWith(hidKeyboard: val));
+                    debugPrint('[OtgModePanel] Updated OtgModeOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Simulate a physical HID keyboard. Keyboard may be disabled separately using --keyboard=disabled.',
                 ),
@@ -108,10 +85,10 @@ class _OtgModePanelState extends State<OtgModePanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'HID Mouse',
-                  value: hidMouse,
+                  value: opts.hidMouse,
                   onChanged: (val) {
-                    setState(() => hidMouse = val);
-                    _updateService(context);
+                    cmdService.updateOtgModeOptions(opts.copyWith(hidMouse: val));
+                    debugPrint('[OtgModePanel] Updated OtgModeOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Simulate a physical HID mouse. Mouse may be disabled separately using --mouse=disabled.',
                 ),

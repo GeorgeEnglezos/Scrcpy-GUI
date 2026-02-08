@@ -10,9 +10,11 @@
 /// - Notify listeners when any option changes
 library;
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/scrcpy_options.dart';
 import 'device_manager_service.dart';
+import 'options_state_service.dart';
 
 /// Service for building scrcpy commands from panel options
 ///
@@ -28,36 +30,23 @@ class CommandBuilderService extends ChangeNotifier {
   /// The .exe extension is optional on Windows (resolved via PATHEXT)
   String baseCommand = "scrcpy --pause-on-exit=if-error";
 
-  /// Audio configuration options (bitrate, codec, buffer, etc.)
-  AudioOptions audioOptions = AudioOptions();
+  /// All option objects in a single immutable bundle (backing store for persistence)
+  OptionsBundle _options = const OptionsBundle();
 
-  /// Screen recording options (output file, format, bitrate, etc.)
-  ScreenRecordingOptions recordingOptions = ScreenRecordingOptions();
+  /// Single instance of the persistence service
+  final OptionsStateService _stateService = OptionsStateService();
 
-  /// Virtual display options (resolution, DPI, decorations, etc.)
-  VirtualDisplayOptions virtualDisplayOptions = VirtualDisplayOptions();
-
-  /// General casting options (fullscreen, orientation, video codec, package, etc.)
-  GeneralCastOptions generalCastOptions = GeneralCastOptions();
-
-  /// Camera options (camera ID, size, facing, FPS, aspect ratio, etc.)
-  CameraOptions cameraOptions = CameraOptions();
-
-  /// Input control options (mouse, keyboard, paste behavior, etc.)
-  InputControlOptions inputControlOptions = InputControlOptions();
-
-  /// Display/Window configuration options (position, size, rotation, render driver, etc.)
-  DisplayWindowOptions displayWindowOptions = DisplayWindowOptions();
-
-  /// Network/Connection options (TCP/IP, tunneling, ADB forward, etc.)
-  NetworkConnectionOptions networkConnectionOptions = NetworkConnectionOptions();
-
-
-  /// Advanced/Developer options (verbosity, cleanup, V4L2, etc.)
-  AdvancedOptions advancedOptions = AdvancedOptions();
-
-  /// OTG Mode options (OTG, HID keyboard/mouse)
-  OtgModeOptions otgModeOptions = OtgModeOptions();
+  // Getters that delegate to the bundle — panels read these directly.
+  AudioOptions get audioOptions => _options.audioOptions;
+  ScreenRecordingOptions get recordingOptions => _options.recordingOptions;
+  VirtualDisplayOptions get virtualDisplayOptions => _options.virtualDisplayOptions;
+  GeneralCastOptions get generalCastOptions => _options.generalCastOptions;
+  CameraOptions get cameraOptions => _options.cameraOptions;
+  InputControlOptions get inputControlOptions => _options.inputControlOptions;
+  DisplayWindowOptions get displayWindowOptions => _options.displayWindowOptions;
+  NetworkConnectionOptions get networkConnectionOptions => _options.networkConnectionOptions;
+  AdvancedOptions get advancedOptions => _options.advancedOptions;
+  OtgModeOptions get otgModeOptions => _options.otgModeOptions;
 
   /// Reference to DeviceManagerService to get selected device
   DeviceManagerService? _deviceManagerService;
@@ -83,70 +72,80 @@ class CommandBuilderService extends ChangeNotifier {
 
   @override
   void dispose() {
-    // Clean up listener
+    unawaited(flushPendingSave());
     _deviceManagerService?.removeListener(_onDeviceChanged);
     super.dispose();
   }
 
   void updateAudioOptions(AudioOptions options) {
-    audioOptions = options;
+    _options = _options.copyWith(audioOptions: options);
     _log('Audio options updated: $audioOptions');
     notifyListeners();
+    _scheduleSave();
   }
 
   /// Also affects window title (adds 'record-' prefix)
   void updateRecordingOptions(ScreenRecordingOptions options) {
-    recordingOptions = options;
+    _options = _options.copyWith(recordingOptions: options);
     _log('Recording options updated: $recordingOptions');
     notifyListeners();
+    _scheduleSave();
   }
 
   void updateVirtualDisplayOptions(VirtualDisplayOptions options) {
-    virtualDisplayOptions = options;
+    _options = _options.copyWith(virtualDisplayOptions: options);
     _log('Virtual display options updated: $virtualDisplayOptions');
     notifyListeners();
+    _scheduleSave();
   }
 
   void updateGeneralCastOptions(GeneralCastOptions options) {
-    generalCastOptions = options;
+    _options = _options.copyWith(generalCastOptions: options);
     _log('General cast options updated: $generalCastOptions');
     notifyListeners();
+    _scheduleSave();
   }
 
   void updateCameraOptions(CameraOptions options) {
-    cameraOptions = options;
+    _options = _options.copyWith(cameraOptions: options);
     _log('Camera options updated: $cameraOptions');
     notifyListeners();
+    _scheduleSave();
   }
 
   void updateInputControlOptions(InputControlOptions options) {
-    inputControlOptions = options;
+    _options = _options.copyWith(inputControlOptions: options);
     _log('Input control options updated: $inputControlOptions');
     notifyListeners();
+    _scheduleSave();
   }
 
   void updateDisplayWindowOptions(DisplayWindowOptions options) {
-    displayWindowOptions = options;
+    _options = _options.copyWith(displayWindowOptions: options);
     _log('Display/Window options updated: $displayWindowOptions');
     notifyListeners();
+    _scheduleSave();
   }
 
   void updateNetworkConnectionOptions(NetworkConnectionOptions options) {
-    networkConnectionOptions = options;
+    _options = _options.copyWith(networkConnectionOptions: options);
     _log('Network/Connection options updated: $networkConnectionOptions');
     notifyListeners();
+    _scheduleSave();
   }
 
   void updateAdvancedOptions(AdvancedOptions options) {
-    advancedOptions = options;
+    _options = _options.copyWith(advancedOptions: options);
     _log('Advanced options updated: $advancedOptions');
     notifyListeners();
+    _scheduleSave();
   }
 
   void updateOtgModeOptions(OtgModeOptions options) {
-    otgModeOptions = options;
+    _options = _options.copyWith(otgModeOptions: options);
     _log('OTG mode options updated: $otgModeOptions');
     notifyListeners();
+    _scheduleSave();
   }
 
   /// Builds complete scrcpy command from all panels
@@ -207,18 +206,48 @@ class CommandBuilderService extends ChangeNotifier {
 
   /// Reset all options to defaults
   void resetToDefaults() {
-    audioOptions = AudioOptions();
-    recordingOptions = ScreenRecordingOptions();
-    virtualDisplayOptions = VirtualDisplayOptions();
-    generalCastOptions = GeneralCastOptions();
-    cameraOptions = CameraOptions();
-    inputControlOptions = InputControlOptions();
-    displayWindowOptions = DisplayWindowOptions();
-    networkConnectionOptions = NetworkConnectionOptions();
-    advancedOptions = AdvancedOptions();
-    otgModeOptions = OtgModeOptions();
+    _options = const OptionsBundle();
     _log('All options reset to defaults');
     notifyListeners();
+    _scheduleSave();
+  }
+
+  // --- Persistence ---
+
+  Timer? _saveTimer;
+
+  /// Serialize all 10 option objects to a single JSON map.
+  Map<String, dynamic> optionsToJson() => _options.toJson();
+
+  /// Restore all 10 option objects from a JSON map.
+  /// Recording state is cleared since it's session-specific (stale filenames).
+  void loadOptionsFromJson(Map<String, dynamic> json) {
+    try {
+      _options = OptionsBundle.fromJson(json);
+      // Clear recording state — outputFile contains a session-specific timestamp
+      _options = _options.copyWith(recordingOptions: const ScreenRecordingOptions());
+      _log('Options loaded from JSON');
+    } catch (e) {
+      _log('Error deserializing options, falling back to defaults: $e');
+      _options = const OptionsBundle();
+    }
+    notifyListeners();
+  }
+
+  /// Schedule a debounced save to avoid excessive disk writes.
+  void _scheduleSave() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 4000), () {
+      _stateService.saveOptionsState(optionsToJson());
+    });
+  }
+
+  /// Flush any pending save immediately (used on app close).
+  Future<void> flushPendingSave() async {
+		if (_saveTimer != null){
+    	_saveTimer?.cancel();
+    	await _stateService.saveOptionsState(optionsToJson());
+		}
   }
 
   /// Internal logging helper for debugging

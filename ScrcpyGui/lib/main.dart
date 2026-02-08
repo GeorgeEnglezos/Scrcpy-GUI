@@ -15,6 +15,7 @@ import 'models/settings_model.dart';
 import 'pages/home_page.dart';
 import 'services/command_builder_service.dart';
 import 'services/device_manager_service.dart';
+import 'services/options_state_service.dart';
 import 'services/settings_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/sidebar.dart';
@@ -45,6 +46,12 @@ Future<void> main() async {
   // Initialize CommandBuilderService with reference to DeviceManagerService
   final commandBuilder = CommandBuilderService();
   commandBuilder.deviceManagerService = deviceManager;
+
+  // Restore persisted options state (survives app restarts)
+  final savedOptions = await OptionsStateService().loadOptionsState();
+  if (savedOptions != null) {
+    commandBuilder.loadOptionsFromJson(savedOptions);
+  }
 
   // Load settings
   final settingsService = SettingsService();
@@ -84,7 +91,7 @@ class ScrcpyGuiApp extends StatefulWidget {
   State<ScrcpyGuiApp> createState() => _ScrcpyGuiAppState();
 }
 
-class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
+class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> with WindowListener {
   /// Currently selected page index (0: Home, 1: Favorites, 2: Resources, 3: Settings)
   late int selectedIndex;
   late AppSettings _currentSettings;
@@ -96,7 +103,29 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
     _currentSettings = widget.settings;
     // Set initial tab based on bootTab setting
     selectedIndex = _getInitialTabIndex();
+    windowManager.addListener(this);
+    windowManager.setPreventClose(true);
     _startSettingsPolling();
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    windowManager.setPreventClose(false);
+    super.dispose();
+  }
+
+  @override
+  Future<void> onWindowClose() async {
+    final isPreventClose = await windowManager.isPreventClose();
+    if (!isPreventClose) {
+      return;
+    }
+
+    final commandBuilder = context.read<CommandBuilderService>();
+    await commandBuilder.flushPendingSave();
+    await windowManager.setPreventClose(false);
+    await windowManager.close();
   }
 
   int _getInitialTabIndex() {
@@ -166,11 +195,6 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
               selectedIndex: selectedIndex,
               showBatFilesTab: _currentSettings.showBatFilesTab,
               onItemSelected: (index) {
-                // Clear command builder when leaving Home page (index 0)
-                if (selectedIndex == 0 && index != 0) {
-                  final commandService = Provider.of<CommandBuilderService>(context, listen: false);
-                  commandService.resetToDefaults();
-                }
                 setState(() => selectedIndex = index);
               },
             ),

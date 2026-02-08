@@ -1,44 +1,51 @@
 import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-/// Screen Recording Options
-class ScreenRecordingOptions {
-  String maxSize;
-  String bitrate;
-  String framerate;
-  String outputFormat;
-  String outputFile;
-  String recordOrientation;
-  String videoCodec;
+part 'scrcpy_options.freezed.dart';
+part 'scrcpy_options.g.dart';
 
-  ScreenRecordingOptions({
-    this.maxSize = '',
-    this.bitrate = '',
-    this.framerate = '',
-    this.outputFormat = '',
-    this.outputFile = '',
-    this.recordOrientation = '',
-    this.videoCodec = '',
-  });
+// ---------------------------------------------------------------------------
+// OptionsBundle — wraps all 10 option objects for persistence
+// ---------------------------------------------------------------------------
 
-  ScreenRecordingOptions copyWith({
-    String? maxSize,
-    String? bitrate,
-    String? framerate,
-    String? outputFormat,
-    String? outputFile,
-    String? recordOrientation,
-    String? videoCodec,
-  }) {
-    return ScreenRecordingOptions(
-      maxSize: maxSize ?? this.maxSize,
-      bitrate: bitrate ?? this.bitrate,
-      framerate: framerate ?? this.framerate,
-      outputFormat: outputFormat ?? this.outputFormat,
-      outputFile: outputFile ?? this.outputFile,
-      recordOrientation: recordOrientation ?? this.recordOrientation,
-      videoCodec: videoCodec ?? this.videoCodec,
-    );
-  }
+@freezed
+class OptionsBundle with _$OptionsBundle {
+  const factory OptionsBundle({
+    @Default(AudioOptions()) AudioOptions audioOptions,
+    @Default(ScreenRecordingOptions()) ScreenRecordingOptions recordingOptions,
+    @Default(VirtualDisplayOptions()) VirtualDisplayOptions virtualDisplayOptions,
+    @Default(GeneralCastOptions()) GeneralCastOptions generalCastOptions,
+    @Default(CameraOptions()) CameraOptions cameraOptions,
+    @Default(InputControlOptions()) InputControlOptions inputControlOptions,
+    @Default(DisplayWindowOptions()) DisplayWindowOptions displayWindowOptions,
+    @Default(NetworkConnectionOptions()) NetworkConnectionOptions networkConnectionOptions,
+    @Default(AdvancedOptions()) AdvancedOptions advancedOptions,
+    @Default(OtgModeOptions()) OtgModeOptions otgModeOptions,
+  }) = _OptionsBundle;
+
+  factory OptionsBundle.fromJson(Map<String, dynamic> json) =>
+      _$OptionsBundleFromJson(json);
+}
+
+// ---------------------------------------------------------------------------
+// Screen Recording Options
+// ---------------------------------------------------------------------------
+
+@freezed
+class ScreenRecordingOptions with _$ScreenRecordingOptions {
+  const ScreenRecordingOptions._();
+  const factory ScreenRecordingOptions({
+    @Default('') String maxSize,
+    @Default('') String bitrate,
+    @Default('') String framerate,
+    @Default('') String outputFormat,
+    @Default('') String outputFile,
+    @Default('') String recordOrientation,
+    @Default('') String videoCodec,
+  }) = _ScreenRecordingOptions;
+
+  factory ScreenRecordingOptions.fromJson(Map<String, dynamic> json) =>
+      _$ScreenRecordingOptionsFromJson(json);
 
   String generateCommandPart() {
     var cmd = '';
@@ -57,43 +64,25 @@ class ScreenRecordingOptions {
     debugPrint('[ScreenRecordingOptions] => $cmd');
     return cmd.trim();
   }
-
-  @override
-  String toString() => generateCommandPart();
 }
 
-/// Virtual Display Options
-class VirtualDisplayOptions {
-  bool newDisplay;
-  String resolution;
-  bool noVdDestroyContent;
-  bool noVdSystemDecorations;
-  String dpi;
+// ---------------------------------------------------------------------------
+// Virtual Display Options
+// ---------------------------------------------------------------------------
 
-  VirtualDisplayOptions({
-    this.newDisplay = false,
-    this.resolution = '',
-    this.noVdDestroyContent = false,
-    this.noVdSystemDecorations = false,
-    this.dpi = '',
-  });
+@freezed
+class VirtualDisplayOptions with _$VirtualDisplayOptions {
+  const VirtualDisplayOptions._();
+  const factory VirtualDisplayOptions({
+    @Default(false) bool newDisplay,
+    @Default('') String resolution,
+    @Default(false) bool noVdDestroyContent,
+    @Default(false) bool noVdSystemDecorations,
+    @Default('') String dpi,
+  }) = _VirtualDisplayOptions;
 
-  VirtualDisplayOptions copyWith({
-    bool? newDisplay,
-    String? resolution,
-    bool? noVdDestroyContent,
-    bool? noVdSystemDecorations,
-    String? dpi,
-  }) {
-    return VirtualDisplayOptions(
-      newDisplay: newDisplay ?? this.newDisplay,
-      resolution: resolution ?? this.resolution,
-      noVdDestroyContent: noVdDestroyContent ?? this.noVdDestroyContent,
-      noVdSystemDecorations:
-          noVdSystemDecorations ?? this.noVdSystemDecorations,
-      dpi: dpi ?? this.dpi,
-    );
-  }
+  factory VirtualDisplayOptions.fromJson(Map<String, dynamic> json) =>
+      _$VirtualDisplayOptionsFromJson(json);
 
   String generateCommandPart() {
     var cmd = '';
@@ -111,55 +100,28 @@ class VirtualDisplayOptions {
     debugPrint('[VirtualDisplayOptions] => $cmd');
     return cmd.trim();
   }
-
-  @override
-  String toString() => generateCommandPart();
 }
 
-/// Audio Options
-class AudioOptions {
-  String audioBitRate;
-  String audioBuffer;
-  bool audioDup;
-  bool noAudio;
-  String audioCodecOptions;
-  String audioCodecEncoderPair;
-  String audioCodec;
-  String audioSource;
+// ---------------------------------------------------------------------------
+// Audio Options
+// ---------------------------------------------------------------------------
 
-  AudioOptions({
-    this.audioBitRate = '',
-    this.audioBuffer = '',
-    this.audioDup = false,
-    this.noAudio = false,
-    this.audioCodecOptions = '',
-    this.audioCodecEncoderPair = '',
-    this.audioCodec = '',
-    this.audioSource = '',
-  });
+@freezed
+class AudioOptions with _$AudioOptions {
+  const AudioOptions._();
+  const factory AudioOptions({
+    @Default('') String audioBitRate,
+    @Default('') String audioBuffer,
+    @Default(false) bool audioDup,
+    @Default(false) bool noAudio,
+    @Default('') String audioCodecOptions,
+    @Default('') String audioCodecEncoderPair,
+    @Default('') String audioCodec,
+    @Default('') String audioSource,
+  }) = _AudioOptions;
 
-  AudioOptions copyWith({
-    String? audioBitRate,
-    String? audioBuffer,
-    bool? audioDup,
-    bool? noAudio,
-    String? audioCodecOptions,
-    String? audioCodecEncoderPair,
-    String? audioCodec,
-    String? audioSource,
-  }) {
-    return AudioOptions(
-      audioBitRate: audioBitRate ?? this.audioBitRate,
-      audioBuffer: audioBuffer ?? this.audioBuffer,
-      audioDup: audioDup ?? this.audioDup,
-      noAudio: noAudio ?? this.noAudio,
-      audioCodecOptions: audioCodecOptions ?? this.audioCodecOptions,
-      audioCodecEncoderPair:
-          audioCodecEncoderPair ?? this.audioCodecEncoderPair,
-      audioCodec: audioCodec ?? this.audioCodec,
-      audioSource: audioSource ?? this.audioSource,
-    );
-  }
+  factory AudioOptions.fromJson(Map<String, dynamic> json) =>
+      _$AudioOptionsFromJson(json);
 
   String generateCommandPart() {
     var cmd = '';
@@ -175,87 +137,36 @@ class AudioOptions {
     debugPrint('[AudioOptions] => $cmd');
     return cmd.trim();
   }
-
-  @override
-  String toString() => generateCommandPart();
 }
 
-/// General Cast / Display Options
-class GeneralCastOptions {
-  bool fullscreen;
-  bool turnScreenOff;
-  String windowTitle;
-  String crop;
-  String extraParameters;
-  String videoOrientation;
-  String videoCodecEncoderPair;
-  bool stayAwake;
-  bool windowBorderless;
-  bool windowAlwaysOnTop;
-  bool disableScreensaver;
-  String videoBitRate;
-  String selectedPackage;
-  bool printFps;
-  String timeLimit;
-  bool powerOffOnClose;
+// ---------------------------------------------------------------------------
+// General Cast / Display Options
+// ---------------------------------------------------------------------------
 
-  GeneralCastOptions({
-    this.fullscreen = false,
-    this.turnScreenOff = false,
-    this.windowTitle = '',
-    this.crop = '',
-    this.extraParameters = '',
-    this.videoOrientation = '',
-    this.videoCodecEncoderPair = '',
-    this.stayAwake = false,
-    this.windowBorderless = false,
-    this.windowAlwaysOnTop = false,
-    this.disableScreensaver = false,
-    this.videoBitRate = '',
-    this.selectedPackage = '',
-    this.printFps = false,
-    this.timeLimit = '',
-    this.powerOffOnClose = false,
-  });
+@freezed
+class GeneralCastOptions with _$GeneralCastOptions {
+  const GeneralCastOptions._();
+  const factory GeneralCastOptions({
+    @Default(false) bool fullscreen,
+    @Default(false) bool turnScreenOff,
+    @Default('') String windowTitle,
+    @Default('') String crop,
+    @Default('') String extraParameters,
+    @Default('') String videoOrientation,
+    @Default('') String videoCodecEncoderPair,
+    @Default(false) bool stayAwake,
+    @Default(false) bool windowBorderless,
+    @Default(false) bool windowAlwaysOnTop,
+    @Default(false) bool disableScreensaver,
+    @Default('') String videoBitRate,
+    @Default('') String selectedPackage,
+    @Default(false) bool printFps,
+    @Default('') String timeLimit,
+    @Default(false) bool powerOffOnClose,
+  }) = _GeneralCastOptions;
 
-  GeneralCastOptions copyWith({
-    bool? fullscreen,
-    bool? turnScreenOff,
-    String? windowTitle,
-    String? crop,
-    String? extraParameters,
-    String? videoOrientation,
-    String? videoCodecEncoderPair,
-    bool? stayAwake,
-    bool? windowBorderless,
-    bool? windowAlwaysOnTop,
-    bool? disableScreensaver,
-    String? videoBitRate,
-    String? selectedPackage,
-    bool? printFps,
-    String? timeLimit,
-    bool? powerOffOnClose,
-  }) {
-    return GeneralCastOptions(
-      fullscreen: fullscreen ?? this.fullscreen,
-      turnScreenOff: turnScreenOff ?? this.turnScreenOff,
-      windowTitle: windowTitle ?? this.windowTitle,
-      crop: crop ?? this.crop,
-      extraParameters: extraParameters ?? this.extraParameters,
-      videoOrientation: videoOrientation ?? this.videoOrientation,
-      videoCodecEncoderPair:
-          videoCodecEncoderPair ?? this.videoCodecEncoderPair,
-      stayAwake: stayAwake ?? this.stayAwake,
-      windowBorderless: windowBorderless ?? this.windowBorderless,
-      windowAlwaysOnTop: windowAlwaysOnTop ?? this.windowAlwaysOnTop,
-      disableScreensaver: disableScreensaver ?? this.disableScreensaver,
-      videoBitRate: videoBitRate ?? this.videoBitRate,
-      selectedPackage: selectedPackage ?? this.selectedPackage,
-      printFps: printFps ?? this.printFps,
-      timeLimit: timeLimit ?? this.timeLimit,
-      powerOffOnClose: powerOffOnClose ?? this.powerOffOnClose,
-    );
-  }
+  factory GeneralCastOptions.fromJson(Map<String, dynamic> json) =>
+      _$GeneralCastOptionsFromJson(json);
 
   String generateCommandPart() {
     var cmd = '';
@@ -281,46 +192,26 @@ class GeneralCastOptions {
     debugPrint('[GeneralCastOptions] => $cmd');
     return cmd.trim();
   }
-
-  @override
-  String toString() => generateCommandPart();
 }
 
-/// Camera Options
-class CameraOptions {
-  String cameraId;
-  String cameraSize;
-  String cameraFacing;
-  String cameraFps;
-  String cameraAr;
-  bool cameraHighSpeed;
+// ---------------------------------------------------------------------------
+// Camera Options
+// ---------------------------------------------------------------------------
 
-  CameraOptions({
-    this.cameraId = '',
-    this.cameraSize = '',
-    this.cameraFacing = '',
-    this.cameraFps = '',
-    this.cameraAr = '',
-    this.cameraHighSpeed = false,
-  });
+@freezed
+class CameraOptions with _$CameraOptions {
+  const CameraOptions._();
+  const factory CameraOptions({
+    @Default('') String cameraId,
+    @Default('') String cameraSize,
+    @Default('') String cameraFacing,
+    @Default('') String cameraFps,
+    @Default('') String cameraAr,
+    @Default(false) bool cameraHighSpeed,
+  }) = _CameraOptions;
 
-  CameraOptions copyWith({
-    String? cameraId,
-    String? cameraSize,
-    String? cameraFacing,
-    String? cameraFps,
-    String? cameraAr,
-    bool? cameraHighSpeed,
-  }) {
-    return CameraOptions(
-      cameraId: cameraId ?? this.cameraId,
-      cameraSize: cameraSize ?? this.cameraSize,
-      cameraFacing: cameraFacing ?? this.cameraFacing,
-      cameraFps: cameraFps ?? this.cameraFps,
-      cameraAr: cameraAr ?? this.cameraAr,
-      cameraHighSpeed: cameraHighSpeed ?? this.cameraHighSpeed,
-    );
-  }
+  factory CameraOptions.fromJson(Map<String, dynamic> json) =>
+      _$CameraOptionsFromJson(json);
 
   String generateCommandPart() {
     var cmd = '';
@@ -333,62 +224,30 @@ class CameraOptions {
     debugPrint('[CameraOptions] => $cmd');
     return cmd.trim();
   }
-
-  @override
-  String toString() => generateCommandPart();
 }
 
-/// Input Control Options
-class InputControlOptions {
-  bool noControl;
-  bool noMouseHover;
-  bool forwardAllClicks;
-  bool legacyPaste;
-  bool noKeyRepeat;
-  bool rawKeyEvents;
-  bool preferText;
-  String mouseBind;
-  String keyboardMode;
-  String mouseMode;
+// ---------------------------------------------------------------------------
+// Input Control Options
+// ---------------------------------------------------------------------------
 
-  InputControlOptions({
-    this.noControl = false,
-    this.noMouseHover = false,
-    this.forwardAllClicks = false,
-    this.legacyPaste = false,
-    this.noKeyRepeat = false,
-    this.rawKeyEvents = false,
-    this.preferText = false,
-    this.mouseBind = '',
-    this.keyboardMode = '',
-    this.mouseMode = '',
-  });
+@freezed
+class InputControlOptions with _$InputControlOptions {
+  const InputControlOptions._();
+  const factory InputControlOptions({
+    @Default(false) bool noControl,
+    @Default(false) bool noMouseHover,
+    @Default(false) bool forwardAllClicks,
+    @Default(false) bool legacyPaste,
+    @Default(false) bool noKeyRepeat,
+    @Default(false) bool rawKeyEvents,
+    @Default(false) bool preferText,
+    @Default('') String mouseBind,
+    @Default('') String keyboardMode,
+    @Default('') String mouseMode,
+  }) = _InputControlOptions;
 
-  InputControlOptions copyWith({
-    bool? noControl,
-    bool? noMouseHover,
-    bool? forwardAllClicks,
-    bool? legacyPaste,
-    bool? noKeyRepeat,
-    bool? rawKeyEvents,
-    bool? preferText,
-    String? mouseBind,
-    String? keyboardMode,
-    String? mouseMode,
-  }) {
-    return InputControlOptions(
-      noControl: noControl ?? this.noControl,
-      noMouseHover: noMouseHover ?? this.noMouseHover,
-      forwardAllClicks: forwardAllClicks ?? this.forwardAllClicks,
-      legacyPaste: legacyPaste ?? this.legacyPaste,
-      noKeyRepeat: noKeyRepeat ?? this.noKeyRepeat,
-      rawKeyEvents: rawKeyEvents ?? this.rawKeyEvents,
-      preferText: preferText ?? this.preferText,
-      mouseBind: mouseBind ?? this.mouseBind,
-      keyboardMode: keyboardMode ?? this.keyboardMode,
-      mouseMode: mouseMode ?? this.mouseMode,
-    );
-  }
+  factory InputControlOptions.fromJson(Map<String, dynamic> json) =>
+      _$InputControlOptionsFromJson(json);
 
   String generateCommandPart() {
     var cmd = '';
@@ -405,58 +264,29 @@ class InputControlOptions {
     debugPrint('[InputControlOptions] => $cmd');
     return cmd.trim();
   }
-
-  @override
-  String toString() => generateCommandPart();
 }
 
-/// Display/Window Configuration Options
-class DisplayWindowOptions {
-  String windowX;
-  String windowY;
-  String windowWidth;
-  String windowHeight;
-  String rotation;
-  String displayId;
-  String displayBuffer;
-  String renderDriver;
-  bool forceAdbForward;
+// ---------------------------------------------------------------------------
+// Display/Window Configuration Options
+// ---------------------------------------------------------------------------
 
-  DisplayWindowOptions({
-    this.windowX = '',
-    this.windowY = '',
-    this.windowWidth = '',
-    this.windowHeight = '',
-    this.rotation = '',
-    this.displayId = '',
-    this.displayBuffer = '',
-    this.renderDriver = '',
-    this.forceAdbForward = false,
-  });
+@freezed
+class DisplayWindowOptions with _$DisplayWindowOptions {
+  const DisplayWindowOptions._();
+  const factory DisplayWindowOptions({
+    @Default('') String windowX,
+    @Default('') String windowY,
+    @Default('') String windowWidth,
+    @Default('') String windowHeight,
+    @Default('') String rotation,
+    @Default('') String displayId,
+    @Default('') String displayBuffer,
+    @Default('') String renderDriver,
+    @Default(false) bool forceAdbForward,
+  }) = _DisplayWindowOptions;
 
-  DisplayWindowOptions copyWith({
-    String? windowX,
-    String? windowY,
-    String? windowWidth,
-    String? windowHeight,
-    String? rotation,
-    String? displayId,
-    String? displayBuffer,
-    String? renderDriver,
-    bool? forceAdbForward,
-  }) {
-    return DisplayWindowOptions(
-      windowX: windowX ?? this.windowX,
-      windowY: windowY ?? this.windowY,
-      windowWidth: windowWidth ?? this.windowWidth,
-      windowHeight: windowHeight ?? this.windowHeight,
-      rotation: rotation ?? this.rotation,
-      displayId: displayId ?? this.displayId,
-      displayBuffer: displayBuffer ?? this.displayBuffer,
-      renderDriver: renderDriver ?? this.renderDriver,
-      forceAdbForward: forceAdbForward ?? this.forceAdbForward,
-    );
-  }
+  factory DisplayWindowOptions.fromJson(Map<String, dynamic> json) =>
+      _$DisplayWindowOptionsFromJson(json);
 
   String generateCommandPart() {
     var cmd = '';
@@ -472,42 +302,25 @@ class DisplayWindowOptions {
     debugPrint('[DisplayWindowOptions] => $cmd');
     return cmd.trim();
   }
-
-  @override
-  String toString() => generateCommandPart();
 }
 
-/// Network/Connection Options
-class NetworkConnectionOptions {
-  String tcpipPort;
-  bool selectTcpip;
-  String tunnelHost;
-  String tunnelPort;
-  bool noAdbForward;
+// ---------------------------------------------------------------------------
+// Network/Connection Options
+// ---------------------------------------------------------------------------
 
-  NetworkConnectionOptions({
-    this.tcpipPort = '',
-    this.selectTcpip = false,
-    this.tunnelHost = '',
-    this.tunnelPort = '',
-    this.noAdbForward = false,
-  });
+@freezed
+class NetworkConnectionOptions with _$NetworkConnectionOptions {
+  const NetworkConnectionOptions._();
+  const factory NetworkConnectionOptions({
+    @Default('') String tcpipPort,
+    @Default(false) bool selectTcpip,
+    @Default('') String tunnelHost,
+    @Default('') String tunnelPort,
+    @Default(false) bool noAdbForward,
+  }) = _NetworkConnectionOptions;
 
-  NetworkConnectionOptions copyWith({
-    String? tcpipPort,
-    bool? selectTcpip,
-    String? tunnelHost,
-    String? tunnelPort,
-    bool? noAdbForward,
-  }) {
-    return NetworkConnectionOptions(
-      tcpipPort: tcpipPort ?? this.tcpipPort,
-      selectTcpip: selectTcpip ?? this.selectTcpip,
-      tunnelHost: tunnelHost ?? this.tunnelHost,
-      tunnelPort: tunnelPort ?? this.tunnelPort,
-      noAdbForward: noAdbForward ?? this.noAdbForward,
-    );
-  }
+  factory NetworkConnectionOptions.fromJson(Map<String, dynamic> json) =>
+      _$NetworkConnectionOptionsFromJson(json);
 
   String generateCommandPart() {
     var cmd = '';
@@ -519,42 +332,25 @@ class NetworkConnectionOptions {
     debugPrint('[NetworkConnectionOptions] => $cmd');
     return cmd.trim();
   }
-
-  @override
-  String toString() => generateCommandPart();
 }
 
-/// Advanced/Developer Options
-class AdvancedOptions {
-  String verbosity;
-  bool noCleanup;
-  bool noDownsizeOnError;
-  String v4l2Sink;
-  String v4l2Buffer;
+// ---------------------------------------------------------------------------
+// Advanced/Developer Options
+// ---------------------------------------------------------------------------
 
-  AdvancedOptions({
-    this.verbosity = '',
-    this.noCleanup = false,
-    this.noDownsizeOnError = false,
-    this.v4l2Sink = '',
-    this.v4l2Buffer = '',
-  });
+@freezed
+class AdvancedOptions with _$AdvancedOptions {
+  const AdvancedOptions._();
+  const factory AdvancedOptions({
+    @Default('') String verbosity,
+    @Default(false) bool noCleanup,
+    @Default(false) bool noDownsizeOnError,
+    @Default('') String v4l2Sink,
+    @Default('') String v4l2Buffer,
+  }) = _AdvancedOptions;
 
-  AdvancedOptions copyWith({
-    String? verbosity,
-    bool? noCleanup,
-    bool? noDownsizeOnError,
-    String? v4l2Sink,
-    String? v4l2Buffer,
-  }) {
-    return AdvancedOptions(
-      verbosity: verbosity ?? this.verbosity,
-      noCleanup: noCleanup ?? this.noCleanup,
-      noDownsizeOnError: noDownsizeOnError ?? this.noDownsizeOnError,
-      v4l2Sink: v4l2Sink ?? this.v4l2Sink,
-      v4l2Buffer: v4l2Buffer ?? this.v4l2Buffer,
-    );
-  }
+  factory AdvancedOptions.fromJson(Map<String, dynamic> json) =>
+      _$AdvancedOptionsFromJson(json);
 
   String generateCommandPart() {
     var cmd = '';
@@ -566,34 +362,23 @@ class AdvancedOptions {
     debugPrint('[AdvancedOptions] => $cmd');
     return cmd.trim();
   }
-
-  @override
-  String toString() => generateCommandPart();
 }
 
-/// OTG Mode Options
-class OtgModeOptions {
-  bool otg;
-  bool hidKeyboard;
-  bool hidMouse;
+// ---------------------------------------------------------------------------
+// OTG Mode Options
+// ---------------------------------------------------------------------------
 
-  OtgModeOptions({
-    this.otg = false,
-    this.hidKeyboard = false,
-    this.hidMouse = false,
-  });
+@freezed
+class OtgModeOptions with _$OtgModeOptions {
+  const OtgModeOptions._();
+  const factory OtgModeOptions({
+    @Default(false) bool otg,
+    @Default(false) bool hidKeyboard,
+    @Default(false) bool hidMouse,
+  }) = _OtgModeOptions;
 
-  OtgModeOptions copyWith({
-    bool? otg,
-    bool? hidKeyboard,
-    bool? hidMouse,
-  }) {
-    return OtgModeOptions(
-      otg: otg ?? this.otg,
-      hidKeyboard: hidKeyboard ?? this.hidKeyboard,
-      hidMouse: hidMouse ?? this.hidMouse,
-    );
-  }
+  factory OtgModeOptions.fromJson(Map<String, dynamic> json) =>
+      _$OtgModeOptionsFromJson(json);
 
   String generateCommandPart() {
     var cmd = '';
@@ -603,7 +388,4 @@ class OtgModeOptions {
     debugPrint('[OtgModeOptions] => $cmd');
     return cmd.trim();
   }
-
-  @override
-  String toString() => generateCommandPart();
 }

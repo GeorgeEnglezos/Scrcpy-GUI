@@ -12,6 +12,7 @@ import '../../widgets/custom_searchbar.dart';
 import '../../widgets/custom_textinput.dart';
 import '../../widgets/surrounding_panel.dart';
 import '../../services/command_builder_service.dart';
+import '../../models/scrcpy_options.dart';
 
 /// Panel for configuring virtual display options.
 ///
@@ -47,77 +48,22 @@ class _VirtualDisplayCommandsPanelState
     '1024x768',
   ];
 
-  bool newDisplay = false;
-  bool noDisplayDecorations = false;
-  bool dontDestroyContent = false;
-  String resolution = '';
-  String dpi = '';
-
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-
-    final options = cmdService.virtualDisplayOptions.copyWith(
-      newDisplay: newDisplay,
-      noVdSystemDecorations: noDisplayDecorations,
-      noVdDestroyContent: dontDestroyContent,
-      resolution: resolution,
-      dpi: dpi,
-    );
-
-    cmdService.updateVirtualDisplayOptions(options);
-
-    debugPrint(
-      '[VirtualDisplayPanel] Updated VirtualDisplayOptions → ${cmdService.fullCommand}',
-    );
-  }
-
-  void _cleanSettings(BuildContext context) {
-    setState(() {
-      resolution = '';
-      dpi = '';
-      noDisplayDecorations = false;
-      dontDestroyContent = false;
-    });
-    _updateService(context);
-  }
-
-  void _onNewDisplayChanged(BuildContext context, bool enabled) {
-    setState(() {
-      newDisplay = enabled;
-      if (enabled && resolution.isEmpty) {
-        resolution = resolutionOptions.first;
-      }
-    });
-
-    if (!enabled) {
-      _cleanSettings(context);
-    }
-
-    _updateService(context);
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      newDisplay = false;
-      noDisplayDecorations = false;
-      dontDestroyContent = false;
-      resolution = '';
-      dpi = '';
-    });
-    _updateService(context);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final opts = context.select<CommandBuilderService, VirtualDisplayOptions>(
+      (s) => s.virtualDisplayOptions,
+    );
+    final cmdService = context.read<CommandBuilderService>();
+
     return SurroundingPanel(
       icon: Icons.monitor,
       title: 'Virtual Display',
       panelType: "Virtual Display",
       showButton: true,
-      onClearPressed: _clearAllFields,
+      onClearPressed: () {
+        cmdService.updateVirtualDisplayOptions(const VirtualDisplayOptions());
+        debugPrint('[VirtualDisplayCommandsPanel] Fields cleared!');
+      },
       clearController: widget.clearController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,30 +75,49 @@ class _VirtualDisplayCommandsPanelState
               Expanded(
                 child: CustomCheckbox(
                   label: 'New Display',
-                  value: newDisplay,
+                  value: opts.newDisplay,
                   onChanged: (val) {
-                    _onNewDisplayChanged(context, val);
+                    var newOpts = opts.copyWith(newDisplay: val);
+                    if (val && opts.resolution.isEmpty) {
+                      newOpts = newOpts.copyWith(
+                        resolution: resolutionOptions.first,
+                      );
+                    } else if (!val) {
+                      newOpts = newOpts.copyWith(
+                        resolution: '',
+                        dpi: '',
+                        noVdSystemDecorations: false,
+                        noVdDestroyContent: false,
+                      );
+                    }
+                    cmdService.updateVirtualDisplayOptions(newOpts);
+                    debugPrint('[VirtualDisplayCommandsPanel] Updated VirtualDisplayOptions → ${cmdService.fullCommand}');
                   },
-                  tooltip: 'Create a new display with the specified resolution and density. If not provided, they default to the main display dimensions and DPI.',
+                  tooltip:
+                      'Create a new display with the specified resolution and density. If not provided, they default to the main display dimensions and DPI.',
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: AbsorbPointer(
-                  absorbing: !newDisplay,
+                  absorbing: !opts.newDisplay,
                   child: Opacity(
-                    opacity: newDisplay ? 1.0 : 0.5,
+                    opacity: opts.newDisplay ? 1.0 : 0.5,
                     child: CustomSearchBar(
                       hintText: 'Resolution',
                       suggestions: resolutionOptions,
-                      value: resolution,
+                      value: opts.resolution,
                       onChanged: (val) {
-                        setState(() => resolution = val);
-                        _updateService(context);
+                        cmdService.updateVirtualDisplayOptions(
+                          opts.copyWith(resolution: val),
+                        );
+                        debugPrint('[VirtualDisplayCommandsPanel] Updated VirtualDisplayOptions → ${cmdService.fullCommand}');
                       },
                       onClear: () {
-                        setState(() => resolution = '');
-                        _updateService(context);
+                        cmdService.updateVirtualDisplayOptions(
+                          opts.copyWith(resolution: ''),
+                        );
+                        debugPrint('[VirtualDisplayCommandsPanel] Updated VirtualDisplayOptions → ${cmdService.fullCommand}');
                       },
                       tooltip: 'Set the resolution for the new display (e.g., 1920x1080). Defaults to the main display dimensions.',
                     ),
@@ -162,15 +127,17 @@ class _VirtualDisplayCommandsPanelState
               const SizedBox(width: 16),
               Expanded(
                 child: AbsorbPointer(
-                  absorbing: !newDisplay,
+                  absorbing: !opts.newDisplay,
                   child: Opacity(
-                    opacity: newDisplay ? 1.0 : 0.5,
+                    opacity: opts.newDisplay ? 1.0 : 0.5,
                     child: CustomCheckbox(
                       label: "Don't Destroy Content",
-                      value: dontDestroyContent,
+                      value: opts.noVdDestroyContent,
                       onChanged: (val) {
-                        setState(() => dontDestroyContent = val);
-                        _updateService(context);
+                        cmdService.updateVirtualDisplayOptions(
+                          opts.copyWith(noVdDestroyContent: val),
+                        );
+                        debugPrint('[VirtualDisplayCommandsPanel] Updated VirtualDisplayOptions → ${cmdService.fullCommand}');
                       },
                       tooltip: 'Disable virtual display "destroy content on removal" flag. With this option, when the virtual display is closed, the running apps are moved to the main display rather than being destroyed.',
                     ),
@@ -186,15 +153,17 @@ class _VirtualDisplayCommandsPanelState
             children: [
               Expanded(
                 child: AbsorbPointer(
-                  absorbing: !newDisplay,
+                  absorbing: !opts.newDisplay,
                   child: Opacity(
-                    opacity: newDisplay ? 1.0 : 0.5,
+                    opacity: opts.newDisplay ? 1.0 : 0.5,
                     child: CustomCheckbox(
                       label: 'No Display Decorations',
-                      value: noDisplayDecorations,
+                      value: opts.noVdSystemDecorations,
                       onChanged: (val) {
-                        setState(() => noDisplayDecorations = val);
-                        _updateService(context);
+                        cmdService.updateVirtualDisplayOptions(
+                          opts.copyWith(noVdSystemDecorations: val),
+                        );
+                        debugPrint('[VirtualDisplayCommandsPanel] Updated VirtualDisplayOptions → ${cmdService.fullCommand}');
                       },
                       tooltip: 'Disable virtual display system decorations flag.',
                     ),
@@ -204,15 +173,17 @@ class _VirtualDisplayCommandsPanelState
               const SizedBox(width: 16),
               Expanded(
                 child: AbsorbPointer(
-                  absorbing: !newDisplay,
+                  absorbing: !opts.newDisplay,
                   child: Opacity(
-                    opacity: newDisplay ? 1.0 : 0.5,
+                    opacity: opts.newDisplay ? 1.0 : 0.5,
                     child: CustomTextField(
                       label: 'Dots Per Inch (DPI)',
-                      value: dpi,
+                      value: opts.dpi,
                       onChanged: (val) {
-                        setState(() => dpi = val);
-                        _updateService(context);
+                        cmdService.updateVirtualDisplayOptions(
+                          opts.copyWith(dpi: val),
+                        );
+                        debugPrint('[VirtualDisplayCommandsPanel] Updated VirtualDisplayOptions → ${cmdService.fullCommand}');
                       },
                       tooltip: 'Set the DPI for the new display. Defaults to the main display DPI.',
                     ),

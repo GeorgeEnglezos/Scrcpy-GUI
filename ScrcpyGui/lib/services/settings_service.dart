@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import '../models/settings_model.dart';
+import '../utils/app_paths.dart';
 
 class SettingsService {
   static AppSettings? _cachedSettings; // Cache settings in memory
@@ -79,22 +80,9 @@ class SettingsService {
     }
   }
 
-  /// Returns the app settings directory
+  /// Returns the app settings directory (delegates to AppPaths)
   Future<String> getSettingsDirectory() async {
-    String dir;
-    if (Platform.isWindows) {
-      dir = Platform.environment['APPDATA'] ?? '.';
-    } else if (Platform.isMacOS) {
-      dir = '${Platform.environment['HOME']}/Library/Application Support';
-    } else {
-      dir = Platform.environment['HOME'] ?? '.';
-    }
-    final fullDir = p.join(dir, 'ScrcpyGui');
-    final directory = Directory(fullDir);
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-    }
-    return fullDir;
+    return AppPaths.getBasePath();
   }
 
   /// Reset only User Interface settings (panel order and properties)

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/command_builder_service.dart';
+import '../../models/scrcpy_options.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_checkbox.dart';
 import '../../widgets/custom_searchbar.dart';
@@ -36,12 +37,6 @@ class AdvancedPanel extends StatefulWidget {
 }
 
 class _AdvancedPanelState extends State<AdvancedPanel> {
-  String? verbosity;
-  bool noCleanup = false;
-  bool noDownsizeOnError = false;
-  String v4l2Sink = '';
-  String v4l2Buffer = '';
-
   final List<String> verbosityOptions = [
     'verbose',
     'debug',
@@ -50,46 +45,22 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
     'error',
   ];
 
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-
-    final options = cmdService.advancedOptions.copyWith(
-      verbosity: verbosity ?? '',
-      noCleanup: noCleanup,
-      noDownsizeOnError: noDownsizeOnError,
-      v4l2Sink: v4l2Sink,
-      v4l2Buffer: v4l2Buffer,
-    );
-
-    cmdService.updateAdvancedOptions(options);
-
-    debugPrint(
-      '[AdvancedPanel] Updated AdvancedOptions → ${cmdService.fullCommand}',
-    );
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      verbosity = null;
-      noCleanup = false;
-      noDownsizeOnError = false;
-      v4l2Sink = '';
-      v4l2Buffer = '';
-    });
-    _updateService(context);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final opts = context.select<CommandBuilderService, AdvancedOptions>(
+      (s) => s.advancedOptions,
+    );
+    final cmdService = context.read<CommandBuilderService>();
+
     return SurroundingPanel(
       icon: Icons.settings_applications,
       title: 'Advanced/Developer',
       showButton: true,
       panelType: "Advanced",
-      onClearPressed: _clearAllFields,
+      onClearPressed: () {
+        cmdService.updateAdvancedOptions(const AdvancedOptions());
+        debugPrint('[AdvancedPanel] Fields cleared!');
+      },
       clearController: widget.clearController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,15 +71,15 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Verbosity Level',
-                  value: verbosity,
+                  value: opts.verbosity.isNotEmpty ? opts.verbosity : null,
                   suggestions: verbosityOptions,
                   onChanged: (val) {
-                    setState(() => verbosity = val);
-                    _updateService(context);
+                    cmdService.updateAdvancedOptions(opts.copyWith(verbosity: val));
+                    debugPrint('[AdvancedPanel] Updated AdvancedOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => verbosity = null);
-                    _updateService(context);
+                    cmdService.updateAdvancedOptions(opts.copyWith(verbosity: ''));
+                    debugPrint('[AdvancedPanel] Updated AdvancedOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Set the log level (verbose, debug, info, warn or error). Default is info.',
                 ),
@@ -117,10 +88,10 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'No Cleanup',
-                  value: noCleanup,
+                  value: opts.noCleanup,
                   onChanged: (val) {
-                    setState(() => noCleanup = val);
-                    _updateService(context);
+                    cmdService.updateAdvancedOptions(opts.copyWith(noCleanup: val));
+                    debugPrint('[AdvancedPanel] Updated AdvancedOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'By default, scrcpy removes the server binary from the device and restores the device state on exit. This option disables this cleanup.',
                 ),
@@ -129,10 +100,10 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'No Downsize on Error',
-                  value: noDownsizeOnError,
+                  value: opts.noDownsizeOnError,
                   onChanged: (val) {
-                    setState(() => noDownsizeOnError = val);
-                    _updateService(context);
+                    cmdService.updateAdvancedOptions(opts.copyWith(noDownsizeOnError: val));
+                    debugPrint('[AdvancedPanel] Updated AdvancedOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'By default, on MediaCodec error, scrcpy automatically tries again with a lower definition. This option disables this behavior.',
                 ),
@@ -145,10 +116,10 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'V4L2 Sink (Linux)',
-                  value: v4l2Sink,
+                  value: opts.v4l2Sink,
                   onChanged: (val) {
-                    setState(() => v4l2Sink = val);
-                    _updateService(context);
+                    cmdService.updateAdvancedOptions(opts.copyWith(v4l2Sink: val));
+                    debugPrint('[AdvancedPanel] Updated AdvancedOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Output to v4l2loopback device (e.g., /dev/videoN). This feature is only available on Linux.',
                 ),
@@ -157,10 +128,10 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'V4L2 Buffer (ms)',
-                  value: v4l2Buffer,
+                  value: opts.v4l2Buffer,
                   onChanged: (val) {
-                    setState(() => v4l2Buffer = val);
-                    _updateService(context);
+                    cmdService.updateAdvancedOptions(opts.copyWith(v4l2Buffer: val));
+                    debugPrint('[AdvancedPanel] Updated AdvancedOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Add a buffering delay (in milliseconds) before pushing frames. This increases latency to compensate for jitter. Default is 0 (no buffering). Linux only.',
                 ),

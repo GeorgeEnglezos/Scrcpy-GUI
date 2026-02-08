@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/device_manager_service.dart';
 import '../../services/command_builder_service.dart';
+import '../../models/scrcpy_options.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_searchbar.dart';
 import '../../widgets/surrounding_panel.dart';
@@ -16,18 +17,18 @@ class PackageSelectorPanel extends StatefulWidget {
 }
 
 class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
-  String selectedPackage = '';
-  String selectedAppName = '';
+  // Local state for packages is fine as it's data source, not configuration state
   List<String> packages = [];
   Map<String, String> packageLabels = {}; // package -> app name
   Map<String, String> reverseLabels = {}; // app name -> package
-  DeviceManagerService? _deviceManager; // Add this field
+  DeviceManagerService? _deviceManager;
 
   @override
   void initState() {
     super.initState();
     _loadPackages();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _deviceManager = Provider.of<DeviceManagerService>(
         context,
         listen: false,
@@ -47,53 +48,40 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
     );
     final deviceId = deviceManager.selectedDevice;
     if (deviceId == null) {
-      setState(() {
-        packages = [];
-        packageLabels = {};
-        reverseLabels = {};
-      });
+      if (mounted) {
+        setState(() {
+          packages = [];
+          packageLabels = {};
+          reverseLabels = {};
+        });
+      }
       return;
     }
     final info = DeviceManagerService.devicesInfo[deviceId];
     if (info != null) {
-      setState(() {
-        packages = info.packages;
-        packageLabels = info.packageLabels;
-        // Create reverse mapping: app name -> package name
-        reverseLabels = {
-          for (var entry in info.packageLabels.entries) entry.value: entry.key
-        };
-      });
+      if (mounted) {
+        setState(() {
+          packages = info.packages;
+          packageLabels = info.packageLabels;
+          // Create reverse mapping: app name -> package name
+          reverseLabels = {
+            for (var entry in info.packageLabels.entries) entry.value: entry.key
+          };
+        });
+      }
     } else {
-      setState(() {
-        packages = [];
-        packageLabels = {};
-        reverseLabels = {};
-      });
+      if (mounted) {
+        setState(() {
+          packages = [];
+          packageLabels = {};
+          reverseLabels = {};
+        });
+      }
     }
-  }
-
-  void _updateCommandBuilder() {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-    cmdService.updateGeneralCastOptions(
-      cmdService.generalCastOptions.copyWith(selectedPackage: selectedPackage),
-    );
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      selectedPackage = '';
-      selectedAppName = '';
-    });
-    _updateCommandBuilder();
   }
 
   @override
   void dispose() {
-    // Use the saved reference instead of Provider.of(context)
     _deviceManager?.selectedDeviceNotifier.removeListener(_onDeviceChanged);
     super.dispose();
   }
@@ -103,13 +91,27 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
     // Get list of app names for display
     final appNames = packageLabels.values.toList()..sort();
 
+    final opts = context.select<CommandBuilderService, GeneralCastOptions>(
+      (s) => s.generalCastOptions,
+    );
+    final cmdService = context.read<CommandBuilderService>();
+
+    final selectedPackage = opts.selectedPackage;
+    // Derive the app name from the selected package, or use the package name if not found
+    final selectedAppName = packageLabels[selectedPackage] ?? selectedPackage;
+
     return SurroundingPanel(
       title: "Applications",
       icon: Icons.apps,
       panelType: "Package Selector",
       showButton: false,
       clearController: widget.clearController,
-      onClearPressed: _clearAllFields,
+      onClearPressed: () {
+        cmdService.updateGeneralCastOptions(
+          opts.copyWith(selectedPackage: ''),
+        );
+        debugPrint('[PackageSelectorPanel] Fields cleared!');
+      },
       child: Column(
         children: [
           const SizedBox(height: 20),
@@ -118,19 +120,25 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
             value: selectedAppName,
             suggestions: appNames,
             onChanged: (value) {
-              setState(() {
-                selectedAppName = value;
-                // Convert app name to package name for the command builder
-                selectedPackage = reverseLabels[value] ?? value;
-              });
-              _updateCommandBuilder();
+              // If the user types an app name, try to find its package
+              // If not found in reverseLabels, assume it's a raw package name (or partial)
+              // The CustomSearchBar likely returns the text in the field.
+              // If the user selected from suggestions, value will be an App Name.
+              // If the user typed manually, it might be anything.
+
+              // Ideally, we want to map back to package name.
+              final pkg = reverseLabels[value] ?? value;
+
+              cmdService.updateGeneralCastOptions(
+                opts.copyWith(selectedPackage: pkg),
+              );
+              debugPrint('[PackageSelectorPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
             },
             onClear: () {
-              setState(() {
-                selectedPackage = '';
-                selectedAppName = '';
-              });
-              _updateCommandBuilder();
+              cmdService.updateGeneralCastOptions(
+                opts.copyWith(selectedPackage: ''),
+              );
+              debugPrint('[PackageSelectorPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}');
             },
             onReload: _loadPackages,
           ),

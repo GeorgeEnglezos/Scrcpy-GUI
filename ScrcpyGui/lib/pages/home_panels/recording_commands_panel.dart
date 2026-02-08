@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/command_builder_service.dart';
+import '../../models/scrcpy_options.dart';
 import '../../services/settings_service.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_checkbox.dart';
@@ -44,12 +45,6 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
   final List<String> orientations = ['0', '90', '180', '270'];
   final SettingsService _settingsService = SettingsService();
 
-  bool enableRecording = false;
-  String fileName = '';
-  String outputFormat = '';
-  String maxFps = '';
-  String maxSize = '';
-  String recordOrientation = '';
   String recordingsDirectory = '';
 
   @override
@@ -60,7 +55,11 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
 
   Future<void> _loadRecordingsDirectory() async {
     final settings = await _settingsService.loadSettings();
-    recordingsDirectory = settings.recordingsDirectory;
+    if (mounted) {
+      setState(() {
+        recordingsDirectory = settings.recordingsDirectory;
+      });
+    }
 
     // Create directory if it doesn't exist
     if (recordingsDirectory.isNotEmpty) {
@@ -71,28 +70,7 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
     }
   }
 
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-
-    final options = cmdService.recordingOptions.copyWith(
-      outputFile: fileName,
-      outputFormat: outputFormat,
-      framerate: maxFps,
-      maxSize: maxSize,
-      recordOrientation: recordOrientation,
-    );
-
-    cmdService.updateRecordingOptions(options);
-
-    debugPrint(
-      '[RecordingPanel] Updated RecordingOptions → ${cmdService.fullCommand}',
-    );
-  }
-
-  void _initializeRecordingOptions(BuildContext context) {
+  void _initializeRecordingOptions(CommandBuilderService cmdService) {
     final now = DateTime.now();
     final formattedDateTime =
         "${now.year}_${now.month.toString().padLeft(2, '0')}_${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}_${now.minute.toString().padLeft(2, '0')}_${now.second.toString().padLeft(2, '0')}";
@@ -100,48 +78,45 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
     final recordingsDir =
         SettingsService.currentSettings?.recordingsDirectory ?? '';
 
-    setState(() {
-      fileName = "$recordingsDir/Scrcpy_$formattedDateTime";
-      outputFormat = "mp4";
-      maxFps = "30";
-      maxSize = "";
-    });
-
-    _updateService(context);
+    final newOptions = cmdService.recordingOptions.copyWith(
+      outputFile: "$recordingsDir/Scrcpy_$formattedDateTime",
+      outputFormat: "mp4",
+      framerate: "30",
+      maxSize: "",
+    );
+    cmdService.updateRecordingOptions(newOptions);
+    debugPrint('[RecordingCommandsPanel] Recording initialized → ${cmdService.fullCommand}');
   }
 
-  void _cleanSettings(BuildContext context) {
-    setState(() {
-      fileName = "";
-      outputFormat = "";
-      maxFps = "";
-      maxSize = "";
-      recordOrientation = "";
-    });
-
-    _updateService(context);
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      enableRecording = false;
-      fileName = '';
-      outputFormat = '';
-      maxFps = '';
-      maxSize = '';
-      recordOrientation = '';
-    });
-    _updateService(context);
+  void _cleanSettings(CommandBuilderService cmdService) {
+    final newOptions = cmdService.recordingOptions.copyWith(
+      outputFile: "",
+      outputFormat: "",
+      framerate: "",
+      maxSize: "",
+      recordOrientation: "",
+    );
+    cmdService.updateRecordingOptions(newOptions);
+    debugPrint('[RecordingCommandsPanel] Recording settings cleaned → ${cmdService.fullCommand}');
   }
 
   @override
   Widget build(BuildContext context) {
+    final opts = context.select<CommandBuilderService, ScreenRecordingOptions>(
+      (s) => s.recordingOptions,
+    );
+    final cmdService = context.read<CommandBuilderService>();
+    final enableRecording = opts.outputFile.isNotEmpty;
+
     return SurroundingPanel(
       icon: Icons.videocam,
       title: 'Recording',
       panelType: "Recording",
       showButton: true,
-      onClearPressed: _clearAllFields,
+      onClearPressed: () {
+        cmdService.updateRecordingOptions(const ScreenRecordingOptions());
+        debugPrint('[RecordingCommandsPanel] Fields cleared!');
+      },
       clearController: widget.clearController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,11 +131,10 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                   label: 'Enable Recording',
                   value: enableRecording,
                   onChanged: (val) {
-                    setState(() => enableRecording = val);
                     if (val) {
-                      _initializeRecordingOptions(context);
+                      _initializeRecordingOptions(cmdService);
                     } else {
-                      _cleanSettings(context);
+                      _cleanSettings(cmdService);
                     }
                   },
                   tooltip: 'Record screen to file. The format is determined by the --record-format option if set, or by the file extension.',
@@ -175,10 +149,12 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                     opacity: enableRecording ? 1.0 : 0.5,
                     child: CustomTextField(
                       label: 'File Name',
-                      value: fileName,
+                      value: opts.outputFile,
                       onChanged: (val) {
-                        setState(() => fileName = val);
-                        _updateService(context);
+                        cmdService.updateRecordingOptions(
+                          opts.copyWith(outputFile: val),
+                        );
+                        debugPrint('[RecordingCommandsPanel] Updated ScreenRecordingOptions → ${cmdService.fullCommand}');
                       },
                       tooltip: 'Set the file path for recording. The format is determined by the file extension or the output format option.',
                     ),
@@ -201,14 +177,18 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                       hintText: 'Select format',
                       suggestions: outputFormats,
                       onChanged: (val) {
-                        setState(() => outputFormat = val);
-                        _updateService(context);
+                        cmdService.updateRecordingOptions(
+                          opts.copyWith(outputFormat: val),
+                        );
+                        debugPrint('[RecordingCommandsPanel] Updated ScreenRecordingOptions → ${cmdService.fullCommand}');
                       },
                       onClear: () {
-                        setState(() => outputFormat = '');
-                        _updateService(context);
+                        cmdService.updateRecordingOptions(
+                          opts.copyWith(outputFormat: ''),
+                        );
+                        debugPrint('[RecordingCommandsPanel] Updated ScreenRecordingOptions → ${cmdService.fullCommand}');
                       },
-                      value: outputFormat,
+                      value: opts.outputFormat,
                       tooltip: 'Force recording format (mp4, mkv, m4a, mka, opus, aac, flac or wav).',
                     ),
                   ),
@@ -222,10 +202,12 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                     opacity: enableRecording ? 1.0 : 0.5,
                     child: CustomTextField(
                       label: 'Max fps',
-                      value: maxFps,
+                      value: opts.framerate,
                       onChanged: (val) {
-                        setState(() => maxFps = val);
-                        _updateService(context);
+                        cmdService.updateRecordingOptions(
+                          opts.copyWith(framerate: val),
+                        );
+                        debugPrint('[RecordingCommandsPanel] Updated ScreenRecordingOptions → ${cmdService.fullCommand}');
                       },
                       tooltip: 'Limit the frame rate of screen capture (officially supported since Android 10, but may work on earlier versions).',
                     ),
@@ -240,10 +222,12 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                     opacity: enableRecording ? 1.0 : 0.5,
                     child: CustomTextField(
                       label: 'Max Size',
-                      value: maxSize,
+                      value: opts.maxSize,
                       onChanged: (val) {
-                        setState(() => maxSize = val);
-                        _updateService(context);
+                        cmdService.updateRecordingOptions(
+                          opts.copyWith(maxSize: val),
+                        );
+                        debugPrint('[RecordingCommandsPanel] Updated ScreenRecordingOptions → ${cmdService.fullCommand}');
                       },
                       tooltip: 'Limit both the width and height of the video to value. The other dimension is computed so that the device aspect-ratio is preserved. Default is 0 (unlimited).',
                     ),
@@ -266,14 +250,18 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                       hintText: 'Record Orientation',
                       suggestions: orientations,
                       onChanged: (val) {
-                        setState(() => recordOrientation = val);
-                        _updateService(context);
+                        cmdService.updateRecordingOptions(
+                          opts.copyWith(recordOrientation: val),
+                        );
+                        debugPrint('[RecordingCommandsPanel] Updated ScreenRecordingOptions → ${cmdService.fullCommand}');
                       },
                       onClear: () {
-                        setState(() => recordOrientation = '');
-                        _updateService(context);
+                        cmdService.updateRecordingOptions(
+                          opts.copyWith(recordOrientation: ''),
+                        );
+                        debugPrint('[RecordingCommandsPanel] Updated ScreenRecordingOptions → ${cmdService.fullCommand}');
                       },
-                      value: recordOrientation,
+                      value: opts.recordOrientation,
                       tooltip: 'Set the record orientation. The number represents the clockwise rotation in degrees (0, 90, 180, 270). Default is 0.',
                     ),
                   ),

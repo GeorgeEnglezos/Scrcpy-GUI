@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/command_builder_service.dart';
+import '../../models/scrcpy_options.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_checkbox.dart';
 import '../../widgets/custom_searchbar.dart';
@@ -37,17 +38,6 @@ class InputControlPanel extends StatefulWidget {
 }
 
 class _InputControlPanelState extends State<InputControlPanel> {
-  bool noControl = false;
-  bool noMouseHover = false;
-  bool forwardAllClicks = false;
-  bool legacyPaste = false;
-  bool noKeyRepeat = false;
-  bool rawKeyEvents = false;
-  bool preferText = false;
-  String? mouseBind;
-  String? keyboardMode;
-  String? mouseMode;
-
   final List<String> mouseBindOptions = [
     'bhsm',
     'bhms',
@@ -71,56 +61,22 @@ class _InputControlPanelState extends State<InputControlPanel> {
     'disabled',
   ];
 
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-
-    final options = cmdService.inputControlOptions.copyWith(
-      keyboardMode: keyboardMode ?? '',
-      mouseMode: mouseMode ?? '',
-      noControl: noControl,
-      noMouseHover: noMouseHover,
-      forwardAllClicks: forwardAllClicks,
-      legacyPaste: legacyPaste,
-      noKeyRepeat: noKeyRepeat,
-      rawKeyEvents: rawKeyEvents,
-      preferText: preferText,
-      mouseBind: mouseBind ?? '',
-    );
-
-    cmdService.updateInputControlOptions(options);
-
-    debugPrint(
-      '[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}',
-    );
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      keyboardMode = null;
-      mouseMode = null;
-      noControl = false;
-      noMouseHover = false;
-      forwardAllClicks = false;
-      legacyPaste = false;
-      noKeyRepeat = false;
-      rawKeyEvents = false;
-      preferText = false;
-      mouseBind = null;
-    });
-    _updateService(context);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final opts = context.select<CommandBuilderService, InputControlOptions>(
+      (s) => s.inputControlOptions,
+    );
+    final cmdService = context.read<CommandBuilderService>();
+
     return SurroundingPanel(
       icon: Icons.gamepad,
       title: 'Input Control',
       showButton: true,
       panelType: "Input Control",
-      onClearPressed: _clearAllFields,
+      onClearPressed: () {
+        cmdService.updateInputControlOptions(const InputControlOptions());
+        debugPrint('[InputControlPanel] Fields cleared!');
+      },
       clearController: widget.clearController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,15 +87,15 @@ class _InputControlPanelState extends State<InputControlPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Keyboard Mode',
-                  value: keyboardMode,
+                  value: opts.keyboardMode.isNotEmpty ? opts.keyboardMode : null,
                   suggestions: keyboardModeOptions,
                   onChanged: (val) {
-                    setState(() => keyboardMode = val);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(keyboardMode: val));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => keyboardMode = null);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(keyboardMode: ''));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Select how to send keyboard inputs: disabled, sdk (Android API), uhid (physical HID keyboard), or aoa (AOAv2 protocol, USB only).',
                 ),
@@ -148,15 +104,15 @@ class _InputControlPanelState extends State<InputControlPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Mouse Mode',
-                  value: mouseMode,
+                  value: opts.mouseMode.isNotEmpty ? opts.mouseMode : null,
                   suggestions: mouseModeOptions,
                   onChanged: (val) {
-                    setState(() => mouseMode = val);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(mouseMode: val));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => mouseMode = null);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(mouseMode: ''));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Select how to send mouse inputs: disabled, sdk (Android API), uhid (physical HID mouse), or aoa (AOAv2 protocol, USB only).',
                 ),
@@ -169,10 +125,10 @@ class _InputControlPanelState extends State<InputControlPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'No Control (View Only)',
-                  value: noControl,
+                  value: opts.noControl,
                   onChanged: (val) {
-                    setState(() => noControl = val);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(noControl: val));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Disable device control (mirror the device in read-only).',
                 ),
@@ -181,10 +137,10 @@ class _InputControlPanelState extends State<InputControlPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'No Mouse Hover',
-                  value: noMouseHover,
+                  value: opts.noMouseHover,
                   onChanged: (val) {
-                    setState(() => noMouseHover = val);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(noMouseHover: val));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Do not forward mouse hover (mouse motion without any clicks) events.',
                 ),
@@ -193,10 +149,10 @@ class _InputControlPanelState extends State<InputControlPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Forward All Clicks',
-                  value: forwardAllClicks,
+                  value: opts.forwardAllClicks,
                   onChanged: (val) {
-                    setState(() => forwardAllClicks = val);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(forwardAllClicks: val));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Forward all mouse clicks to the device, including secondary buttons.',
                 ),
@@ -209,10 +165,10 @@ class _InputControlPanelState extends State<InputControlPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Legacy Paste',
-                  value: legacyPaste,
+                  value: opts.legacyPaste,
                   onChanged: (val) {
-                    setState(() => legacyPaste = val);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(legacyPaste: val));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Inject computer clipboard text as a sequence of key events on Ctrl+v. This is a workaround for some devices not behaving as expected when setting the device clipboard programmatically.',
                 ),
@@ -221,10 +177,10 @@ class _InputControlPanelState extends State<InputControlPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'No Key Repeat',
-                  value: noKeyRepeat,
+                  value: opts.noKeyRepeat,
                   onChanged: (val) {
-                    setState(() => noKeyRepeat = val);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(noKeyRepeat: val));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Do not forward repeated key events when a key is held down.',
                 ),
@@ -233,10 +189,10 @@ class _InputControlPanelState extends State<InputControlPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Raw Key Events',
-                  value: rawKeyEvents,
+                  value: opts.rawKeyEvents,
                   onChanged: (val) {
-                    setState(() => rawKeyEvents = val);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(rawKeyEvents: val));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Inject key events for all input keys, and ignore text events.',
                 ),
@@ -249,10 +205,10 @@ class _InputControlPanelState extends State<InputControlPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'Prefer Text Injection',
-                  value: preferText,
+                  value: opts.preferText,
                   onChanged: (val) {
-                    setState(() => preferText = val);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(preferText: val));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Inject alpha characters and space as text events instead of key events. This avoids issues when combining multiple keys to enter a special character, but breaks the expected behavior of alpha keys in games (typically WASD).',
                 ),
@@ -262,15 +218,15 @@ class _InputControlPanelState extends State<InputControlPanel> {
                 flex: 2,
                 child: CustomSearchBar(
                   hintText: 'Mouse Bind (Button mapping)',
-                  value: mouseBind,
+                  value: opts.mouseBind.isNotEmpty ? opts.mouseBind : null,
                   suggestions: mouseBindOptions,
                   onChanged: (val) {
-                    setState(() => mouseBind = val);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(mouseBind: val));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   onClear: () {
-                    setState(() => mouseBind = null);
-                    _updateService(context);
+                    cmdService.updateInputControlOptions(opts.copyWith(mouseBind: ''));
+                    debugPrint('[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}');
                   },
                   tooltip: 'Configure bindings of secondary clicks. Each character maps a mouse button: + (forward), - (ignore), b (BACK), h (HOME), s (APP_SWITCH), n (notifications).',
                 ),
