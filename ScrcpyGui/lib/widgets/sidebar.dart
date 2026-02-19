@@ -47,6 +47,7 @@ class Sidebar extends StatelessWidget {
       if (showBatFilesTab)
         const _SidebarItem(icon: Icons.terminal, label: 'Scripts'),
       const _SidebarItem(icon: Icons.folder, label: 'Resources'),
+      const _SidebarItem(icon: Icons.keyboard, label: 'Shortcuts'),
       const _SidebarItem(icon: Icons.settings, label: 'Settings'),
     ];
 

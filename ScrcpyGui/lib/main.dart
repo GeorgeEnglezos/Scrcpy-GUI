@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:scrcpy_gui_prod/pages/scripts_page.dart';
 import 'package:scrcpy_gui_prod/pages/favorites_page.dart';
 import 'package:scrcpy_gui_prod/pages/resources_page.dart';
+import 'package:scrcpy_gui_prod/pages/shortcuts_page.dart';
 import 'package:scrcpy_gui_prod/pages/settings_page.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -149,6 +150,7 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
         const FavoritesPage(),
         if (_currentSettings.showBatFilesTab) const ScriptsPage(),
         const ResourcesPage(),
+        const ShortcutsPage(),
         const SettingsPage(),
       ];
 
