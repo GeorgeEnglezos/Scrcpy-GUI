@@ -219,7 +219,37 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                bool isWideScreen = constraints.maxWidth > 1400;
+
+                if (isWideScreen) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: _buildFunctionalitySection()),
+                      const SizedBox(width: 24),
+                      Expanded(flex: 3, child: _buildUserInterfaceSection()),
+                      const SizedBox(width: 24),
+                      Expanded(flex: 4, child: _buildDirectorySection()),
+                    ],
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      _buildFunctionalitySection(),
+                      const SizedBox(height: 24),
+                      _buildUserInterfaceSection(),
+                      const SizedBox(height: 24),
+                      _buildDirectorySection(),
+                    ],
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 24),
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 ElevatedButton.icon(
                   onPressed: _showResetUserInterfaceConfirmation,
@@ -256,35 +286,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                bool isWideScreen = constraints.maxWidth > 1400;
-
-                if (isWideScreen) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(flex: 3, child: _buildFunctionalitySection()),
-                      const SizedBox(width: 24),
-                      Expanded(flex: 3, child: _buildUserInterfaceSection()),
-                      const SizedBox(width: 24),
-                      Expanded(flex: 4, child: _buildDirectorySection()),
-                    ],
-                  );
-                } else {
-                  return Column(
-                    children: [
-                      _buildFunctionalitySection(),
-                      const SizedBox(height: 24),
-                      _buildUserInterfaceSection(),
-                      const SizedBox(height: 24),
-                      _buildDirectorySection(),
-                    ],
-                  );
-                }
-              },
-            ),
           ],
         ),
       ),
@@ -296,6 +297,7 @@ class _SettingsPageState extends State<SettingsPage> {
       icon: Icons.settings_suggest,
       title: 'Functionality',
       showButton: false,
+      lockedExpanded: true,
       contentPadding: const EdgeInsets.all(12),
       child: Column(
         children: [
@@ -348,6 +350,7 @@ class _SettingsPageState extends State<SettingsPage> {
       icon: Icons.dashboard,
       title: 'User Interface',
       showButton: false,
+      lockedExpanded: true,
       contentPadding: const EdgeInsets.all(12),
       child: _buildPanelOrderTable(),
     );
@@ -386,31 +389,37 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text(
-                    'Hide',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                  child: Center(
+                    child: Text(
+                      'Hide',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text(
-                    'Full Width',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                  child: Center(
+                    child: Text(
+                      'Full Width',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text(
-                    'Lock Expanded',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                  child: Center(
+                    child: Text(
+                      'Lock Expanded',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -522,6 +531,7 @@ class _SettingsPageState extends State<SettingsPage> {
       icon: Icons.folder,
       title: 'Directory Settings',
       showButton: false,
+      lockedExpanded: true,
       contentPadding: const EdgeInsets.all(12),
       child: Column(
         children: [
