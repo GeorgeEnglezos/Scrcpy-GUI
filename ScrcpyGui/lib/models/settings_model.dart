@@ -69,6 +69,7 @@ class AppSettings {
   bool showBatFilesTab; // NOTE: Shows script files on all platforms
   String bootTab;
   String settingsDirectory;
+  List<String> shortcutMod;
 
   AppSettings({
     required this.panelOrder,
@@ -80,6 +81,7 @@ class AppSettings {
     this.showBatFilesTab = true,
     this.bootTab = 'Home',
     this.settingsDirectory = '',
+    this.shortcutMod = const [],
   });
 
   factory AppSettings.defaultSettings() {
@@ -93,6 +95,7 @@ class AppSettings {
       showBatFilesTab: true,
       bootTab: 'Home',
       settingsDirectory: '',
+      shortcutMod: const [],
     );
   }
 
@@ -111,6 +114,7 @@ class AppSettings {
       showBatFilesTab: json['showBatFilesTab'] as bool? ?? true,
       bootTab: json['bootTab'] as String? ?? 'Home',
       settingsDirectory: json['settingsDirectory'] as String? ?? '',
+      shortcutMod: (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
 
@@ -125,6 +129,7 @@ class AppSettings {
       'showBatFilesTab': showBatFilesTab,
       'bootTab': bootTab,
       'settingsDirectory': settingsDirectory,
+      'shortcutMod': shortcutMod,
     };
   }
 

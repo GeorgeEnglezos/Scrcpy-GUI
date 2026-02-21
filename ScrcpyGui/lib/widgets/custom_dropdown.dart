@@ -71,12 +71,18 @@ class CustomDropdown extends StatelessWidget {
       onChanged: onChanged,
       isExpanded: true, // ✅ makes dropdown take all available horizontal space
       dropdownColor: AppColors.surface,
-      iconEnabledColor: AppColors.textSecondary,
+      borderRadius: BorderRadius.circular(8),
+      icon: Transform.translate(
+        offset: const Offset(3, 0),
+        child: const Icon(Icons.arrow_drop_down, color: Colors.white),
+      ),
       style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
       hint: hint != null
           ? Text(
               hint!,
-              style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7)),
+              style: TextStyle(
+                color: AppColors.textSecondary.withValues(alpha: 0.7),
+              ),
             )
           : null,
       decoration: InputDecoration(

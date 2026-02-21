@@ -279,12 +279,11 @@ class _SurroundingPanelState extends State<SurroundingPanel> {
                         minimumSize: const Size(32, 32),
                       ),
                     ),
-                  Icon(
-                    _isLockedExpanded
-                        ? Icons.lock
-                        : (isExpanded ? Icons.expand_less : Icons.expand_more),
-                    color: currentTheme.primary,
-                  ),
+                  if (!_isLockedExpanded)
+                    Icon(
+                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: currentTheme.primary,
+                    ),
                 ],
               ),
             ),

@@ -22,18 +22,37 @@ class ShortcutsPage extends StatelessWidget {
 
   static const _window = [
     _Shortcut('Resize to 1:1 (pixel-perfect)', ['MOD+g']),
-    _Shortcut('Resize to remove black borders', ['MOD+w', 'Double-left-click']),
+    _Shortcut(
+      'Resize to remove black borders',
+      ['MOD+w', 'Double-left-click'],
+      'Double-click on black borders to remove them.',
+    ),
   ];
 
   static const _deviceButtons = [
     _Shortcut('Click HOME', ['MOD+h', 'Middle-click']),
-    _Shortcut('Click BACK', ['MOD+b', 'MOD+Backspace', 'Right-click']),
-    _Shortcut('Click APP_SWITCH', ['MOD+s', '4th-click']),
-    _Shortcut('Click MENU (unlock screen)', ['MOD+m']),
+    _Shortcut(
+      'Click BACK',
+      ['MOD+b', 'MOD+Backspace', 'Right-click'],
+      'Right-click turns the screen on if it was off, presses BACK otherwise.',
+    ),
+    _Shortcut('Click APP_SWITCH', [
+      'MOD+s',
+      '4th-click',
+    ], '4th and 5th mouse buttons, if your mouse has them.'),
+    _Shortcut(
+      'Click MENU (unlock screen)',
+      ['MOD+m'],
+      'For React Native apps in development, MENU triggers the development menu.',
+    ),
     _Shortcut('Click VOLUME_UP', ['MOD+↑']),
     _Shortcut('Click VOLUME_DOWN', ['MOD+↓']),
     _Shortcut('Click POWER', ['MOD+p']),
-    _Shortcut('Power on', ['Right-click']),
+    _Shortcut(
+      'Power on',
+      ['Right-click'],
+      'Right-click turns the screen on if it was off, presses BACK otherwise.',
+    ),
   ];
 
   static const _screenControl = [
@@ -43,15 +62,25 @@ class ShortcutsPage extends StatelessWidget {
   ];
 
   static const _panels = [
-    _Shortcut('Expand notification panel', ['MOD+n', '5th-click']),
-    _Shortcut('Expand settings panel', ['MOD+n+n', 'Double-5th-click']),
+    _Shortcut(
+      'Expand notification panel',
+      ['MOD+n', '5th-click'],
+      '4th and 5th mouse buttons, if your mouse has them.',
+    ),
+    _Shortcut(
+      'Expand settings panel',
+      ['MOD+n+n', 'Double-5th-click'],
+      '4th and 5th mouse buttons, if your mouse has them.',
+    ),
     _Shortcut('Collapse panels', ['MOD+Shift+n']),
   ];
 
   static const _clipboard = [
-    _Shortcut('Copy to clipboard', ['MOD+c']),
-    _Shortcut('Cut to clipboard', ['MOD+x']),
-    _Shortcut('Synchronize clipboards and paste', ['MOD+v']),
+    _Shortcut('Copy to clipboard', ['MOD+c'], 'Only on Android >= 7.'),
+    _Shortcut('Cut to clipboard', ['MOD+x'], 'Only on Android >= 7.'),
+    _Shortcut('Synchronize clipboards and paste', [
+      'MOD+v',
+    ], 'Only on Android >= 7.'),
     _Shortcut('Inject computer clipboard text', ['MOD+Shift+v']),
     _Shortcut('Open keyboard settings (HID keyboard only)', ['MOD+k']),
   ];
@@ -59,8 +88,12 @@ class ShortcutsPage extends StatelessWidget {
   static const _gestures = [
     _Shortcut('Enable / disable FPS counter (stdout)', ['MOD+i']),
     _Shortcut('Pinch-to-zoom / rotate', ['Ctrl+click-and-move']),
-    _Shortcut('Tilt vertically (slide with 2 fingers)', ['Shift+click-and-move']),
-    _Shortcut('Tilt horizontally (slide with 2 fingers)', ['Ctrl+Shift+click-and-move']),
+    _Shortcut('Tilt vertically (slide with 2 fingers)', [
+      'Shift+click-and-move',
+    ]),
+    _Shortcut('Tilt horizontally (slide with 2 fingers)', [
+      'Ctrl+Shift+click-and-move',
+    ]),
     _Shortcut('Install APK from computer', ['Drag & drop APK']),
     _Shortcut('Push file to device', ['Drag & drop non-APK file']),
   ];
@@ -78,7 +111,10 @@ class ShortcutsPage extends StatelessWidget {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final double width = constraints.maxWidth;
-                  final int columns = width >= 1100 ? 3 : (width >= 700 ? 2 : 1);
+                  final int columns = width >= 1100
+                      ? 3
+                      : (width >= 700 ? 2 : 1);
+                  final bool isWide = width >= 900;
 
                   return StaggeredGrid.count(
                     crossAxisCount: columns,
@@ -87,31 +123,66 @@ class ShortcutsPage extends StatelessWidget {
                     children: [
                       StaggeredGridTile.fit(
                         crossAxisCellCount: 1,
-                        child: _buildCategory(Icons.monitor, 'Display', _display),
+                        child: _buildCategory(
+                          Icons.monitor,
+                          'Display',
+                          _display,
+                          isWide,
+                        ),
                       ),
                       StaggeredGridTile.fit(
                         crossAxisCellCount: 1,
-                        child: _buildCategory(Icons.crop_free, 'Window', _window),
+                        child: _buildCategory(
+                          Icons.crop_free,
+                          'Window',
+                          _window,
+                          isWide,
+                        ),
                       ),
                       StaggeredGridTile.fit(
                         crossAxisCellCount: 1,
-                        child: _buildCategory(Icons.phone_android, 'Device Buttons', _deviceButtons),
+                        child: _buildCategory(
+                          Icons.phone_android,
+                          'Device Buttons',
+                          _deviceButtons,
+                          isWide,
+                        ),
                       ),
                       StaggeredGridTile.fit(
                         crossAxisCellCount: 1,
-                        child: _buildCategory(Icons.light_mode, 'Screen Control', _screenControl),
+                        child: _buildCategory(
+                          Icons.light_mode,
+                          'Screen Control',
+                          _screenControl,
+                          isWide,
+                        ),
                       ),
                       StaggeredGridTile.fit(
                         crossAxisCellCount: 1,
-                        child: _buildCategory(Icons.view_agenda_outlined, 'Panels', _panels),
+                        child: _buildCategory(
+                          Icons.content_paste,
+                          'Clipboard',
+                          _clipboard,
+                          isWide,
+                        ),
                       ),
                       StaggeredGridTile.fit(
                         crossAxisCellCount: 1,
-                        child: _buildCategory(Icons.content_paste, 'Clipboard', _clipboard),
+                        child: _buildCategory(
+                          Icons.view_agenda_outlined,
+                          'Panels',
+                          _panels,
+                          isWide,
+                        ),
                       ),
                       StaggeredGridTile.fit(
                         crossAxisCellCount: 1,
-                        child: _buildCategory(Icons.touch_app, 'Gestures & Other', _gestures),
+                        child: _buildCategory(
+                          Icons.touch_app,
+                          'Gestures & Other',
+                          _gestures,
+                          isWide,
+                        ),
                       ),
                       StaggeredGridTile.fit(
                         crossAxisCellCount: columns,
@@ -160,18 +231,21 @@ class ShortcutsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.4),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.4),
+                ),
               ),
-            ),
-            child: Text(
-              'MOD = Left Alt  or  Left Super (Win / Cmd)',
-              style: TextStyle(fontSize: 12, color: AppColors.primaryLight),
+              child: Text(
+                'MOD = Left Alt  or  Left Super (Win / Cmd)',
+                style: TextStyle(fontSize: 12, color: AppColors.primaryLight),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
         ],
@@ -179,7 +253,12 @@ class ShortcutsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCategory(IconData icon, String title, List<_Shortcut> shortcuts) {
+  Widget _buildCategory(
+    IconData icon,
+    String title,
+    List<_Shortcut> shortcuts,
+    bool isWide,
+  ) {
     return SurroundingPanel(
       icon: icon,
       title: title,
@@ -187,31 +266,68 @@ class ShortcutsPage extends StatelessWidget {
       lockedExpanded: true,
       contentPadding: const EdgeInsets.all(0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (int i = 0; i < shortcuts.length; i++)
-            _buildShortcutRow(shortcuts[i], i.isEven),
+            _buildShortcutRow(shortcuts[i], i.isEven, isWide),
         ],
       ),
     );
   }
 
-  Widget _buildShortcutRow(_Shortcut shortcut, bool isEven) {
+  Widget _buildShortcutRow(_Shortcut shortcut, bool isEven, bool isWide) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: isEven ? Colors.white.withValues(alpha: 0.02) : Colors.transparent,
+        color: isEven
+            ? Colors.white.withValues(alpha: 0.02)
+            : Colors.transparent,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              shortcut.action,
-              style: const TextStyle(fontSize: 13, color: Colors.white70),
-            ),
-          ),
-          const SizedBox(width: 16),
-          _buildCombos(shortcut.combos),
-        ],
+      child: Builder(
+        builder: (context) {
+          final Widget label = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  shortcut.action,
+                  style: const TextStyle(fontSize: 13, color: Colors.white70),
+                ),
+              ),
+              if (shortcut.tooltip != null) ...[
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: shortcut.tooltip!,
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
+          );
+
+          if (isWide) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: label),
+                const SizedBox(width: 16),
+                _buildCombos(shortcut.combos),
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              label,
+              const SizedBox(height: 6),
+              _buildCombos(shortcut.combos),
+            ],
+          );
+        },
       ),
     );
   }
@@ -220,7 +336,7 @@ class ShortcutsPage extends StatelessWidget {
     return Wrap(
       spacing: 6,
       runSpacing: 4,
-      alignment: WrapAlignment.end,
+      alignment: WrapAlignment.start,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         for (int i = 0; i < combos.length; i++) ...[
@@ -240,7 +356,8 @@ class ShortcutsPage extends StatelessWidget {
   }
 
   Widget _buildSingleCombo(String combo) {
-    final bool isMouse = combo.contains('click') ||
+    final bool isMouse =
+        combo.contains('click') ||
         combo.contains('Drag') ||
         combo.contains('drop');
 
@@ -362,18 +479,15 @@ class ShortcutsPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildNote('Double-click on black borders to remove them.'),
-          _buildNote('Right-click turns the screen on if it was off, otherwise sends BACK.'),
-          _buildNote('4th and 5th buttons refer to extra mouse buttons, if available.'),
-          _buildNote('Clipboard shortcuts (copy/cut/paste) require Android 7 or higher.'),
           _buildNote(
             'Shortcuts with repeated keys (e.g. MOD+n+n): keep MOD held, double-press the last key, then release MOD.',
           ),
-          _buildNote('All Ctrl+key shortcuts are forwarded to the device and handled by the active app.'),
           _buildNote(
-            'The MOD key can be changed with --shortcut-mod. Options: lctrl, rctrl, lalt, ralt, lsuper, rsuper.',
+            'All Ctrl+key shortcuts are forwarded to the device and handled by the active app.',
           ),
-          _buildNote('For React Native apps in development, MENU triggers the development menu.'),
+          _buildNote(
+            'The MOD key can be changed with the settings page. Options: lctrl, rctrl, lalt, ralt, lsuper, rsuper.',
+          ),
         ],
       ),
     );
@@ -405,6 +519,7 @@ class ShortcutsPage extends StatelessWidget {
 class _Shortcut {
   final String action;
   final List<String> combos;
+  final String? tooltip;
 
-  const _Shortcut(this.action, this.combos);
+  const _Shortcut(this.action, this.combos, [this.tooltip]);
 }

@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:multi_dropdown/multi_dropdown.dart';
 import '../models/settings_model.dart';
 import '../services/settings_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/surrounding_panel.dart';
 import '../widgets/custom_checkbox.dart';
 import '../widgets/custom_dropdown.dart';
+import '../widgets/custom_multi_dropdown.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -20,6 +22,18 @@ class _SettingsPageState extends State<SettingsPage> {
   final SettingsService _settingsService = SettingsService();
   late AppSettings _settings;
   bool _isLoading = true;
+
+  final MultiSelectController<String> _shortcutModController =
+      MultiSelectController<String>();
+
+  final List<DropdownItem<String>> _shortcutModItems = [
+    DropdownItem(label: 'lctrl', value: 'lctrl'),
+    DropdownItem(label: 'rctrl', value: 'rctrl'),
+    DropdownItem(label: 'lalt', value: 'lalt'),
+    DropdownItem(label: 'ralt', value: 'ralt'),
+    DropdownItem(label: 'lsuper', value: 'lsuper'),
+    DropdownItem(label: 'rsuper', value: 'rsuper'),
+  ];
 
   @override
   void initState() {
@@ -59,6 +73,16 @@ class _SettingsPageState extends State<SettingsPage> {
       _settings.settingsDirectory = settingsDir;
       _isLoading = false;
     });
+
+    if (settings.shortcutMod.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _shortcutModController.selectWhere(
+            (item) => _settings.shortcutMod.contains(item.value),
+          );
+        }
+      });
+    }
   }
 
   Future<void> _createDirectoryIfNeeded(String path) async {
@@ -339,6 +363,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 _saveSettings();
               }
             },
+          ),
+          const SizedBox(height: 16),
+          CustomMultiDropdown(
+            label: 'Shortcut Mod Key',
+            items: _shortcutModItems,
+            controller: _shortcutModController,
+            onSelectionChange: (selected) {
+              setState(() {
+                _settings.shortcutMod = selected;
+              });
+              _saveSettings();
+            },
+            tooltip: 'Select one or more modifier keys used for scrcpy shortcuts (e.g. lctrl+rctrl). Defaults to left Alt or left Super if not set.',
           ),
         ],
       ),

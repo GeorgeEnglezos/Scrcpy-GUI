@@ -13,6 +13,7 @@ library;
 import 'package:flutter/foundation.dart';
 import '../models/scrcpy_options.dart';
 import 'device_manager_service.dart';
+import 'settings_service.dart';
 
 /// Service for building scrcpy commands from panel options
 ///
@@ -184,10 +185,17 @@ class CommandBuilderService extends ChangeNotifier {
         ? '--serial=$deviceSerial'
         : '';
 
+    // Add shortcut mod from global settings
+    final savedShortcutMod = SettingsService.currentSettings?.shortcutMod ?? [];
+    final shortcutModPart = savedShortcutMod.isNotEmpty
+        ? '--shortcut-mod=${savedShortcutMod.join(',')}'
+        : '';
+
     final parts = [
       baseCommand,
       serialPart,
       windowTitlePart,
+      shortcutModPart,
       generalPart,
       cameraPart,
       inputControlPart,
