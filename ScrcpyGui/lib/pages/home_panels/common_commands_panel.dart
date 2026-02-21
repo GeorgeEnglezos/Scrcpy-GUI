@@ -48,6 +48,8 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
   bool windowAlwaysOnTop = false;
   bool disableScreensaver = false;
   String videoBitRate = '';
+  String maxFps = '';
+  String maxSize = '';
   String videoCodec = '';
   String extraParameters = '';
   bool printFps = false;
@@ -122,6 +124,8 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
       windowAlwaysOnTop: windowAlwaysOnTop,
       disableScreensaver: disableScreensaver,
       videoBitRate: videoBitRate,
+      maxFps: maxFps,
+      maxSize: maxSize,
       videoCodecEncoderPair: videoCodec,
       extraParameters: extraParameters,
       printFps: printFps,
@@ -148,6 +152,8 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
       windowAlwaysOnTop = false;
       disableScreensaver = false;
       videoBitRate = '';
+      maxFps = '';
+      maxSize = '';
       videoCodec = '';
       extraParameters = '';
       printFps = false;
@@ -318,7 +324,34 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                flex: 2,
+                child: CustomTextField(
+                  label: 'Max FPS',
+                  value: maxFps,
+                  onChanged: (val) {
+                    setState(() => maxFps = val);
+                    _updateService(context);
+                  },
+                  tooltip: 'Limit the frame rate of screen capture. Affects both mirroring and recording. Officially supported since Android 10.',
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: CustomTextField(
+                  label: 'Max Size',
+                  value: maxSize,
+                  onChanged: (val) {
+                    setState(() => maxSize = val);
+                    _updateService(context);
+                  },
+                  tooltip: 'Limit both the width and height of the video to this value. The other dimension is scaled to preserve aspect ratio. Affects both mirroring and recording.',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
                 child: AbsorbPointer(
                   absorbing: !hasDevices,
                   child: Opacity(

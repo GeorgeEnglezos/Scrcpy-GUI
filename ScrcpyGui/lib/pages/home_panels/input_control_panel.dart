@@ -39,7 +39,6 @@ class InputControlPanel extends StatefulWidget {
 class _InputControlPanelState extends State<InputControlPanel> {
   bool noControl = false;
   bool noMouseHover = false;
-  bool forwardAllClicks = false;
   bool legacyPaste = false;
   bool noKeyRepeat = false;
   bool rawKeyEvents = false;
@@ -49,6 +48,7 @@ class _InputControlPanelState extends State<InputControlPanel> {
   String? mouseMode;
 
   final List<String> mouseBindOptions = [
+    '++++:++++',
     'bhsm',
     'bhms',
     'bshm',
@@ -82,7 +82,6 @@ class _InputControlPanelState extends State<InputControlPanel> {
       mouseMode: mouseMode ?? '',
       noControl: noControl,
       noMouseHover: noMouseHover,
-      forwardAllClicks: forwardAllClicks,
       legacyPaste: legacyPaste,
       noKeyRepeat: noKeyRepeat,
       rawKeyEvents: rawKeyEvents,
@@ -103,7 +102,6 @@ class _InputControlPanelState extends State<InputControlPanel> {
       mouseMode = null;
       noControl = false;
       noMouseHover = false;
-      forwardAllClicks = false;
       legacyPaste = false;
       noKeyRepeat = false;
       rawKeyEvents = false;
@@ -189,18 +187,6 @@ class _InputControlPanelState extends State<InputControlPanel> {
                   tooltip: 'Do not forward mouse hover (mouse motion without any clicks) events.',
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: CustomCheckbox(
-                  label: 'Forward All Clicks',
-                  value: forwardAllClicks,
-                  onChanged: (val) {
-                    setState(() => forwardAllClicks = val);
-                    _updateService(context);
-                  },
-                  tooltip: 'Forward all mouse clicks to the device, including secondary buttons.',
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -272,7 +258,7 @@ class _InputControlPanelState extends State<InputControlPanel> {
                     setState(() => mouseBind = null);
                     _updateService(context);
                   },
-                  tooltip: 'Configure bindings of secondary clicks. Each character maps a mouse button: + (forward), - (ignore), b (BACK), h (HOME), s (APP_SWITCH), n (notifications).',
+                  tooltip: 'Configure bindings of secondary mouse buttons. Format: PRIMARY:SECONDARY (4 chars each) for right, middle, 4th, 5th button. Each char: + (forward), - (ignore), b (BACK), h (HOME), s (APP_SWITCH), n (notifications). Example: ++++:++++ forwards all secondary clicks.',
                 ),
               ),
             ],

@@ -63,9 +63,7 @@ class CommandSyntaxHighlighter {
     // Recording flags (Red)
     if (part.startsWith("--record") ||
         part.startsWith("--no-record") ||
-        part.startsWith("--record-format") ||
-        part.startsWith("--max-size") ||
-        part.startsWith("--max-fps")) {
+        part.startsWith("--record-format")) {
       return AppColors.recordingPrimary;
     }
 
@@ -84,9 +82,12 @@ class CommandSyntaxHighlighter {
         part.startsWith("--turn-screen-off") ||
         part.startsWith("--crop") ||
         part.startsWith("--capture-orientation") ||
+        part.startsWith("--display-orientation") ||
         part.startsWith("--stay-awake") ||
         part.startsWith("--disable-screensaver") ||
         part.startsWith("--video-bit-rate") ||
+        part.startsWith("--max-fps") ||
+        part.startsWith("--max-size") ||
         part.startsWith("--video-codec") ||
         part.startsWith("--video-encoder")) {
       return AppColors.generalPrimary;

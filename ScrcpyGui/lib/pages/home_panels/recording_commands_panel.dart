@@ -47,8 +47,6 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
   bool enableRecording = false;
   String fileName = '';
   String outputFormat = '';
-  String maxFps = '';
-  String maxSize = '';
   String recordOrientation = '';
   String recordingsDirectory = '';
 
@@ -80,8 +78,6 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
     final options = cmdService.recordingOptions.copyWith(
       outputFile: fileName,
       outputFormat: outputFormat,
-      framerate: maxFps,
-      maxSize: maxSize,
       recordOrientation: recordOrientation,
     );
 
@@ -103,8 +99,6 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
     setState(() {
       fileName = "$recordingsDir/Scrcpy_$formattedDateTime";
       outputFormat = "mp4";
-      maxFps = "30";
-      maxSize = "";
     });
 
     _updateService(context);
@@ -114,8 +108,6 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
     setState(() {
       fileName = "";
       outputFormat = "";
-      maxFps = "";
-      maxSize = "";
       recordOrientation = "";
     });
 
@@ -127,8 +119,6 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
       enableRecording = false;
       fileName = '';
       outputFormat = '';
-      maxFps = '';
-      maxSize = '';
       recordOrientation = '';
     });
     _updateService(context);
@@ -210,42 +200,6 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                       },
                       value: outputFormat,
                       tooltip: 'Force recording format (mp4, mkv, m4a, mka, opus, aac, flac or wav).',
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AbsorbPointer(
-                  absorbing: !enableRecording,
-                  child: Opacity(
-                    opacity: enableRecording ? 1.0 : 0.5,
-                    child: CustomTextField(
-                      label: 'Max fps',
-                      value: maxFps,
-                      onChanged: (val) {
-                        setState(() => maxFps = val);
-                        _updateService(context);
-                      },
-                      tooltip: 'Limit the frame rate of screen capture (officially supported since Android 10, but may work on earlier versions).',
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AbsorbPointer(
-                  absorbing: !enableRecording,
-                  child: Opacity(
-                    opacity: enableRecording ? 1.0 : 0.5,
-                    child: CustomTextField(
-                      label: 'Max Size',
-                      value: maxSize,
-                      onChanged: (val) {
-                        setState(() => maxSize = val);
-                        _updateService(context);
-                      },
-                      tooltip: 'Limit both the width and height of the video to value. The other dimension is computed so that the device aspect-ratio is preserved. Default is 0 (unlimited).',
                     ),
                   ),
                 ),

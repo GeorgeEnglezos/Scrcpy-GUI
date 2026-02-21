@@ -2,50 +2,30 @@ import 'package:flutter/foundation.dart';
 
 /// Screen Recording Options
 class ScreenRecordingOptions {
-  String maxSize;
-  String bitrate;
-  String framerate;
   String outputFormat;
   String outputFile;
   String recordOrientation;
-  String videoCodec;
 
   ScreenRecordingOptions({
-    this.maxSize = '',
-    this.bitrate = '',
-    this.framerate = '',
     this.outputFormat = '',
     this.outputFile = '',
     this.recordOrientation = '',
-    this.videoCodec = '',
   });
 
   ScreenRecordingOptions copyWith({
-    String? maxSize,
-    String? bitrate,
-    String? framerate,
     String? outputFormat,
     String? outputFile,
     String? recordOrientation,
-    String? videoCodec,
   }) {
     return ScreenRecordingOptions(
-      maxSize: maxSize ?? this.maxSize,
-      bitrate: bitrate ?? this.bitrate,
-      framerate: framerate ?? this.framerate,
       outputFormat: outputFormat ?? this.outputFormat,
       outputFile: outputFile ?? this.outputFile,
       recordOrientation: recordOrientation ?? this.recordOrientation,
-      videoCodec: videoCodec ?? this.videoCodec,
     );
   }
 
   String generateCommandPart() {
     var cmd = '';
-    if (maxSize.isNotEmpty) cmd += ' --max-size=$maxSize';
-    if (bitrate.isNotEmpty) cmd += ' --video-bit-rate=$bitrate';
-    if (framerate.isNotEmpty) cmd += ' --max-fps=$framerate';
-    if (videoCodec.isNotEmpty) cmd += ' --video-codec=$videoCodec';
     if (recordOrientation.isNotEmpty) {
       cmd += ' --record-orientation=$recordOrientation';
     }
@@ -194,6 +174,8 @@ class GeneralCastOptions {
   bool windowAlwaysOnTop;
   bool disableScreensaver;
   String videoBitRate;
+  String maxFps;
+  String maxSize;
   String selectedPackage;
   bool printFps;
   String timeLimit;
@@ -212,6 +194,8 @@ class GeneralCastOptions {
     this.windowAlwaysOnTop = false,
     this.disableScreensaver = false,
     this.videoBitRate = '',
+    this.maxFps = '',
+    this.maxSize = '',
     this.selectedPackage = '',
     this.printFps = false,
     this.timeLimit = '',
@@ -231,6 +215,8 @@ class GeneralCastOptions {
     bool? windowAlwaysOnTop,
     bool? disableScreensaver,
     String? videoBitRate,
+    String? maxFps,
+    String? maxSize,
     String? selectedPackage,
     bool? printFps,
     String? timeLimit,
@@ -250,6 +236,8 @@ class GeneralCastOptions {
       windowAlwaysOnTop: windowAlwaysOnTop ?? this.windowAlwaysOnTop,
       disableScreensaver: disableScreensaver ?? this.disableScreensaver,
       videoBitRate: videoBitRate ?? this.videoBitRate,
+      maxFps: maxFps ?? this.maxFps,
+      maxSize: maxSize ?? this.maxSize,
       selectedPackage: selectedPackage ?? this.selectedPackage,
       printFps: printFps ?? this.printFps,
       timeLimit: timeLimit ?? this.timeLimit,
@@ -269,6 +257,8 @@ class GeneralCastOptions {
     }
     if (stayAwake) cmd += ' --stay-awake';
     if (videoBitRate.isNotEmpty) cmd += ' --video-bit-rate=$videoBitRate';
+    if (maxFps.isNotEmpty) cmd += ' --max-fps=$maxFps';
+    if (maxSize.isNotEmpty) cmd += ' --max-size=$maxSize';
     if (windowBorderless) cmd += ' --window-borderless';
     if (windowAlwaysOnTop) cmd += ' --always-on-top';
     if (videoCodecEncoderPair.isNotEmpty) cmd += ' $videoCodecEncoderPair';
@@ -342,7 +332,6 @@ class CameraOptions {
 class InputControlOptions {
   bool noControl;
   bool noMouseHover;
-  bool forwardAllClicks;
   bool legacyPaste;
   bool noKeyRepeat;
   bool rawKeyEvents;
@@ -354,7 +343,6 @@ class InputControlOptions {
   InputControlOptions({
     this.noControl = false,
     this.noMouseHover = false,
-    this.forwardAllClicks = false,
     this.legacyPaste = false,
     this.noKeyRepeat = false,
     this.rawKeyEvents = false,
@@ -367,7 +355,6 @@ class InputControlOptions {
   InputControlOptions copyWith({
     bool? noControl,
     bool? noMouseHover,
-    bool? forwardAllClicks,
     bool? legacyPaste,
     bool? noKeyRepeat,
     bool? rawKeyEvents,
@@ -379,7 +366,6 @@ class InputControlOptions {
     return InputControlOptions(
       noControl: noControl ?? this.noControl,
       noMouseHover: noMouseHover ?? this.noMouseHover,
-      forwardAllClicks: forwardAllClicks ?? this.forwardAllClicks,
       legacyPaste: legacyPaste ?? this.legacyPaste,
       noKeyRepeat: noKeyRepeat ?? this.noKeyRepeat,
       rawKeyEvents: rawKeyEvents ?? this.rawKeyEvents,
@@ -396,7 +382,6 @@ class InputControlOptions {
     if (mouseMode.isNotEmpty) cmd += ' --mouse=$mouseMode';
     if (noControl) cmd += ' --no-control';
     if (noMouseHover) cmd += ' --no-mouse-hover';
-    if (forwardAllClicks) cmd += ' --forward-all-clicks';
     if (legacyPaste) cmd += ' --legacy-paste';
     if (noKeyRepeat) cmd += ' --no-key-repeat';
     if (rawKeyEvents) cmd += ' --raw-key-events';
@@ -464,9 +449,9 @@ class DisplayWindowOptions {
     if (windowY.isNotEmpty) cmd += ' --window-y=$windowY';
     if (windowWidth.isNotEmpty) cmd += ' --window-width=$windowWidth';
     if (windowHeight.isNotEmpty) cmd += ' --window-height=$windowHeight';
-    if (rotation.isNotEmpty) cmd += ' --rotation=$rotation';
+    if (rotation.isNotEmpty) cmd += ' --display-orientation=$rotation';
     if (displayId.isNotEmpty) cmd += ' --display-id=$displayId';
-    if (displayBuffer.isNotEmpty) cmd += ' --display-buffer=$displayBuffer';
+    if (displayBuffer.isNotEmpty) cmd += ' --video-buffer=$displayBuffer';
     if (renderDriver.isNotEmpty) cmd += ' --render-driver=$renderDriver';
     if (forceAdbForward) cmd += ' --force-adb-forward';
     debugPrint('[DisplayWindowOptions] => $cmd');
@@ -574,32 +559,22 @@ class AdvancedOptions {
 /// OTG Mode Options
 class OtgModeOptions {
   bool otg;
-  bool hidKeyboard;
-  bool hidMouse;
 
   OtgModeOptions({
     this.otg = false,
-    this.hidKeyboard = false,
-    this.hidMouse = false,
   });
 
   OtgModeOptions copyWith({
     bool? otg,
-    bool? hidKeyboard,
-    bool? hidMouse,
   }) {
     return OtgModeOptions(
       otg: otg ?? this.otg,
-      hidKeyboard: hidKeyboard ?? this.hidKeyboard,
-      hidMouse: hidMouse ?? this.hidMouse,
     );
   }
 
   String generateCommandPart() {
     var cmd = '';
     if (otg) cmd += ' --otg';
-    if (hidKeyboard) cmd += ' --hid-keyboard';
-    if (hidMouse) cmd += ' --hid-mouse';
     debugPrint('[OtgModeOptions] => $cmd');
     return cmd.trim();
   }

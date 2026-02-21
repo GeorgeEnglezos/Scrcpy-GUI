@@ -35,8 +35,6 @@ class OtgModePanel extends StatefulWidget {
 
 class _OtgModePanelState extends State<OtgModePanel> {
   bool otg = false;
-  bool hidKeyboard = false;
-  bool hidMouse = false;
 
   void _updateService(BuildContext context) {
     final cmdService = Provider.of<CommandBuilderService>(
@@ -46,8 +44,6 @@ class _OtgModePanelState extends State<OtgModePanel> {
 
     final options = cmdService.otgModeOptions.copyWith(
       otg: otg,
-      hidKeyboard: hidKeyboard,
-      hidMouse: hidMouse,
     );
 
     cmdService.updateOtgModeOptions(options);
@@ -60,8 +56,6 @@ class _OtgModePanelState extends State<OtgModePanel> {
   void _clearAllFields() {
     setState(() {
       otg = false;
-      hidKeyboard = false;
-      hidMouse = false;
     });
     _updateService(context);
   }
@@ -89,31 +83,7 @@ class _OtgModePanelState extends State<OtgModePanel> {
                     setState(() => otg = val);
                     _updateService(context);
                   },
-                  tooltip: 'Run in OTG mode: simulate physical keyboard and mouse, as if the computer keyboard and mouse were plugged directly to the device via an OTG cable. In this mode, adb (USB debugging) is not necessary, and mirroring is disabled.',
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: CustomCheckbox(
-                  label: 'HID Keyboard',
-                  value: hidKeyboard,
-                  onChanged: (val) {
-                    setState(() => hidKeyboard = val);
-                    _updateService(context);
-                  },
-                  tooltip: 'Simulate a physical HID keyboard. Keyboard may be disabled separately using --keyboard=disabled.',
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: CustomCheckbox(
-                  label: 'HID Mouse',
-                  value: hidMouse,
-                  onChanged: (val) {
-                    setState(() => hidMouse = val);
-                    _updateService(context);
-                  },
-                  tooltip: 'Simulate a physical HID mouse. Mouse may be disabled separately using --mouse=disabled.',
+                  tooltip: 'Run in OTG mode: simulate physical keyboard and mouse, as if the computer keyboard and mouse were plugged directly to the device via an OTG cable. In this mode, adb (USB debugging) is not necessary, and mirroring is disabled. Keyboard (--keyboard=aoa) and mouse (--mouse=aoa) are implicitly enabled.',
                 ),
               ),
             ],
@@ -122,7 +92,7 @@ class _OtgModePanelState extends State<OtgModePanel> {
           Text(
             'OTG mode allows control of the device via USB On-The-Go.\n'
             'This mode simulates physical keyboard and mouse input without video streaming.\n'
-            'Note: Requires USB OTG support on the device.',
+            'Note: --keyboard=aoa and --mouse=aoa are implicitly set by --otg.',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[400],
