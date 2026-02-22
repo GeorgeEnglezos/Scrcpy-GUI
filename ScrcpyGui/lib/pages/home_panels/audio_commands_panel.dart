@@ -53,7 +53,10 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
     '320k',
   ];
   final List<String> audioBufferOptions = ['256', '512', '1024', '2048'];
-  final List<String> audioCodecOptionsList = ['aac', 'mp3', 'opus', 'flac'];
+  final List<String> audioCodecOptionsList = [
+    'flac-compression-level=8',
+    'bitrate=128000',
+  ];
   final List<String> audioSources = [
     'output',
     'playback',
@@ -62,6 +65,10 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
     'mic-camcorder',
     'mic-voice-recognition',
     'mic-voice-communication',
+    'voice-call',
+    'voice-call-uplink',
+    'voice-call-downlink',
+    'voice-performance',
   ];
   List<String> audioCodecEncoders = [];
 

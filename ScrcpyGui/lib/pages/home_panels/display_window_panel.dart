@@ -19,7 +19,7 @@ import '../../widgets/surrounding_panel.dart';
 /// The [DisplayWindowPanel] allows configuration of:
 /// - Window position (X, Y coordinates)
 /// - Window size (width, height)
-/// - Display rotation (0-3, 90-degree increments)
+/// - Display orientation (0, 90, 180, 270 degrees)
 /// - Display ID for multi-display devices
 /// - Display buffer size
 /// - Render driver selection
@@ -46,11 +46,9 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
   String? renderDriver;
   bool forceAdbForward = false;
 
-  final List<String> rotationOptions = ['0', '1', '2', '3'];
+  final List<String> rotationOptions = ['0', '90', '180', '270'];
   final List<String> renderDriverOptions = [
     'direct3d',
-    'direct3d11',
-    'direct3d12',
     'opengl',
     'opengles',
     'opengles2',
@@ -167,7 +165,7 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
             children: [
               Expanded(
                 child: CustomSearchBar(
-                  hintText: 'Rotation (0=0°, 1=90°, 2=180°, 3=270°)',
+                  hintText: 'Display Orientation (0°, 90°, 180°, 270°)',
                   value: rotation,
                   suggestions: rotationOptions,
                   onChanged: (val) {
@@ -178,7 +176,7 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
                     setState(() => rotation = null);
                     _updateService(context);
                   },
-                  tooltip: 'Rotate the video content by 90° increments (0, 1, 2, or 3 for 0°, 90°, 180°, 270° clockwise).',
+                  tooltip: 'Set the display orientation in degrees (0, 90, 180, 270). This only affects the client-side display, not recordings.',
                 ),
               ),
               const SizedBox(width: 16),

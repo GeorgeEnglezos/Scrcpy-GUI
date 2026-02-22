@@ -20,7 +20,7 @@ import '../../widgets/surrounding_panel.dart';
 /// The [RecordingCommandsPanel] allows configuration of:
 /// - Recording enable/disable
 /// - Output file name and directory
-/// - Video format (mp4, mkv, avi, mov, webm)
+/// - Video format (mp4, mkv, m4a, mka, opus, aac, flac, wav)
 /// - Maximum frame rate
 /// - Maximum video size
 /// - Recording orientation
@@ -40,7 +40,7 @@ class RecordingCommandsPanel extends StatefulWidget {
 }
 
 class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
-  final List<String> outputFormats = ['mp4', 'mkv', 'avi', 'mov', 'webm'];
+  final List<String> outputFormats = ['mp4', 'mkv', 'm4a', 'mka', 'opus', 'aac', 'flac', 'wav'];
   final List<String> orientations = ['0', '90', '180', '270'];
   final SettingsService _settingsService = SettingsService();
 

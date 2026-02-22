@@ -62,8 +62,9 @@ class CommandSyntaxHighlighter {
 
     // Recording flags (Red)
     if (part.startsWith("--record") ||
-        part.startsWith("--no-record") ||
-        part.startsWith("--record-format")) {
+        part.startsWith("--record-format") ||
+        part.startsWith("--record-orientation") ||
+        part.startsWith("--no-playback")) {
       return AppColors.recordingPrimary;
     }
 
@@ -97,6 +98,7 @@ class CommandSyntaxHighlighter {
     if (part.startsWith("--audio-bit-rate") ||
         part.startsWith("--audio-buffer") ||
         part.startsWith("--audio-dup") ||
+        part.startsWith("--audio-source") ||
         part.startsWith("--no-audio") ||
         part.startsWith("--audio-codec-options") ||
         part.startsWith("--audio-codec") ||

@@ -49,12 +49,11 @@ class _InputControlPanelState extends State<InputControlPanel> {
 
   final List<String> mouseBindOptions = [
     '++++:++++',
-    'bhsm',
-    'bhms',
-    'bshm',
-    'bsmh',
-    'bmhs',
-    'bmsh',
+    'bhsn',
+    'bhsn:++++',
+    '++++:bhsn',
+    'b+++',
+    '----',
   ];
 
   final List<String> keyboardModeOptions = [

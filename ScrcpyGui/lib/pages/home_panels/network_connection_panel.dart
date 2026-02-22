@@ -114,13 +114,13 @@ class _NetworkConnectionPanelState extends State<NetworkConnectionPanel> {
               const SizedBox(width: 16),
               Expanded(
                 child: CustomCheckbox(
-                  label: 'Disable ADB Forward',
+                  label: 'Force ADB Forward',
                   value: noAdbForward,
                   onChanged: (val) {
                     setState(() => noAdbForward = val);
                     _updateService(context);
                   },
-                  tooltip: 'Do not attempt to use "adb reverse" to connect to the device.',
+                  tooltip: 'Force the use of "adb forward" instead of "adb reverse" to connect to the device.',
                 ),
               ),
             ],

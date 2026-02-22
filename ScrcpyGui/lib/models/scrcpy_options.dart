@@ -32,7 +32,8 @@ class ScreenRecordingOptions {
     if (outputFormat.isNotEmpty) cmd += ' --record-format=$outputFormat';
     if (outputFile.isNotEmpty) {
       final ext = outputFormat.isNotEmpty ? '.$outputFormat' : '';
-      cmd += ' --record=$outputFile$ext';
+      final alreadyHasExt = ext.isNotEmpty && outputFile.endsWith(ext);
+      cmd += ' --record=$outputFile${alreadyHasExt ? '' : ext}';
     }
     debugPrint('[ScreenRecordingOptions] => $cmd');
     return cmd.trim();
@@ -312,8 +313,18 @@ class CameraOptions {
     );
   }
 
+  bool get _hasAnyOption =>
+      cameraId.isNotEmpty ||
+      cameraSize.isNotEmpty ||
+      cameraFacing.isNotEmpty ||
+      cameraFps.isNotEmpty ||
+      cameraAr.isNotEmpty ||
+      cameraHighSpeed;
+
   String generateCommandPart() {
     var cmd = '';
+    if (!_hasAnyOption) return cmd;
+    cmd += ' --video-source=camera';
     if (cameraId.isNotEmpty) cmd += ' --camera-id=$cameraId';
     if (cameraSize.isNotEmpty) cmd += ' --camera-size=$cameraSize';
     if (cameraFacing.isNotEmpty) cmd += ' --camera-facing=$cameraFacing';
@@ -500,7 +511,7 @@ class NetworkConnectionOptions {
     if (selectTcpip) cmd += ' --select-tcpip';
     if (tunnelHost.isNotEmpty) cmd += ' --tunnel-host=$tunnelHost';
     if (tunnelPort.isNotEmpty) cmd += ' --tunnel-port=$tunnelPort';
-    if (noAdbForward) cmd += ' --no-adb-forward';
+    if (noAdbForward) cmd += ' --force-adb-forward';
     debugPrint('[NetworkConnectionOptions] => $cmd');
     return cmd.trim();
   }

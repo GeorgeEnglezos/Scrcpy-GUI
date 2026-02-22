@@ -57,7 +57,12 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
   bool powerOffOnClose = false;
 
   List<String> videoCodecOptions = [];
-  final List<String> orientationOptions = ['0', '90', '180', '270'];
+  final List<String> orientationOptions = [
+    '0', '90', '180', '270',
+    'flip0', 'flip90', 'flip180', 'flip270',
+    '@0', '@90', '@180', '@270',
+    '@flip0', '@flip90', '@flip180', '@flip270',
+  ];
 
   DeviceManagerService? _deviceManager;
 
@@ -263,7 +268,7 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
                     setState(() => videoOrientation = '');
                     _updateService(context);
                   },
-                  tooltip: 'Set the initial display orientation. The number represents the clockwise rotation in degrees. Default is 0.',
+                  tooltip: 'Set the capture orientation (server-side). Affects both mirroring and recording. Values: 0, 90, 180, 270 (rotation), flip0/flip90/flip180/flip270 (mirrored), or prefix with @ to lock against device rotation.',
                 ),
               ),
             ],
