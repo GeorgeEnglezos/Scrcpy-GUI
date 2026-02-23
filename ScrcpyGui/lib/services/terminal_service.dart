@@ -629,6 +629,22 @@ class TerminalService {
         .toList();
   }
 
+  /// Validates an IPv4 address string.
+  ///
+  /// Returns null if valid, or an error message string if invalid.
+  /// Accepts dotted-decimal notation only (e.g. '192.168.1.100').
+  static String? validateIpAddress(String ipAddress) {
+    final ipRegex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
+    if (!ipRegex.hasMatch(ipAddress)) {
+      return 'Invalid IP address format: $ipAddress';
+    }
+    final octets = ipAddress.split('.').map(int.parse).toList();
+    if (octets.any((o) => o > 255)) {
+      return 'Invalid IP address: each octet must be 0–255';
+    }
+    return null;
+  }
+
   /// Enable TCP/IP mode on a device
   ///
   /// Switches the device from USB-only to TCP/IP mode, allowing wireless ADB connections.
@@ -673,32 +689,40 @@ class TerminalService {
     // Strategy 1: Preferred method with -f inet flag for IPv4 only
     var result = await runCommand('adb -s $deviceId shell ip -f inet addr show wlan0');
     var ipMatch = ipRegex.firstMatch(result);
-    if (ipMatch != null) return ipMatch.group(1);
+    if (ipMatch != null) {
+      return ipMatch.group(1);
+    }
 
     // Strategy 2: Fallback to original method without -f flag
     result = await runCommand('adb -s $deviceId shell ip addr show wlan0');
     ipMatch = ipRegex.firstMatch(result);
-    if (ipMatch != null) return ipMatch.group(1);
+    if (ipMatch != null) {
+      return ipMatch.group(1);
+    }
 
     // Strategy 3: Try other common wireless interface names
     final interfaces = ['wlan1', 'wlan2', 'wlan3'];
     for (var iface in interfaces) {
-      // Try with -f inet first
       result = await runCommand('adb -s $deviceId shell ip -f inet addr show $iface');
       ipMatch = ipRegex.firstMatch(result);
-      if (ipMatch != null) return ipMatch.group(1);
+      if (ipMatch != null) {
+        return ipMatch.group(1);
+      }
 
-      // Try without -f inet
       result = await runCommand('adb -s $deviceId shell ip addr show $iface');
       ipMatch = ipRegex.firstMatch(result);
-      if (ipMatch != null) return ipMatch.group(1);
+      if (ipMatch != null) {
+        return ipMatch.group(1);
+      }
     }
 
     // Strategy 4: Try using ifconfig instead of ip command
     result = await runCommand('adb -s $deviceId shell ifconfig wlan0');
     final ifconfigRegex = RegExp(r'inet addr:(\d+\.\d+\.\d+\.\d+)');
     ipMatch = ifconfigRegex.firstMatch(result);
-    if (ipMatch != null) return ipMatch.group(1);
+    if (ipMatch != null) {
+      return ipMatch.group(1);
+    }
 
     // Strategy 5: Try dumpsys wifi (Android-specific)
     result = await runCommand('adb -s $deviceId shell dumpsys wifi');
@@ -712,13 +736,17 @@ class TerminalService {
     ipMatch = dumpsysRegex.firstMatch(wifiInfoLine);
     if (ipMatch != null) {
       final foundIp = ipMatch.group(1)!;
-      if (foundIp != '0.0.0.0') return foundIp;
+      if (foundIp != '0.0.0.0') {
+        return foundIp;
+      }
     }
 
     // Strategy 6: Try getprop command
     result = await runCommand('adb -s $deviceId shell getprop dhcp.wlan0.ipaddress');
     ipMatch = ipRegex.firstMatch(result);
-    if (ipMatch != null) return ipMatch.group(1);
+    if (ipMatch != null) {
+      return ipMatch.group(1);
+    }
 
     return null;
   }
@@ -900,16 +928,14 @@ class TerminalService {
     String ipAddress,
     int port,
   ) async {
-    // Validate IP address format
-    final ipRegex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
-    if (!ipRegex.hasMatch(ipAddress)) {
-      return {
-        'success': false,
-        'message': 'Invalid IP address format: $ipAddress',
-      };
+    // Validate IP address format and octet ranges (0–255)
+    final ipError = validateIpAddress(ipAddress);
+    if (ipError != null) {
+      return {'success': false, 'message': ipError};
     }
 
     // Step 1: Enable TCP/IP on the device
+    // IP is provided by the caller, so we skip the getDeviceIpAddress step.
     final tcpipResult = await enableTcpip(deviceId, port);
 
     if (tcpipResult.isEmpty || tcpipResult.toLowerCase().contains('error')) {
@@ -919,10 +945,10 @@ class TerminalService {
       };
     }
 
-    // Wait a moment for TCP/IP to initialize
+    // Step 2: Wait for TCP/IP to initialize
     await Future.delayed(const Duration(milliseconds: 1500));
 
-    // Step 2: Connect to the device wirelessly using manual IP
+    // Step 3: Connect to the device wirelessly using manual IP
     final connectResult = await connectWireless(ipAddress, port);
 
     if (connectResult.contains('connected') ||

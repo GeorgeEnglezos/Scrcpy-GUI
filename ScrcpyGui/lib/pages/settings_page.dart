@@ -354,6 +354,17 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           const SizedBox(height: 16),
+          CustomCheckbox(
+            label: 'Show manual IP input (for wireless debugging)',
+            value: _settings.showManualIpInput,
+            onChanged: (value) {
+              setState(() {
+                _settings.showManualIpInput = value;
+              });
+              _saveSettings();
+            },
+          ),
+          const SizedBox(height: 16),
           CustomDropdown(
             label: 'Boot Tab',
             value: _settings.showBatFilesTab

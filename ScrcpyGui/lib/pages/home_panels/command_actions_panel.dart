@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../widgets/command_panel.dart';
 import '../../widgets/surrounding_panel.dart';
 import '../../services/command_builder_service.dart';
@@ -28,10 +29,23 @@ class CommandActionsPanel extends StatefulWidget {
 }
 
 class _CommandActionsPanelState extends State<CommandActionsPanel> {
-  final TextEditingController _portController = TextEditingController(text: '5555');
+  final TextEditingController _ipController = TextEditingController(
+    text: '192.168.1.',
+  );
+  final TextEditingController _portController = TextEditingController(
+    text: '5555',
+  );
+  bool _isConnecting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ipController.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
+    _ipController.dispose();
     _portController.dispose();
     super.dispose();
   }
@@ -62,18 +76,27 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
               const SizedBox(height: 12),
               Consumer<DeviceManagerService>(
                 builder: (context, deviceManager, _) {
-                  final devices = DeviceManagerService.devicesInfo.values.toList();
-                  final selected = deviceManager.selectedDevice;
-                  final isDeviceSelected = selected != null && selected.isNotEmpty;
+                  final devices = DeviceManagerService.devicesInfo.values
+                      .toList();
+                  final rawSelected = deviceManager.selectedDevice;
+                  // Guard: only use the selected value if it exists in the
+                  // current items list to avoid the DropdownButton assertion.
+                  final selected = (rawSelected != null &&
+                          devices.any((d) => d.deviceId == rawSelected))
+                      ? rawSelected
+                      : null;
+                  final isDeviceSelected =
+                      selected != null && selected.isNotEmpty;
                   final isDropdownEnabled = devices.length > 1;
 
                   return LayoutBuilder(
                     builder: (context, constraints) {
                       // Calculate if we have enough width for all items in one row
-                      // Dropdown (200) + Run (48) + Favorite (48) + Spacing (24) = ~320
-                      // Port section needs: Divider (1) + Port (100) + Wifi (48) + Stop (48) + Spacing (48) = ~245
-                      // Total needed: ~565px for one row
-                      final bool showDivider = constraints.maxWidth > 565;
+                      // Dropdown (170) + Run (48) + Favorite (48) + Spacing (36) = ~302
+                      // Port section (with IP):    Divider (1) + IP (130) + Port (100) + Wifi (48) + Stop (48) + Spacing (48) = ~375 → total ~677
+                      // Port section (without IP): Divider (1) + Port (100) + Wifi (48) + Stop (48) + Spacing (36) = ~233 → total ~535
+                      final bool showIpField = SettingsService.currentSettings?.showManualIpInput ?? false;
+                      final bool showDivider = constraints.maxWidth > (showIpField ? 677 : 535);
 
                       return Wrap(
                         spacing: 12,
@@ -115,7 +138,9 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.all(12),
                               elevation: 2,
-                              shadowColor: AppColors.runGreen.withValues(alpha: 0.3),
+                              shadowColor: AppColors.runGreen.withValues(
+                                alpha: 0.3,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -132,24 +157,64 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.all(12),
                               elevation: 2,
-                              shadowColor: AppColors.favoriteRed.withValues(alpha: 0.3),
+                              shadowColor: AppColors.favoriteRed.withValues(
+                                alpha: 0.3,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
                             tooltip: 'Add to Favorites',
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              if (showDivider) ...[
+                              if (showDivider)
                                 Container(
                                   height: 40,
                                   width: 1,
                                   color: Colors.grey.shade400,
-                                  margin: const EdgeInsets.only(right: 12),
                                 ),
-                              ],
+                              if (showIpField)
+                                SizedBox(
+                                  width: 130,
+                                  child: TextField(
+                                    controller: _ipController,
+                                    decoration: InputDecoration(
+                                      labelText: 'IP (optional)',
+                                      hintText: '192.168.1.x',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: Colors.blue.shade600,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                    ),
+                                    keyboardType: TextInputType.text,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(
+                                        RegExp(r'[\d.]'),
+                                      ),
+                                      LengthLimitingTextInputFormatter(15),
+                                    ],
+                                  ),
+                                ),
                               SizedBox(
                                 width: 100,
                                 child: TextField(
@@ -162,11 +227,16 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: Colors.grey.shade400),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade400,
+                                      ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                                      borderSide: BorderSide(
+                                        color: Colors.blue.shade600,
+                                        width: 2,
+                                      ),
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 12,
@@ -174,13 +244,29 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                                     ),
                                   ),
                                   keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(5),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 12),
                               IconButton(
-                                onPressed: isDeviceSelected
-                                    ? () => _connectWirelessly(context, selected)
-                                    : null,
+                                onPressed: () {
+                                  // Use the showIp-gated IP, matching what
+                                  // _connectWirelessly will actually use.
+                                  final effectiveIp = showIpField
+                                      ? _ipController.text.trim()
+                                      : '';
+                                  final canConnect =
+                                      (isDeviceSelected ||
+                                          effectiveIp.isNotEmpty) &&
+                                      !_isConnecting;
+                                  if (!canConnect) return null;
+                                  return () => _connectWirelessly(
+                                    context,
+                                    selected ?? '',
+                                  );
+                                }(),
                                 icon: const Icon(Icons.wifi, size: 22),
                                 style: IconButton.styleFrom(
                                   backgroundColor: AppColors.connectGreen,
@@ -189,14 +275,34 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                                   disabledForegroundColor: Colors.grey.shade500,
                                   padding: const EdgeInsets.all(12),
                                   elevation: 2,
-                                  shadowColor: AppColors.connectGreen.withValues(alpha: 0.3),
+                                  shadowColor: AppColors.connectGreen
+                                      .withValues(alpha: 0.3),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                tooltip: 'Connect Wirelessly',
+                                tooltip: () {
+                                  final ip = showIpField
+                                      ? _ipController.text.trim()
+                                      : '';
+                                  if (isDeviceSelected && ip.isNotEmpty) {
+                                    return 'USB + IP: enables TCP/IP on the USB device then connects to $ip';
+                                  } else if (ip.isNotEmpty) {
+                                    return 'Direct connect to $ip using the entered port';
+                                  } else if (isDeviceSelected) {
+                                    return 'Auto-detect: enables TCP/IP on the USB device and connects wirelessly';
+                                  }
+                                  return 'Connect wirelessly\n\n'
+                                      'Via USB device (1-click): select the device you want to connect wirelessly\n'
+                                      'from the dropdown and the connection will be done automatically\n\n'
+                                      'Via Wireless Debugging (Android 11+ - Manual approach):\n'
+                                      '  0. If not enabled from the settings, enable the manual IP input\n'
+                                      '  1. Developer Options → Wireless Debugging → Enable\n'
+                                      '  2. Enter the IPv4 address of your device\n'
+                                      '  3. Enter the port shown on the Wireless Debugging screen (not 5555)\n'
+                                      '  4. Press this button';
+                                }(),
                               ),
-                              const SizedBox(width: 12),
                               IconButton(
                                 onPressed: isDeviceSelected
                                     ? () => _stopConnection(context, selected)
@@ -209,7 +315,9 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                                   disabledForegroundColor: Colors.grey.shade500,
                                   padding: const EdgeInsets.all(12),
                                   elevation: 2,
-                                  shadowColor: AppColors.stopRed.withValues(alpha: 0.3),
+                                  shadowColor: AppColors.stopRed.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -320,6 +428,8 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
   }
 
   Future<void> _connectWirelessly(BuildContext context, String deviceId) async {
+    final showIp = SettingsService.currentSettings?.showManualIpInput ?? false;
+    final ip = showIp ? _ipController.text.trim() : '';
     final port = _portController.text.trim();
 
     // Validate port number
@@ -328,19 +438,26 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Invalid port number: $port'),
+          content: Text(
+            port.isEmpty
+                ? 'Port number cannot be empty'
+                : 'Invalid port number: $port',
+          ),
           backgroundColor: Colors.red.shade700,
         ),
       );
       return;
     }
 
-    // Check if device is already wireless
-    if (deviceId.contains(':')) {
+    // Block the auto-detect flow when the selected device is already wireless —
+    // there's no USB to run enableTcpip on, and no manual IP was given.
+    if (ip.isEmpty && deviceId.contains(':')) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Device is already connected wirelessly. Disconnect first to reconnect.'),
+          content: Text(
+            'Device is already connected wirelessly. Disconnect first to reconnect.',
+          ),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 3),
         ),
@@ -348,41 +465,110 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
       return;
     }
 
+    setState(() => _isConnecting = true);
+
+    // True when IP given AND a physical USB device is selected — enables TCP/IP
+    // on the USB device then connects by IP. False for pure direct-connect or
+    // auto-detect flows.
+    final bool hasUsbDevice = deviceId.isNotEmpty && !deviceId.contains(':');
+    final bool isPureDirectConnect = ip.isNotEmpty && !hasUsbDevice;
+
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Setting up wireless connection...'),
+      SnackBar(
+        content: Text(
+          isPureDirectConnect
+              ? 'Connecting to $ip:$portNum...'
+              : 'Setting up wireless connection...',
+        ),
         backgroundColor: Colors.blue,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       ),
     );
 
     try {
-      // Use TerminalService to setup wireless connection
-      final result = await TerminalService.setupWirelessConnection(
-        deviceId,
-        portNum,
-      );
+      final Map<String, dynamic> result;
+
+      if (ip.isNotEmpty && hasUsbDevice) {
+        // IP given AND a USB device is selected: enable TCP/IP on the USB device
+        // first, then connect by the user-provided IP.
+        result =
+            await TerminalService.setupWirelessConnectionManual(
+              deviceId,
+              ip,
+              portNum,
+            ).timeout(
+              const Duration(seconds: 15),
+              onTimeout: () => {
+                'success': false,
+                'message':
+                    'Connection timed out. Check USB connection and try again.',
+              },
+            );
+      } else if (ip.isNotEmpty) {
+        // IP given, no USB device selected: device is assumed to already be in
+        // TCP/IP mode (Android 11+ wireless debugging or previously set up).
+        final ipError = TerminalService.validateIpAddress(ip);
+        if (ipError != null) {
+          result = {'success': false, 'message': ipError};
+        } else {
+          final connectResult = await TerminalService.connectWireless(
+            ip,
+            portNum,
+          ).timeout(const Duration(seconds: 15), onTimeout: () => 'timeout');
+          final success =
+              connectResult.contains('connected') ||
+              connectResult.contains('already connected');
+          result = {
+            'success': success,
+            'message': success
+                ? 'Connected to $ip:$portNum'
+                : connectResult == 'timeout'
+                ? 'Connection timed out. Make sure the device is reachable at $ip.'
+                : 'Connection failed: $connectResult',
+          };
+        }
+      } else {
+        // No IP: auto-detect IP from the selected USB device.
+        result =
+            await TerminalService.setupWirelessConnection(
+              deviceId,
+              portNum,
+            ).timeout(
+              const Duration(seconds: 15),
+              onTimeout: () => {
+                'success': false,
+                'message':
+                    'Connection timed out. Check USB connection and try again.',
+              },
+            );
+      }
 
       if (!context.mounted) return;
 
+      final success = result['success'] == true;
+      final message = result['message']?.toString() ?? 'Unknown error';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['message'] as String),
-          backgroundColor: result['success'] as bool
+          content: Text(message),
+          backgroundColor: success
               ? Colors.green.shade700
               : Colors.red.shade700,
           duration: const Duration(seconds: 4),
         ),
       );
 
-      // If successful, show additional instructions
-      if (result['success'] as bool) {
+      // If successful and a USB device was involved, prompt the user to
+      // disconnect the cable. Skip this for pure direct-connect (no USB).
+      if (success && !isPureDirectConnect) {
         Future.delayed(const Duration(seconds: 4), () {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('You can now disconnect the USB cable. Wireless device should appear in the device list.'),
+              content: Text(
+                'You can now disconnect the USB cable. Wireless device should appear in the device list.',
+              ),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 5),
             ),
@@ -398,6 +584,8 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
           duration: const Duration(seconds: 4),
         ),
       );
+    } finally {
+      if (mounted) setState(() => _isConnecting = false);
     }
   }
 
@@ -427,12 +615,13 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
 
     if (!context.mounted) return;
 
+    final success = result['success'] == true;
+    final message = result['message']?.toString() ?? 'Unknown error';
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(result['message'] as String),
-        backgroundColor: result['success'] as bool
-            ? Colors.green.shade700
-            : Colors.red.shade700,
+        content: Text(message),
+        backgroundColor: success ? Colors.green.shade700 : Colors.red.shade700,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -489,7 +678,8 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
       } else {
         // macOS/Linux - use shell script
         fileExtension = Platform.isMacOS ? '.command' : '.sh';
-        fileContent = '#!/bin/bash\n$command\nread -p "Press any key to continue..."';
+        fileContent =
+            '#!/bin/bash\n$command\nread -p "Press any key to continue..."';
       }
 
       String filename = baseFilename;

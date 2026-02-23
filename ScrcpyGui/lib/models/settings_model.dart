@@ -67,6 +67,7 @@ class AppSettings {
   String batDirectory; // NOTE: Also stores .sh/.command files on macOS/Linux
   bool openCmdWindows;
   bool showBatFilesTab; // NOTE: Shows script files on all platforms
+  bool showManualIpInput;
   String bootTab;
   String settingsDirectory;
   List<String> shortcutMod;
@@ -79,6 +80,7 @@ class AppSettings {
     required this.batDirectory,
     this.openCmdWindows = false,
     this.showBatFilesTab = true,
+    this.showManualIpInput = false,
     this.bootTab = 'Home',
     this.settingsDirectory = '',
     this.shortcutMod = const [],
@@ -93,6 +95,7 @@ class AppSettings {
       batDirectory: '',
       openCmdWindows: false,
       showBatFilesTab: true,
+      showManualIpInput: false,
       bootTab: 'Home',
       settingsDirectory: '',
       shortcutMod: const [],
@@ -112,6 +115,7 @@ class AppSettings {
       batDirectory: json['batDirectory'] as String? ?? '',
       openCmdWindows: json['openCmdWindows'] as bool? ?? false,
       showBatFilesTab: json['showBatFilesTab'] as bool? ?? true,
+      showManualIpInput: json['showManualIpInput'] as bool? ?? false,
       bootTab: json['bootTab'] as String? ?? 'Home',
       settingsDirectory: json['settingsDirectory'] as String? ?? '',
       shortcutMod: (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
@@ -127,6 +131,7 @@ class AppSettings {
       'batDirectory': batDirectory,
       'openCmdWindows': openCmdWindows,
       'showBatFilesTab': showBatFilesTab,
+      'showManualIpInput': showManualIpInput,
       'bootTab': bootTab,
       'settingsDirectory': settingsDirectory,
       'shortcutMod': shortcutMod,
