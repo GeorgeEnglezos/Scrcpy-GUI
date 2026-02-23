@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import '../models/settings_model.dart';
 
@@ -43,10 +42,6 @@ class SettingsService {
     final deprecatedPanelIds = {'shortcuts'};
     settings.panelOrder.removeWhere((panel) => deprecatedPanelIds.contains(panel.id));
 
-    if (deprecatedPanelIds.any((id) => existingIds.contains(id))) {
-      debugPrint('Settings migration: Removed deprecated panels: ${deprecatedPanelIds.where((id) => existingIds.contains(id)).join(", ")}');
-    }
-
     // Find panels in defaultPanels that aren't in the saved settings
     final currentIds = settings.panelOrder.map((p) => p.id).toSet();
     final missingPanels = defaultPanels
@@ -56,7 +51,6 @@ class SettingsService {
     if (missingPanels.isNotEmpty) {
       // Add missing panels to the end of the panel order
       settings.panelOrder.addAll(missingPanels);
-      debugPrint('Settings migration: Added ${missingPanels.length} new panels');
     }
   }
 

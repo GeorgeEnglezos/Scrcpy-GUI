@@ -211,7 +211,14 @@ class _ScriptsPageState extends State<ScriptsPage> {
         _batFileGroups = groups;
       });
     } catch (e) {
-      debugPrint('Error loading script files: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading script files: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
     }
   }
 
@@ -268,12 +275,17 @@ class _ScriptsPageState extends State<ScriptsPage> {
 
         if (terminal != null) {
           await Process.start(terminal, ['--', 'bash', '-c', '$filePath; exec bash']);
-        } else {
-          debugPrint('No terminal emulator found. Please install gnome-terminal or another terminal.');
         }
       }
     } catch (e) {
-      debugPrint('Error running script file: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error running script: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
     }
   }
 
@@ -294,7 +306,14 @@ class _ScriptsPageState extends State<ScriptsPage> {
         await Process.run('xdg-open', [directory]);
       }
     } catch (e) {
-      debugPrint('Failed to open file location: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open file location: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
     }
   }
 

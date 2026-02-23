@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// Screen Recording Options
 class ScreenRecordingOptions {
   String outputFormat;
@@ -35,7 +33,6 @@ class ScreenRecordingOptions {
       final alreadyHasExt = ext.isNotEmpty && outputFile.endsWith(ext);
       cmd += ' --record=$outputFile${alreadyHasExt ? '' : ext}';
     }
-    debugPrint('[ScreenRecordingOptions] => $cmd');
     return cmd.trim();
   }
 
@@ -89,7 +86,6 @@ class VirtualDisplayOptions {
     }
     if (noVdDestroyContent) cmd += ' --no-vd-destroy-content';
     if (noVdSystemDecorations) cmd += ' --no-vd-system-decorations';
-    debugPrint('[VirtualDisplayOptions] => $cmd');
     return cmd.trim();
   }
 
@@ -153,7 +149,6 @@ class AudioOptions {
     }
     if (audioDup) cmd += ' --audio-dup';
     if (noAudio) cmd += ' --no-audio';
-    debugPrint('[AudioOptions] => $cmd');
     return cmd.trim();
   }
 
@@ -269,7 +264,6 @@ class GeneralCastOptions {
     if (extraParameters.isNotEmpty) cmd += ' $extraParameters';
     if (disableScreensaver) cmd += ' --disable-screensaver';
 
-    debugPrint('[GeneralCastOptions] => $cmd');
     return cmd.trim();
   }
 
@@ -331,7 +325,6 @@ class CameraOptions {
     if (cameraFps.isNotEmpty) cmd += ' --camera-fps=$cameraFps';
     if (cameraAr.isNotEmpty) cmd += ' --camera-ar=$cameraAr';
     if (cameraHighSpeed) cmd += ' --camera-high-speed';
-    debugPrint('[CameraOptions] => $cmd');
     return cmd.trim();
   }
 
@@ -398,7 +391,6 @@ class InputControlOptions {
     if (rawKeyEvents) cmd += ' --raw-key-events';
     if (preferText) cmd += ' --prefer-text';
     if (mouseBind.isNotEmpty) cmd += ' --mouse-bind=$mouseBind';
-    debugPrint('[InputControlOptions] => $cmd');
     return cmd.trim();
   }
 
@@ -465,7 +457,6 @@ class DisplayWindowOptions {
     if (displayBuffer.isNotEmpty) cmd += ' --video-buffer=$displayBuffer';
     if (renderDriver.isNotEmpty) cmd += ' --render-driver=$renderDriver';
     if (forceAdbForward) cmd += ' --force-adb-forward';
-    debugPrint('[DisplayWindowOptions] => $cmd');
     return cmd.trim();
   }
 
@@ -512,7 +503,6 @@ class NetworkConnectionOptions {
     if (tunnelHost.isNotEmpty) cmd += ' --tunnel-host=$tunnelHost';
     if (tunnelPort.isNotEmpty) cmd += ' --tunnel-port=$tunnelPort';
     if (noAdbForward) cmd += ' --force-adb-forward';
-    debugPrint('[NetworkConnectionOptions] => $cmd');
     return cmd.trim();
   }
 
@@ -559,7 +549,6 @@ class AdvancedOptions {
     if (noDownsizeOnError) cmd += ' --no-downsize-on-error';
     if (v4l2Sink.isNotEmpty) cmd += ' --v4l2-sink=$v4l2Sink';
     if (v4l2Buffer.isNotEmpty) cmd += ' --v4l2-buffer=$v4l2Buffer';
-    debugPrint('[AdvancedOptions] => $cmd');
     return cmd.trim();
   }
 
@@ -586,7 +575,6 @@ class OtgModeOptions {
   String generateCommandPart() {
     var cmd = '';
     if (otg) cmd += ' --otg';
-    debugPrint('[OtgModeOptions] => $cmd');
     return cmd.trim();
   }
 

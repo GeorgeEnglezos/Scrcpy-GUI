@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 import '../models/commands_model.dart';
@@ -43,9 +42,7 @@ class CommandsService {
         _cachedCommands = CommandsData.fromJsonString(jsonString);
         return _cachedCommands!;
       }
-    } catch (e) {
-      debugPrint('Error loading commands: $e');
-    }
+    } catch (_) {}
 
     // First launch - create with default favorites
     _cachedCommands = CommandsData(
@@ -68,7 +65,6 @@ class CommandsService {
       await file.writeAsString(commands.toJsonString());
       return true;
     } catch (e) {
-      debugPrint('Error saving commands: $e');
       return false;
     }
   }

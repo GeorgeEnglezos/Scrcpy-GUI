@@ -47,10 +47,6 @@ class _OtgModePanelState extends State<OtgModePanel> {
     );
 
     cmdService.updateOtgModeOptions(options);
-
-    debugPrint(
-      '[OtgModePanel] Updated OtgModeOptions → ${cmdService.fullCommand}',
-    );
   }
 
   void _clearAllFields() {

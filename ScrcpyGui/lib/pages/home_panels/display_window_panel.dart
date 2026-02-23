@@ -75,10 +75,6 @@ class _DisplayWindowPanelState extends State<DisplayWindowPanel> {
     );
 
     cmdService.updateDisplayWindowOptions(options);
-
-    debugPrint(
-      '[DisplayWindowPanel] Updated DisplayWindowOptions → ${cmdService.fullCommand}',
-    );
   }
 
   void _clearAllFields() {

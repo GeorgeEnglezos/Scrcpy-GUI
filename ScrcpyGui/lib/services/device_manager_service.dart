@@ -132,7 +132,6 @@ class DeviceManagerService extends ChangeNotifier {
     final newDevices = devices.where((d) => !_lastConnectedDevices.contains(d));
     for (var deviceId in newDevices) {
       await _loadDeviceData(deviceId);
-      debugPrint('New device connected: $deviceId');
 
       // Set as selectedDevice if none was selected
       selectedDevice ??= deviceId;
@@ -188,10 +187,6 @@ class DeviceManagerService extends ChangeNotifier {
     );
 
     notifyListeners();
-
-    debugPrint(
-      '[${DateTime.now().toIso8601String()}] Loaded device info: ${devicesInfo[deviceId]}',
-    );
   }
 
   /// Get cached device information

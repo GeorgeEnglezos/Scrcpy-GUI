@@ -144,9 +144,6 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
 
     cmdService.updateAudioOptions(options);
 
-    debugPrint(
-      '[AudioPanel] Updated AudioOptions → ${cmdService.fullCommand}',
-    );
   }
 
   void _clearAllFields() {
@@ -160,7 +157,6 @@ class _AudioCommandsPanelState extends State<AudioCommandsPanel> {
       audioDuplication = false;
     });
     _updateService(context);
-    debugPrint('[AudioPanel] Fields cleared!');
   }
 
   @override

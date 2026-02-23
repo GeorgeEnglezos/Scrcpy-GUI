@@ -131,7 +131,14 @@ class _SettingsPageState extends State<SettingsPage> {
         await Process.run('xdg-open', [directory.path]);
       }
     } catch (e) {
-      debugPrint('Failed to open folder: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open folder: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
     }
   }
 

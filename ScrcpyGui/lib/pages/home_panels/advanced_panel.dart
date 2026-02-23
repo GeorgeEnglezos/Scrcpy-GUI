@@ -65,10 +65,6 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
     );
 
     cmdService.updateAdvancedOptions(options);
-
-    debugPrint(
-      '[AdvancedPanel] Updated AdvancedOptions → ${cmdService.fullCommand}',
-    );
   }
 
   void _clearAllFields() {

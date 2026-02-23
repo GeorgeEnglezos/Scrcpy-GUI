@@ -70,10 +70,6 @@ class _CameraCommandsPanelState extends State<CameraCommandsPanel> {
     );
 
     cmdService.updateCameraOptions(options);
-
-    debugPrint(
-      '[CameraPanel] Updated CameraOptions → ${cmdService.fullCommand}',
-    );
   }
 
   void _clearAllFields() {

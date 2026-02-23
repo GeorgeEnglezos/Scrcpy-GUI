@@ -91,62 +91,52 @@ class CommandBuilderService extends ChangeNotifier {
 
   void updateAudioOptions(AudioOptions options) {
     audioOptions = options;
-    _log('Audio options updated: $audioOptions');
     notifyListeners();
   }
 
   /// Also affects window title (adds 'record-' prefix)
   void updateRecordingOptions(ScreenRecordingOptions options) {
     recordingOptions = options;
-    _log('Recording options updated: $recordingOptions');
     notifyListeners();
   }
 
   void updateVirtualDisplayOptions(VirtualDisplayOptions options) {
     virtualDisplayOptions = options;
-    _log('Virtual display options updated: $virtualDisplayOptions');
     notifyListeners();
   }
 
   void updateGeneralCastOptions(GeneralCastOptions options) {
     generalCastOptions = options;
-    _log('General cast options updated: $generalCastOptions');
     notifyListeners();
   }
 
   void updateCameraOptions(CameraOptions options) {
     cameraOptions = options;
-    _log('Camera options updated: $cameraOptions');
     notifyListeners();
   }
 
   void updateInputControlOptions(InputControlOptions options) {
     inputControlOptions = options;
-    _log('Input control options updated: $inputControlOptions');
     notifyListeners();
   }
 
   void updateDisplayWindowOptions(DisplayWindowOptions options) {
     displayWindowOptions = options;
-    _log('Display/Window options updated: $displayWindowOptions');
     notifyListeners();
   }
 
   void updateNetworkConnectionOptions(NetworkConnectionOptions options) {
     networkConnectionOptions = options;
-    _log('Network/Connection options updated: $networkConnectionOptions');
     notifyListeners();
   }
 
   void updateAdvancedOptions(AdvancedOptions options) {
     advancedOptions = options;
-    _log('Advanced options updated: $advancedOptions');
     notifyListeners();
   }
 
   void updateOtgModeOptions(OtgModeOptions options) {
     otgModeOptions = options;
-    _log('OTG mode options updated: $otgModeOptions');
     notifyListeners();
   }
 
@@ -209,7 +199,6 @@ class CommandBuilderService extends ChangeNotifier {
     ];
 
     final cmd = parts.where((p) => p.isNotEmpty).join(' ').trim();
-    _log('Full command rebuilt: $cmd');
     return cmd;
   }
 
@@ -225,12 +214,7 @@ class CommandBuilderService extends ChangeNotifier {
     networkConnectionOptions = NetworkConnectionOptions();
     advancedOptions = AdvancedOptions();
     otgModeOptions = OtgModeOptions();
-    _log('All options reset to defaults');
     notifyListeners();
   }
 
-  /// Internal logging helper for debugging
-  void _log(String message) {
-    debugPrint('[CommandBuilderService] $message');
-  }
 }

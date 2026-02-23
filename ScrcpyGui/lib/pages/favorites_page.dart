@@ -39,8 +39,15 @@ class _FavoritesPageState extends State<FavoritesPage> {
         isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error loading data: $e');
       setState(() => isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading data: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
     }
   }
 

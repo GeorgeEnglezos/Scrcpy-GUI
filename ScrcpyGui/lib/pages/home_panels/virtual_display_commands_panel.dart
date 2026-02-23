@@ -68,10 +68,6 @@ class _VirtualDisplayCommandsPanelState
     );
 
     cmdService.updateVirtualDisplayOptions(options);
-
-    debugPrint(
-      '[VirtualDisplayPanel] Updated VirtualDisplayOptions → ${cmdService.fullCommand}',
-    );
   }
 
   void _cleanSettings(BuildContext context) {

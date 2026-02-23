@@ -89,10 +89,6 @@ class _InputControlPanelState extends State<InputControlPanel> {
     );
 
     cmdService.updateInputControlOptions(options);
-
-    debugPrint(
-      '[InputControlPanel] Updated InputControlOptions → ${cmdService.fullCommand}',
-    );
   }
 
   void _clearAllFields() {

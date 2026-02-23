@@ -56,10 +56,6 @@ class _NetworkConnectionPanelState extends State<NetworkConnectionPanel> {
     );
 
     cmdService.updateNetworkConnectionOptions(options);
-
-    debugPrint(
-      '[NetworkConnectionPanel] Updated NetworkConnectionOptions → ${cmdService.fullCommand}',
-    );
   }
 
   void _clearAllFields() {

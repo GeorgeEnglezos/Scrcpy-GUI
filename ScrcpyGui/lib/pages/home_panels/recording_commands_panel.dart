@@ -82,10 +82,6 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
     );
 
     cmdService.updateRecordingOptions(options);
-
-    debugPrint(
-      '[RecordingPanel] Updated RecordingOptions → ${cmdService.fullCommand}',
-    );
   }
 
   void _initializeRecordingOptions(BuildContext context) {

@@ -139,10 +139,6 @@ class _CommonCommandsPanelState extends State<CommonCommandsPanel> {
     );
 
     cmdService.updateGeneralCastOptions(options);
-
-    debugPrint(
-      '[CommonPanel] Updated GeneralCastOptions → ${cmdService.fullCommand}',
-    );
   }
 
   void _clearAllFields() {
