@@ -32,8 +32,12 @@ import '../utils/command_syntax_highlighter.dart';
 /// )
 /// ```
 class CommandPanel extends StatelessWidget {
-  /// The scrcpy command string to display
+  /// The scrcpy command string used for actions (run, download, delete)
   final String command;
+
+  /// Optional display-only version of the command shown in the UI and copied to
+  /// clipboard. When omitted, [command] is used for both display and actions.
+  final String? displayCommand;
 
   /// Callback when the panel is tapped
   final VoidCallback? onTap;
@@ -51,6 +55,7 @@ class CommandPanel extends StatelessWidget {
   const CommandPanel({
     super.key,
     required this.command,
+    this.displayCommand,
     this.onTap,
     this.onDelete,
     this.onDownload,
@@ -83,7 +88,7 @@ class CommandPanel extends StatelessWidget {
                 child: RichText(
                   text: TextSpan(
                     children: CommandSyntaxHighlighter.getColorizedSpans(
-                      command,
+                      displayCommand ?? command,
                     ),
                   ),
                 ),

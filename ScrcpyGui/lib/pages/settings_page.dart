@@ -45,9 +45,6 @@ class _SettingsPageState extends State<SettingsPage> {
     final settings = await _settingsService.loadSettings();
     final settingsDir = await _settingsService.getSettingsDirectory();
 
-    if (settings.scrcpyDirectory.isEmpty) {
-      settings.scrcpyDirectory = '$settingsDir/Scrcpy-Installation';
-    }
     if (settings.recordingsDirectory.isEmpty) {
       settings.recordingsDirectory = '$settingsDir/Recordings';
     }
@@ -63,7 +60,6 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     }
 
-    await _createDirectoryIfNeeded(settings.scrcpyDirectory);
     await _createDirectoryIfNeeded(settings.recordingsDirectory);
     await _createDirectoryIfNeeded(settings.downloadsDirectory);
     await _createDirectoryIfNeeded(settings.batDirectory);
@@ -250,6 +246,48 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Align(
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _showResetUserInterfaceConfirmation,
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Reset ONLY User Interface'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _showResetAllSettingsConfirmation,
+                    icon: const Icon(Icons.restore, size: 18),
+                    label: const Text('Reset All Settings'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
             LayoutBuilder(
               builder: (context, constraints) {
                 bool isWideScreen = constraints.maxWidth > 1400;
@@ -277,45 +315,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   );
                 }
               },
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _showResetUserInterfaceConfirmation,
-                  icon: const Icon(Icons.refresh, size: 18),
-                  label: const Text('Reset ONLY User Interface'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _showResetAllSettingsConfirmation,
-                  icon: const Icon(Icons.restore, size: 18),
-                  label: const Text('Reset All Settings'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
@@ -592,11 +591,19 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           _buildDirectoryRow(
             'Scrcpy Directory',
-            _settings.scrcpyDirectory,
+            _settings.scrcpyDirectory.isEmpty
+                ? '(using system PATH)'
+                : _settings.scrcpyDirectory,
             onBrowse: () => _pickDirectory((path) {
               _settings.scrcpyDirectory = path;
               _saveSettings();
             }),
+            onClear: _settings.scrcpyDirectory.isNotEmpty
+                ? () {
+                    setState(() => _settings.scrcpyDirectory = '');
+                    _saveSettings();
+                  }
+                : null,
           ),
           const SizedBox(height: 16),
           _buildDirectoryRow(
@@ -640,6 +647,7 @@ class _SettingsPageState extends State<SettingsPage> {
     String label,
     String path, {
     VoidCallback? onBrowse,
+    VoidCallback? onClear,
     bool showButton = true,
   }) {
     return Column(
@@ -717,6 +725,27 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 child: const Text(
                   'Browse...',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+
+            if (onClear != null) ...[
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: onClear,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade700,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Clear',
                   style: TextStyle(color: Colors.white),
                 ),
               ),

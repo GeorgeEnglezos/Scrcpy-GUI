@@ -12,7 +12,9 @@
 library;
 
 import 'dart:io';
+import 'package:path/path.dart' as p;
 import '../constants/package_names.dart';
+import 'settings_service.dart';
 
 /// Service for executing terminal commands and managing system processes
 ///
@@ -25,7 +27,66 @@ class TerminalService {
   // Command templates
   static const adbDevicesCmd = 'adb devices';
   static const adbPackagesCmd = 'adb shell pm list packages';
-  static const scrcpyCodecCmd = 'scrcpy --list-encoders';
+
+  /// Returns the scrcpy executable path.
+  ///
+  /// Uses the configured scrcpy directory from settings if set,
+  /// otherwise falls back to 'scrcpy' (relies on PATH).
+  static String get scrcpyExecutable {
+    final dir = SettingsService.currentSettings?.scrcpyDirectory ?? '';
+    if (dir.isEmpty) return 'scrcpy';
+    return p.join(dir, Platform.isWindows ? 'scrcpy.exe' : 'scrcpy');
+  }
+
+  /// Replaces the full scrcpy executable path in a command string with just "scrcpy".
+  /// Used for display — the full path is preserved for execution and clipboard.
+  static String toDisplayCommand(String cmd) {
+    final exe = scrcpyExecutable;
+    if (exe == 'scrcpy') return cmd;
+
+    // Normalise both sides for comparison so that mixed separators and
+    // casing differences on Windows don't prevent the match.
+    final normalizedExe = p.normalize(exe);
+    final normalizedCmd = p.normalize(cmd);
+
+    bool matches;
+    if (Platform.isWindows) {
+      matches = normalizedCmd.toLowerCase().startsWith(normalizedExe.toLowerCase());
+    } else {
+      matches = normalizedCmd.startsWith(normalizedExe);
+    }
+
+    if (matches) {
+      return 'scrcpy${cmd.substring(exe.length)}';
+    }
+
+    // Also handle quoted executable: "C:\path\scrcpy.exe" --flags
+    final quoted = '"$exe"';
+    final normalizedQuoted = p.normalize(quoted);
+    bool quotedMatches;
+    if (Platform.isWindows) {
+      quotedMatches = normalizedCmd.toLowerCase().startsWith(normalizedQuoted.toLowerCase());
+    } else {
+      quotedMatches = normalizedCmd.startsWith(normalizedQuoted);
+    }
+    if (quotedMatches) {
+      return 'scrcpy${cmd.substring(quoted.length)}';
+    }
+
+    return cmd;
+  }
+
+  /// Returns true if scrcpy is resolvable on the system PATH.
+  static Future<bool> isScrcpyOnPath() async {
+    try {
+      final result = Platform.isWindows
+          ? await Process.run('cmd', ['/c', 'where', 'scrcpy'])
+          : await Process.run('which', ['scrcpy']);
+      return result.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Track running processes started through the app
   ///
@@ -575,8 +636,9 @@ class TerminalService {
   ///
   /// Note: Output should be parsed using [parseVideoEncoders] and [parseAudioEncoders]
   static Future<String> loadScrcpyEncoders({required String deviceId}) async {
-    stdout.writeln('Executing: $scrcpyCodecCmd -s $deviceId');
-    return await runCommand('$scrcpyCodecCmd -s $deviceId');
+    final cmd = '$scrcpyExecutable --list-encoders -s $deviceId';
+    stdout.writeln('Executing: $cmd');
+    return await runCommand(cmd);
   }
 
   /// Extracts video encoders from scrcpy output

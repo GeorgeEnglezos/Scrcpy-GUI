@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 import '../models/scrcpy_options.dart';
 import 'device_manager_service.dart';
 import 'settings_service.dart';
+import 'terminal_service.dart';
 
 /// Service for building scrcpy commands from panel options
 ///
@@ -25,9 +26,13 @@ import 'settings_service.dart';
 /// options object and calls the corresponding update method when changed.
 /// The [fullCommand] getter assembles all options into a complete command string.
 class CommandBuilderService extends ChangeNotifier {
-  /// Base scrcpy command with error handling flag
-  /// The .exe extension is optional on Windows (resolved via PATHEXT)
-  String baseCommand = "scrcpy --pause-on-exit=if-error";
+  /// Base scrcpy command with error handling flag.
+  /// Uses the configured scrcpy directory from settings if set, otherwise falls back to 'scrcpy' on PATH.
+  String get baseCommand => '${TerminalService.scrcpyExecutable} --pause-on-exit=if-error';
+
+  /// Display-safe version of [fullCommand] — replaces the full executable path
+  /// with just "scrcpy" for use in the UI and clipboard.
+  String get displayCommand => TerminalService.toDisplayCommand(fullCommand);
 
   /// Audio configuration options (bitrate, codec, buffer, etc.)
   AudioOptions audioOptions = AudioOptions();

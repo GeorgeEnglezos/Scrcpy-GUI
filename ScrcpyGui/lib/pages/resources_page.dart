@@ -50,6 +50,21 @@ class _ResourcesPageState extends State<ResourcesPage> {
       },
     ];
 
+    final similarProjects = [
+      {
+        'title': 'QtScrcpy (by barry-ran)',
+        'description':
+            'A Qt-based GUI project for displaying and controlling Android devices with scrcpy.',
+        'url': 'https://github.com/barry-ran/QtScrcpy',
+      },
+      {
+        'title': 'flutter-scrcpygui (by pizi-0)',
+        'description':
+            'A Flutter-based scrcpy GUI project with desktop-focused controls and features.',
+        'url': 'https://github.com/pizi-0/flutter-scrcpygui',
+      },
+    ];
+
     final myScrcpyGui = [
       {
         'title': 'Scrcpy GUI',
@@ -359,95 +374,109 @@ class _ResourcesPageState extends State<ResourcesPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   buildCategory('Official Scrcpy', officialScrcpy),
-            const SizedBox(height: 24),
-            buildCategory('My Scrcpy GUI', myScrcpyGui),
-            const SizedBox(height: 24),
-            buildFaqs(),
-            const SizedBox(height: 24),
+                  const SizedBox(height: 24),
+                  buildCategory('My Scrcpy GUI', myScrcpyGui),
+                  const SizedBox(height: 24),
+                  buildCategory(
+                    'Similar Projects worth checking out',
+                    similarProjects,
+                  ),
+                  const SizedBox(height: 24),
+                  buildFaqs(),
+                  const SizedBox(height: 24),
 
-            // Responsive 3-column layout for command panels
-            LayoutBuilder(
-              builder: (context, constraints) {
-                // Calculate number of columns based on available width
-                // 3 columns at full screen (>1000px), 2 columns at medium (>650px), 1 column at small
-                final double availableWidth = constraints.maxWidth;
-                final int columns = availableWidth > 1000 ? 3 : (availableWidth > 650 ? 2 : 1);
-                final double itemWidth = (availableWidth - (24 * (columns - 1))) / columns;
+                  // Responsive 3-column layout for command panels
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Calculate number of columns based on available width
+                      // 3 columns at full screen (>1000px), 2 columns at medium (>650px), 1 column at small
+                      final double availableWidth = constraints.maxWidth;
+                      final int columns = availableWidth > 1000
+                          ? 3
+                          : (availableWidth > 650 ? 2 : 1);
+                      final double itemWidth =
+                          (availableWidth - (24 * (columns - 1))) / columns;
 
-                return Wrap(
-                  spacing: 24,
-                  runSpacing: 24,
-                  children: [
-                    // Scrcpy Install/Uninstall Panel
-                    SizedBox(
-                      width: itemWidth,
-                      child: SurroundingPanel(
-                        icon: Icons.download,
-                        title: 'Install / Uninstall Scrcpy',
-                        showButton: false,
-                        contentPadding: const EdgeInsets.all(12),
-                        child: Column(
-                          children: scrcpyCommands.map((cmd) {
-                            return CommandPanel(
-                              command: cmd,
-                              showDelete: false,
-                              onTap: () async {
-                                await TerminalService.runCommandInNewTerminal(cmd);
-                              },
-                              onDownload: null,
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    // ADB Install/Uninstall Panel
-                    SizedBox(
-                      width: itemWidth,
-                      child: SurroundingPanel(
-                        icon: Icons.download,
-                        title: 'Install / Uninstall ADB',
-                        showButton: false,
-                        contentPadding: const EdgeInsets.all(12),
-                        child: Column(
-                          children: adbCommands.map((cmd) {
-                            return CommandPanel(
-                              command: cmd,
-                              showDelete: false,
-                              onTap: () async {
-                                await TerminalService.runCommandInNewTerminal(cmd);
-                              },
-                              onDownload: null,
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    // Helpful Commands Panel
-                    SizedBox(
-                      width: itemWidth,
-                      child: SurroundingPanel(
-                        icon: Icons.build_circle,
-                        title: 'Helpful Commands',
-                        showButton: false,
-                        contentPadding: const EdgeInsets.all(12),
-                        child: Column(
-                          children: helpfulCommands.map((cmd) {
-                            return CommandPanel(
-                              command: cmd,
-                              showDelete: false,
-                              onTap: () async {
-                                await TerminalService.runCommandInNewTerminal(cmd);
-                              },
-                              onDownload: null,
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+                      return Wrap(
+                        spacing: 24,
+                        runSpacing: 24,
+                        children: [
+                          // Scrcpy Install/Uninstall Panel
+                          SizedBox(
+                            width: itemWidth,
+                            child: SurroundingPanel(
+                              icon: Icons.download,
+                              title: 'Install / Uninstall Scrcpy',
+                              showButton: false,
+                              contentPadding: const EdgeInsets.all(12),
+                              child: Column(
+                                children: scrcpyCommands.map((cmd) {
+                                  return CommandPanel(
+                                    command: cmd,
+                                    showDelete: false,
+                                    onTap: () async {
+                                      await TerminalService.runCommandInNewTerminal(
+                                        cmd,
+                                      );
+                                    },
+                                    onDownload: null,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                          // ADB Install/Uninstall Panel
+                          SizedBox(
+                            width: itemWidth,
+                            child: SurroundingPanel(
+                              icon: Icons.download,
+                              title: 'Install / Uninstall ADB',
+                              showButton: false,
+                              contentPadding: const EdgeInsets.all(12),
+                              child: Column(
+                                children: adbCommands.map((cmd) {
+                                  return CommandPanel(
+                                    command: cmd,
+                                    showDelete: false,
+                                    onTap: () async {
+                                      await TerminalService.runCommandInNewTerminal(
+                                        cmd,
+                                      );
+                                    },
+                                    onDownload: null,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                          // Helpful Commands Panel
+                          SizedBox(
+                            width: itemWidth,
+                            child: SurroundingPanel(
+                              icon: Icons.build_circle,
+                              title: 'Helpful Commands',
+                              showButton: false,
+                              contentPadding: const EdgeInsets.all(12),
+                              child: Column(
+                                children: helpfulCommands.map((cmd) {
+                                  return CommandPanel(
+                                    command: cmd,
+                                    showDelete: false,
+                                    onTap: () async {
+                                      await TerminalService.runCommandInNewTerminal(
+                                        cmd,
+                                      );
+                                    },
+                                    onDownload: null,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),

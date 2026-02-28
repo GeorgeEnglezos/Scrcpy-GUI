@@ -146,7 +146,10 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
   /// - 2: ResourcesPage - Documentation, links, and helpful commands
   /// - 3: SettingsPage - Application preferences and panel customization
   List<Widget> get pages => [
-        HomePage(panelOrder: _currentSettings.panelOrder),
+        HomePage(
+          panelOrder: _currentSettings.panelOrder,
+          onNavigateToSettings: () => setState(() => selectedIndex = pages.length - 1),
+        ),
         const FavoritesPage(),
         if (_currentSettings.showBatFilesTab) const ScriptsPage(),
         const ResourcesPage(),

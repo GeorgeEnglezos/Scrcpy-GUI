@@ -55,6 +55,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
     return Consumer<CommandBuilderService>(
       builder: (context, commandService, _) {
         final command = commandService.fullCommand;
+        final displayCmd = commandService.displayCommand;
 
         return SurroundingPanel(
           icon: Icons.terminal,
@@ -70,6 +71,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
               const SizedBox(height: 20),
               CommandPanel(
                 command: command,
+                displayCommand: displayCmd,
                 showDelete: false,
                 onDownload: () => _downloadAsBat(context, command),
               ),

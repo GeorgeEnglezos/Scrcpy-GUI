@@ -7,6 +7,8 @@ import '../services/commands_service.dart';
 import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
 
+String _display(String cmd) => TerminalService.toDisplayCommand(cmd);
+
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
 
@@ -230,6 +232,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     )
                   : CommandPanel(
                       command: lastCommand,
+                      displayCommand: _display(lastCommand),
                       showDelete: false,
                       onTap: () => _runCommand(lastCommand),
                       onDownload: () => _downloadAsBat(lastCommand),
@@ -253,6 +256,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         favorites.length,
                         (index) => CommandPanel(
                           command: favorites[index],
+                          displayCommand: _display(favorites[index]),
                           onTap: () => _runCommand(favorites[index]),
                           onDownload: () => _downloadAsBat(favorites[index]),
                           onDelete: () => _deleteFromFavorites(index),
@@ -278,6 +282,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         mostUsed.length,
                         (index) => CommandPanel(
                           command: mostUsed[index],
+                          displayCommand: _display(mostUsed[index]),
                           showDelete: false,
                           onTap: () => _runCommand(mostUsed[index]),
                           onDownload: () => _downloadAsBat(mostUsed[index]),
