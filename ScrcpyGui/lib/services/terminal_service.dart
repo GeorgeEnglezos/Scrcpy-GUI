@@ -24,9 +24,15 @@ import 'settings_service.dart';
 /// All methods are static as this service maintains no instance state beyond
 /// process tracking.
 class TerminalService {
-  // Command templates
-  static const adbDevicesCmd = 'adb devices';
-  static const adbPackagesCmd = 'adb shell pm list packages';
+  /// Returns the adb executable path.
+  ///
+  /// Uses the configured scrcpy directory from settings if set,
+  /// otherwise falls back to 'adb' (relies on PATH).
+  static String get adbExecutable {
+    final dir = SettingsService.currentSettings?.scrcpyDirectory ?? '';
+    if (dir.isEmpty) return 'adb';
+    return p.join(dir, Platform.isWindows ? 'adb.exe' : 'adb');
+  }
 
   /// Returns the scrcpy executable path.
   ///
@@ -520,7 +526,7 @@ class TerminalService {
   /// // ['emulator-5554', '192.168.1.50:5555']
   /// ```
   static Future<List<String>> adbDevices() async {
-    final output = await runCommand(adbDevicesCmd);
+    final output = await runCommand('$adbExecutable devices');
     final lines = output.split('\n');
     return lines
         .skip(1)
@@ -549,7 +555,7 @@ class TerminalService {
     required String deviceId,
     bool includeSystemApps = false,
   }) async {
-    var cmd = 'adb -s $deviceId shell pm list packages';
+    var cmd = '$adbExecutable -s $deviceId shell pm list packages';
     if (!includeSystemApps) cmd += ' -3';
     final result = await runCommand(cmd);
     return result
@@ -722,7 +728,7 @@ class TerminalService {
   /// await TerminalService.enableTcpip('abc123', 5555);
   /// ```
   static Future<String> enableTcpip(String deviceId, int port) async {
-    final command = 'adb -s $deviceId tcpip $port';
+    final command = '$adbExecutable -s $deviceId tcpip $port';
     return await runCommand(command);
   }
 
@@ -749,14 +755,14 @@ class TerminalService {
     final ipRegex = RegExp(r'inet\s+(\d+\.\d+\.\d+\.\d+)');
 
     // Strategy 1: Preferred method with -f inet flag for IPv4 only
-    var result = await runCommand('adb -s $deviceId shell ip -f inet addr show wlan0');
+    var result = await runCommand('$adbExecutable -s $deviceId shell ip -f inet addr show wlan0');
     var ipMatch = ipRegex.firstMatch(result);
     if (ipMatch != null) {
       return ipMatch.group(1);
     }
 
     // Strategy 2: Fallback to original method without -f flag
-    result = await runCommand('adb -s $deviceId shell ip addr show wlan0');
+    result = await runCommand('$adbExecutable -s $deviceId shell ip addr show wlan0');
     ipMatch = ipRegex.firstMatch(result);
     if (ipMatch != null) {
       return ipMatch.group(1);
@@ -765,13 +771,13 @@ class TerminalService {
     // Strategy 3: Try other common wireless interface names
     final interfaces = ['wlan1', 'wlan2', 'wlan3'];
     for (var iface in interfaces) {
-      result = await runCommand('adb -s $deviceId shell ip -f inet addr show $iface');
+      result = await runCommand('$adbExecutable -s $deviceId shell ip -f inet addr show $iface');
       ipMatch = ipRegex.firstMatch(result);
       if (ipMatch != null) {
         return ipMatch.group(1);
       }
 
-      result = await runCommand('adb -s $deviceId shell ip addr show $iface');
+      result = await runCommand('$adbExecutable -s $deviceId shell ip addr show $iface');
       ipMatch = ipRegex.firstMatch(result);
       if (ipMatch != null) {
         return ipMatch.group(1);
@@ -779,7 +785,7 @@ class TerminalService {
     }
 
     // Strategy 4: Try using ifconfig instead of ip command
-    result = await runCommand('adb -s $deviceId shell ifconfig wlan0');
+    result = await runCommand('$adbExecutable -s $deviceId shell ifconfig wlan0');
     final ifconfigRegex = RegExp(r'inet addr:(\d+\.\d+\.\d+\.\d+)');
     ipMatch = ifconfigRegex.firstMatch(result);
     if (ipMatch != null) {
@@ -787,7 +793,7 @@ class TerminalService {
     }
 
     // Strategy 5: Try dumpsys wifi (Android-specific)
-    result = await runCommand('adb -s $deviceId shell dumpsys wifi');
+    result = await runCommand('$adbExecutable -s $deviceId shell dumpsys wifi');
     final lines = result.split('\n');
     final wifiInfoLine = lines.firstWhere(
       (line) => line.contains('mWifiInfo'),
