@@ -5,7 +5,6 @@ import 'package:path/path.dart' as path;
 import 'package:desktop_drop/desktop_drop.dart';
 import '../services/settings_service.dart';
 import '../theme/app_colors.dart';
-import '../widgets/surrounding_panel.dart';
 
 class ScriptFileGroup {
   final String groupName;
@@ -562,16 +561,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
   }
 
   Widget _buildGroupPanel(ScriptFileGroup group) {
-    return SurroundingPanel(
-      icon: group.isRoot ? Icons.folder_special : Icons.folder,
-      title: group.groupName,
-      showButton: false,
-      contentPadding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      child: _buildFileList(group.files),
-    );
+    return _buildFileList(group);
   }
 
-  Widget _buildFileList(List<FileSystemEntity> files) {
+  Widget _buildFileList(ScriptFileGroup group) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.background,
@@ -593,12 +586,22 @@ class _ScriptsPageState extends State<ScriptsPage> {
               children: [
                 Expanded(
                   flex: 4,
-                  child: Text(
-                    'File Name',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        group.isRoot ? Icons.folder_special : Icons.folder,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        group.groupName,
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(
@@ -614,8 +617,8 @@ class _ScriptsPageState extends State<ScriptsPage> {
               ],
             ),
           ),
-          ...List.generate(files.length, (index) {
-            return _buildFileRow(files[index]);
+          ...List.generate(group.files.length, (index) {
+            return _buildFileRow(group.files[index]);
           }),
         ],
       ),
