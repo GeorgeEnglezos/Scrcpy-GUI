@@ -187,6 +187,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
           children: links.map((link) {
             return ConstrainedBox(
               constraints: const BoxConstraints(
+                minHeight: 200,
                 maxHeight: 400,
                 minWidth: 200,
                 maxWidth: 400,
@@ -209,6 +210,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
                   }
                 },
                 child: Container(
+                  alignment: Alignment.topLeft,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.commandGrey,
