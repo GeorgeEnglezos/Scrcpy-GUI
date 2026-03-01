@@ -35,7 +35,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
     final officialScrcpy = [
       {
         'title': 'Scrcpy',
-        'description': 'Official GitHub repository for Scrcpy project.',
+        'description': 'Official GitHub repository for the scrcpy project.',
         'url': 'https://github.com/Genymobile/scrcpy',
       },
       {
@@ -75,18 +75,18 @@ class _ResourcesPageState extends State<ResourcesPage> {
       {
         'title': 'Documentation',
         'description':
-            'I promise I will update the docs some day. Use your instinct for the time being!',
+            'I promise I will update the docs someday. Use your instinct for the time being!',
         'url': 'https://github.com/GeorgeEnglezos/Scrcpy-GUI#readme',
       },
       {
         'title': 'Issues',
         'description':
-            'Any feedback is appreciated, good or bad. There are no bad ideas, only things I am bored of implementing',
-        'url': 'https://github.com/GeorgeEnglezos/Scrcpy-GUI/issues',
+            'Any feedback is appreciated, good or bad. There are no bad ideas, only things I am bored of implementing.',
+        'url': 'https://github.com/GeorgeEnglezos/Scrcpy-GUI/issues/new',
       },
       {
         'title': 'Web Scrcpy',
-        'description': 'A very light web version of the app built with Angular',
+        'description': 'A very light web version of the app built with Angular.',
         'url': 'https://scrcpy-ui.web.app/',
       },
       {
@@ -130,7 +130,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
       {
         'question': 'I found a bug! Where do I report it?',
         'answer':
-            'Please open an issue on the GitHub repository at https://github.com/GeorgeEnglezos/Scrcpy-GUI/issues with details about the bug and your platform.',
+            'Please open an issue on the GitHub repository at https://github.com/GeorgeEnglezos/Scrcpy-GUI/issues/new with details about the bug and your platform.',
       },
     ];
 
@@ -187,9 +187,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
           children: links.map((link) {
             return ConstrainedBox(
               constraints: const BoxConstraints(
-                minHeight: 200,
-                maxHeight: 400,
-                minWidth: 200,
+                minHeight: 150,
+                maxHeight: 150,
                 maxWidth: 400,
               ),
               child: InkWell(
@@ -217,11 +216,13 @@ class _ResourcesPageState extends State<ResourcesPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         link['title']!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -380,7 +381,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
                   buildCategory('My Scrcpy GUI', myScrcpyGui),
                   const SizedBox(height: 24),
                   buildCategory(
-                    'Similar Projects worth checking out',
+                    'Similar Projects Worth Checking Out',
                     similarProjects,
                   ),
                   const SizedBox(height: 24),
