@@ -148,6 +148,9 @@ class _ResourcesPageState extends State<ResourcesPage> {
 
     // Install / Uninstall commands for Scrcpy
     final scrcpyCommands = [
+      // Winget (Windows)
+      'winget install Genymobile.scrcpy',
+      'winget uninstall Genymobile.scrcpy',
       // Scoop (Windows)
       'scoop install scrcpy',
       'scoop uninstall scrcpy',
@@ -164,6 +167,9 @@ class _ResourcesPageState extends State<ResourcesPage> {
 
     // Install / Uninstall commands for ADB
     final adbCommands = [
+      // Winget (Windows)
+      'winget install Google.PlatformTools',
+      'winget uninstall Google.PlatformTools',
       // Scoop (Windows)
       'scoop install adb',
       'scoop uninstall adb',
