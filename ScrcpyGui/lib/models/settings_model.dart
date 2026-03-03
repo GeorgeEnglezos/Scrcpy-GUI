@@ -71,6 +71,7 @@ class AppSettings {
   String bootTab;
   String settingsDirectory;
   List<String> shortcutMod;
+  bool checkForUpdatesOnStartup;
 
   AppSettings({
     required this.panelOrder,
@@ -84,6 +85,7 @@ class AppSettings {
     this.bootTab = 'Home',
     this.settingsDirectory = '',
     this.shortcutMod = const [],
+    this.checkForUpdatesOnStartup = true,
   });
 
   factory AppSettings.defaultSettings() {
@@ -99,6 +101,7 @@ class AppSettings {
       bootTab: 'Home',
       settingsDirectory: '',
       shortcutMod: const [],
+      checkForUpdatesOnStartup: true,
     );
   }
 
@@ -119,6 +122,7 @@ class AppSettings {
       bootTab: json['bootTab'] as String? ?? 'Home',
       settingsDirectory: json['settingsDirectory'] as String? ?? '',
       shortcutMod: (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
+      checkForUpdatesOnStartup: json['checkForUpdatesOnStartup'] as bool? ?? true,
     );
   }
 
@@ -135,6 +139,7 @@ class AppSettings {
       'bootTab': bootTab,
       'settingsDirectory': settingsDirectory,
       'shortcutMod': shortcutMod,
+      'checkForUpdatesOnStartup': checkForUpdatesOnStartup,
     };
   }
 

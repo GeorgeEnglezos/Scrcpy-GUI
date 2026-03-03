@@ -364,6 +364,17 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           const SizedBox(height: 16),
+          CustomCheckbox(
+            label: 'Check for updates on startup',
+            value: _settings.checkForUpdatesOnStartup,
+            onChanged: (value) {
+              setState(() {
+                _settings.checkForUpdatesOnStartup = value;
+              });
+              _saveSettings();
+            },
+          ),
+          const SizedBox(height: 16),
           CustomDropdown(
             label: 'Boot Tab',
             value: _settings.showBatFilesTab

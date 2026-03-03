@@ -1,4 +1,4 @@
-/// Scrcpy GUI - Cross-platform GUI for scrcpy
+﻿/// Scrcpy GUI - Cross-platform GUI for scrcpy
 /// Author: George Englezos
 /// https://github.com/GeorgeEnglezos/Scrcpy-GUI
 library;
@@ -17,8 +17,10 @@ import 'pages/home_page.dart';
 import 'services/command_builder_service.dart';
 import 'services/device_manager_service.dart';
 import 'services/settings_service.dart';
+import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 import 'widgets/sidebar.dart';
+import 'services/update_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -90,6 +92,8 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
   late int selectedIndex;
   late AppSettings _currentSettings;
   final SettingsService _settingsService = SettingsService();
+  UpdateService? _updateResult;
+  bool _hideBanner = false;
 
   @override
   void initState() {
@@ -98,6 +102,22 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
     // Set initial tab based on bootTab setting
     selectedIndex = _getInitialTabIndex();
     _startSettingsPolling();
+    _checkUpdateOnStartup();
+  }
+
+  Future<void> _checkUpdateOnStartup() async {
+    if (!_currentSettings.checkForUpdatesOnStartup) return;
+
+    // Small delay to allow app to settle
+    await Future.delayed(const Duration(seconds: 2));
+
+    final updateResult = await UpdateService.checkForUpdate();
+
+    if (mounted && updateResult.hasUpdate) {
+      setState(() {
+        _updateResult = updateResult;
+      });
+    }
   }
 
   int _getInitialTabIndex() {
@@ -181,9 +201,16 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
             ),
             // Main content area with animated page transitions
             Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: pages[selectedIndex],
+              child: Column(
+                children: [
+                  if (_updateResult != null && !_hideBanner) _buildUpdateBanner(),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: pages[selectedIndex],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -191,4 +218,89 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
       ),
     );
   }
+
+  Widget _buildUpdateBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.1),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.update,
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Row(
+              children: [
+                const Text(
+                  'Update Available',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'v${_updateResult!.latestVersion}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton(
+            onPressed: () => UpdateService.launchReleasePage(_updateResult?.downloadUrl),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Download Update'),
+          ),
+          const SizedBox(width: 12),
+          IconButton(
+            onPressed: () => setState(() => _hideBanner = true),
+            icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 20),
+            tooltip: 'Dismiss',
+          ),
+        ],
+      ),
+    );
+  }
+
 }

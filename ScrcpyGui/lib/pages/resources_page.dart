@@ -5,6 +5,7 @@ import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../services/update_service.dart';
 
 class ResourcesPage extends StatefulWidget {
   const ResourcesPage({super.key});
@@ -15,11 +16,14 @@ class ResourcesPage extends StatefulWidget {
 
 class _ResourcesPageState extends State<ResourcesPage> {
   String _version = '';
+  UpdateService? _nightlyResult;
+  bool _hideNightlyBanner = false;
 
   @override
   void initState() {
     super.initState();
     _loadVersion();
+    _checkNightlyOnOpen();
   }
 
   Future<void> _loadVersion() async {
@@ -28,6 +32,14 @@ class _ResourcesPageState extends State<ResourcesPage> {
       _version = packageInfo.version;
     });
   }
+
+  Future<void> _checkNightlyOnOpen() async {
+    final result = await UpdateService.checkForUpdate();
+    if (result.hasNightlyUpdate && mounted) {
+      setState(() => _nightlyResult = result);
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -313,61 +325,64 @@ class _ResourcesPageState extends State<ResourcesPage> {
       body: Column(
         children: [
           // Fixed header at the top
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              border: Border(
-                bottom: BorderSide(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.info_outline,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Developed by George Englezos',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'v$_version',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.primary,
+          Column(
+            children: [
+              if (_nightlyResult != null && !_hideNightlyBanner)
+                _buildNightlyBanner(_nightlyResult!),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      width: 1,
                     ),
                   ),
                 ),
-              ],
-            ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.info_outline,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Developed by George Englezos',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'v$_version',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           // Scrollable content
           Expanded(
@@ -386,7 +401,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
                   ),
                   const SizedBox(height: 24),
                   buildFaqs(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
                   // Responsive 3-column layout for command panels
                   LayoutBuilder(
@@ -488,4 +503,77 @@ class _ResourcesPageState extends State<ResourcesPage> {
       ),
     );
   }
+
+  Widget _buildNightlyBanner(UpdateService result) {
+    final nightly = result.nightlyInfo!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.orange.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.science_outlined, color: Colors.orange, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Row(
+              children: [
+                const Text(
+                  'Nightly Build Available',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'v${nightly.version}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton(
+            onPressed: () => UpdateService.launchReleasePage(nightly.downloadUrl),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Download Nightly'),
+          ),
+          const SizedBox(width: 12),
+          IconButton(
+            onPressed: () => setState(() => _hideNightlyBanner = true),
+            icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 20),
+            tooltip: 'Dismiss',
+          ),
+        ],
+      ),
+    );
+  }
+
 }
