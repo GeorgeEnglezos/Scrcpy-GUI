@@ -143,15 +143,26 @@ class AppIconController extends ChangeNotifier {
     await _runStrategy(packages, forceUpdate: forceUpdate);
   }
 
-  /// Clears the disk cache and resets all state.
+  /// Resets in-memory icon/label state without touching the disk cache.
   Future<void> clearCache() async {
     _cancelled = true;
-    await AppIconCache.clearCache();
+    _resetMemoryState();
+  }
+
+  /// Resets in-memory state without touching the disk cache.
+  /// Use when no device is selected (e.g. device disconnected).
+  void resetState() {
+    _cancelled = true;
+    _resetMemoryState();
+  }
+
+  void _resetMemoryState() {
     icons.clear();
     labels.clear();
     progress = 0;
     total = 0;
     isLoading = false;
+    currentDeviceId = null;
     notifyListeners();
   }
 

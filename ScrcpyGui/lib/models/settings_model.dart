@@ -59,6 +59,27 @@ List<PanelSettings> defaultPanels = [
   PanelSettings(id: 'running', displayName: 'Running Instances', visible: false),
 ];
 
+/// Settings specific to the App Drawer page.
+/// Extend this class as more App Drawer preferences are added.
+class AppDrawerSettings {
+  String appLaunchCommand;
+
+  static const String _defaultCommand =
+      'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
+
+  AppDrawerSettings({
+    this.appLaunchCommand = _defaultCommand,
+  });
+
+  factory AppDrawerSettings.fromJson(Map<String, dynamic> json) =>
+      AppDrawerSettings(
+        appLaunchCommand:
+            json['appLaunchCommand'] as String? ?? _defaultCommand,
+      );
+
+  Map<String, dynamic> toJson() => {'appLaunchCommand': appLaunchCommand};
+}
+
 /// App-wide settings
 class AppSettings {
   List<PanelSettings> panelOrder;
@@ -73,6 +94,7 @@ class AppSettings {
   String settingsDirectory;
   List<String> shortcutMod;
   IconFetchMethod iconFetchMethod;
+  AppDrawerSettings appDrawerSettings;
 
   AppSettings({
     required this.panelOrder,
@@ -87,7 +109,8 @@ class AppSettings {
     this.settingsDirectory = '',
     this.shortcutMod = const [],
     this.iconFetchMethod = IconFetchMethod.adbScrape,
-  });
+    AppDrawerSettings? appDrawerSettings,
+  }) : appDrawerSettings = appDrawerSettings ?? AppDrawerSettings();
 
   factory AppSettings.defaultSettings() {
     return AppSettings(
@@ -103,6 +126,7 @@ class AppSettings {
       settingsDirectory: '',
       shortcutMod: const [],
       iconFetchMethod: IconFetchMethod.adbScrape,
+      appDrawerSettings: AppDrawerSettings(),
     );
   }
 
@@ -124,6 +148,9 @@ class AppSettings {
       settingsDirectory: json['settingsDirectory'] as String? ?? '',
       shortcutMod: (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
       iconFetchMethod: iconFetchMethodFromString(json['iconFetchMethod'] as String?),
+      appDrawerSettings: AppDrawerSettings.fromJson(
+        (json['appDrawerSettings'] as Map<String, dynamic>?) ?? {},
+      ),
     );
   }
 
@@ -141,6 +168,7 @@ class AppSettings {
       'settingsDirectory': settingsDirectory,
       'shortcutMod': shortcutMod,
       'iconFetchMethod': iconFetchMethod.name,
+      'appDrawerSettings': appDrawerSettings.toJson(),
     };
   }
 

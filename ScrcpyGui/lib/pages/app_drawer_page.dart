@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_icon_controller.dart';
 import '../services/device_manager_service.dart';
+import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
 
@@ -27,10 +28,16 @@ class AppDrawerPage extends StatefulWidget {
 class _AppDrawerPageState extends State<AppDrawerPage> {
   String _searchQuery = '';
   DeviceManagerService? _deviceManager;
+  bool _commandExpanded = false;
+  late TextEditingController _cmdController;
+  bool _cmdDirty = false;
 
   @override
   void initState() {
     super.initState();
+    _cmdController = TextEditingController(
+      text: SettingsService.currentSettings?.appDrawerSettings.appLaunchCommand ?? '',
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _deviceManager = Provider.of<DeviceManagerService>(context, listen: false);
       _deviceManager!.selectedDeviceNotifier.addListener(_onDeviceChanged);
@@ -41,6 +48,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   @override
   void dispose() {
     _deviceManager?.selectedDeviceNotifier.removeListener(_onDeviceChanged);
+    _cmdController.dispose();
     super.dispose();
   }
 
@@ -52,7 +60,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     final controller = Provider.of<AppIconController>(context, listen: false);
 
     if (deviceId == null) {
-      controller.clearCache();
+      controller.resetState();
       return;
     }
 
@@ -85,6 +93,14 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     _loadPackages();
   }
 
+  Future<void> _saveCommand() async {
+    final settings = SettingsService.currentSettings;
+    if (settings == null) return;
+    settings.appDrawerSettings.appLaunchCommand = _cmdController.text.trim();
+    await SettingsService().saveSettings(settings);
+    setState(() => _cmdDirty = false);
+  }
+
   Future<void> _launchApp(String packageName) async {
     final dm = _deviceManager ?? Provider.of<DeviceManagerService>(context, listen: false);
     final deviceId = dm.selectedDevice;
@@ -96,12 +112,32 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       }
       return;
     }
-    final exe = TerminalService.scrcpyExecutable;
-    final cmd = '$exe --pause-on-exit=if-error --serial=$deviceId --start-app=$packageName';
+
+    final controller = Provider.of<AppIconController>(context, listen: false);
+    final label = controller.labels[packageName] ?? packageName;
+
+    // Build command from saved template
+    final settings = SettingsService.currentSettings;
+    var template = (settings?.appDrawerSettings.appLaunchCommand ?? '').trim();
+    if (template.isEmpty) {
+      template = 'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
+    }
+
+    final buffer = StringBuffer(template);
+
+    if (!template.contains('--serial')) {
+      buffer.write(' --serial=$deviceId');
+    }
+    buffer.write(' --start-app=$packageName');
+    if (!template.contains('--window-title')) {
+      buffer.write(' --window-title=$label');
+    }
+
+    final cmd = buffer.toString();
+    debugPrint('[AppDrawer] Launching: $cmd');
     await TerminalService.runCommandInNewTerminal(cmd);
+
     if (mounted) {
-      final controller = Provider.of<AppIconController>(context, listen: false);
-      final label = controller.labels[packageName] ?? packageName;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Launching $label…'),
@@ -138,6 +174,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
           body: Column(
             children: [
               _buildHeader(hasDevice, controller, packages.length),
+              if (hasDevice) _buildCommandBar(),
               if (!hasDevice)
                 _buildNoDevice()
               else if (controller.labels.isEmpty && !controller.isLoading)
@@ -294,6 +331,116 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               'No user apps found',
               style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommandBar() {
+    const defaultCmd = 'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeInOut,
+      child: Container(
+        color: AppColors.surface,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Divider(height: 1, thickness: 1, color: AppColors.divider),
+            InkWell(
+              onTap: () => setState(() => _commandExpanded = !_commandExpanded),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Row(
+                  children: [
+                    Icon(Icons.terminal, size: 16, color: AppColors.textSecondary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'App Launch Command',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      _commandExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_commandExpanded)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Focus(
+                        onFocusChange: (hasFocus) {
+                          if (!hasFocus && _cmdDirty) _saveCommand();
+                        },
+                        child: TextField(
+                          controller: _cmdController,
+                          onChanged: (_) => setState(() => _cmdDirty = true),
+                          onEditingComplete: () {
+                            if (_cmdDirty) _saveCommand();
+                            FocusScope.of(context).unfocus();
+                          },
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 13,
+                            fontFamily: 'monospace',
+                          ),
+                          decoration: InputDecoration(
+                            hintText: defaultCmd,
+                            hintStyle: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                            filled: true,
+                            fillColor: AppColors.background,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: AppColors.divider),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: AppColors.divider),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: AppColors.primary),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: 'Reset to default',
+                      child: IconButton(
+                        icon: Icon(Icons.restore, size: 20, color: AppColors.textSecondary),
+                        splashRadius: 18,
+                        onPressed: () {
+                          setState(() {
+                            _cmdController.text = defaultCmd;
+                            _cmdDirty = true;
+                          });
+                          _saveCommand();
+                        },
+                      ),
+                    ),
+                    Tooltip(
+                      message:
+                          '--serial, --start-app, and --window-title\n(if not present) are appended automatically',
+                      child: Icon(Icons.info_outline, size: 18, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
