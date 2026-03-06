@@ -7,13 +7,127 @@ on:
       - 'v*'
   pull_request:
     branches: [ master ]
+  schedule:
+    # 21:00 UTC = 23:00 Europe/Athens (adjust if you want a different hour)
+    - cron: '0 21 * * *'
   workflow_dispatch:
+    inputs:
+      nightly_dry_run:
+        description: 'Nightly: preview retention/upload actions without changing the release'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 jobs:
+  detect-nightly-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.detect.outputs.has_changes }}
+      run_builds: ${{ steps.detect.outputs.run_builds }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: detect
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          NIGHTLY_CONTEXT="false"
+          if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]] || [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && "${GITHUB_REF}" == "refs/heads/master" ]]; then
+            NIGHTLY_CONTEXT="true"
+          fi
+
+          if [[ "${NIGHTLY_CONTEXT}" != "true" ]]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "run_builds=true" >> "$GITHUB_OUTPUT"
+            echo "Non-nightly event; builds will run."
+            exit 0
+          fi
+
+          CURRENT_SHA="${GITHUB_SHA}"
+          LAST_SHA=""
+          if gh release view nightly >/dev/null 2>&1; then
+            BODY=$(gh release view nightly --json body --jq '.body' || true)
+            LAST_SHA=$(printf '%s\n' "$BODY" | sed -nE 's/.*Commit: ([0-9a-f]{7,40}).*/\1/p' | head -n1 || true)
+          fi
+
+          if [[ -z "${LAST_SHA}" ]]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "run_builds=true" >> "$GITHUB_OUTPUT"
+            echo "No recorded nightly commit found; builds will run."
+          elif [[ "${LAST_SHA}" == "${CURRENT_SHA}" ]]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "run_builds=false" >> "$GITHUB_OUTPUT"
+            echo "No new commits since last nightly (${CURRENT_SHA}); builds will be skipped."
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "run_builds=true" >> "$GITHUB_OUTPUT"
+            echo "New commit detected: current=${CURRENT_SHA}, last-nightly=${LAST_SHA}. Builds will run."
+          fi
+
+  nightly-logic-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate nightly versioning and retention logic
+        run: |
+          set -euo pipefail
+
+          RAW_VERSION=$(grep '^version:' ScrcpyGui/pubspec.yaml | awk '{print $2}')
+          BASE_VERSION=$(echo "$RAW_VERSION" | sed -E 's/\+.*$//' | sed -E 's/-.*$//')
+          TEST_DATE="20260304"
+          NIGHTLY_VERSION="${BASE_VERSION}-nightly.${TEST_DATE}.1"
+
+          [[ "$BASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$NIGHTLY_VERSION" =~ ^${BASE_VERSION}-nightly\.[0-9]{8}\.1$ ]]
+
+          EXISTING=$(printf '%s\n' \
+            "${BASE_VERSION}-nightly.20260303.1" \
+            "${BASE_VERSION}-nightly.20260304.1" \
+            "${BASE_VERSION}-nightly.20260302.1")
+
+          PREVIOUS_VERSION=$(
+            printf '%s\n' "$EXISTING" \
+            | grep -v "^${NIGHTLY_VERSION}$" \
+            | sort -Vr \
+            | head -n1
+          )
+
+          test "$PREVIOUS_VERSION" = "${BASE_VERSION}-nightly.20260303.1"
+
+          # Mirror detect-nightly-changes release-body SHA parsing behavior.
+          BODY_WITH_SHA="Latest nightly: v${NIGHTLY_VERSION}; Commit: abcdef1234567890"
+          PARSED_SHA=$(printf '%s\n' "$BODY_WITH_SHA" | sed -nE 's/.*Commit: ([0-9a-f]{7,40}).*/\1/p' | head -n1 || true)
+          test "$PARSED_SHA" = "abcdef1234567890"
+
+          BODY_WITHOUT_SHA="Latest nightly: v${NIGHTLY_VERSION}"
+          PARSED_EMPTY=$(printf '%s\n' "$BODY_WITHOUT_SHA" | sed -nE 's/.*Commit: ([0-9a-f]{7,40}).*/\1/p' | head -n1 || true)
+          test -z "$PARSED_EMPTY"
+
+          # Skip behavior checks used by detect-nightly-changes.
+          CURRENT_SHA="abcdef1234567890"
+          LAST_SHA_SAME="abcdef1234567890"
+          LAST_SHA_DIFF="1234567abcdef1234"
+          LAST_SHA_MISSING=""
+
+          if [[ -z "${LAST_SHA_MISSING}" ]]; then HAS_CHANGES_MISSING=true; else HAS_CHANGES_MISSING=false; fi
+          if [[ "${LAST_SHA_SAME}" == "${CURRENT_SHA}" ]]; then HAS_CHANGES_SAME=false; else HAS_CHANGES_SAME=true; fi
+          if [[ "${LAST_SHA_DIFF}" == "${CURRENT_SHA}" ]]; then HAS_CHANGES_DIFF=false; else HAS_CHANGES_DIFF=true; fi
+
+          test "${HAS_CHANGES_MISSING}" = "true"
+          test "${HAS_CHANGES_SAME}" = "false"
+          test "${HAS_CHANGES_DIFF}" = "true"
+
+          echo "Nightly logic tests passed: base=$BASE_VERSION nightly=$NIGHTLY_VERSION previous=$PREVIOUS_VERSION"
+
   build-windows:
+    needs: [detect-nightly-changes]
+    if: needs.detect-nightly-changes.outputs.run_builds == 'true'
     runs-on: windows-latest
     defaults:
       run:
@@ -40,6 +154,8 @@ jobs:
           path: ScrcpyGui/build/windows/x64/runner/Release/
 
   build-linux:
+    needs: [detect-nightly-changes]
+    if: needs.detect-nightly-changes.outputs.run_builds == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -333,6 +449,8 @@ jobs:
           path: ScrcpyGui/artifacts/linux_package/
 
   build-macos:
+    needs: [detect-nightly-changes]
+    if: needs.detect-nightly-changes.outputs.run_builds == 'true'
     runs-on: macos-latest
     defaults:
       run:
@@ -576,3 +694,108 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-nightly-release:
+    needs: [detect-nightly-changes, build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')) && needs.detect-nightly-changes.outputs.has_changes == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Compute nightly version
+        run: |
+          RAW_VERSION=$(grep '^version:' ScrcpyGui/pubspec.yaml | awk '{print $2}')
+          BASE_VERSION=$(echo "$RAW_VERSION" | sed -E 's/\+.*$//' | sed -E 's/-.*$//')
+          NIGHTLY_VERSION="${BASE_VERSION}-nightly.$(date -u +%Y%m%d).1"
+
+          echo "RAW_VERSION=$RAW_VERSION" >> "$GITHUB_ENV"
+          echo "BASE_VERSION=$BASE_VERSION" >> "$GITHUB_ENV"
+          echo "NIGHTLY_VERSION=$NIGHTLY_VERSION" >> "$GITHUB_ENV"
+
+      - name: Create nightly ZIP archives
+        run: |
+          cd artifacts
+          zip -r ../scrcpy-gui-windows-v${NIGHTLY_VERSION}.zip windows-build/
+          zip -r ../scrcpy-gui-linux-v${NIGHTLY_VERSION}.zip linux-build/
+          cd macos-build
+          zip -r ../../scrcpy-gui-macos-v${NIGHTLY_VERSION}.zip .
+
+      - name: Ensure nightly pre-release exists
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view nightly >/dev/null 2>&1; then
+            gh release create nightly \
+              --title "Nightly Builds" \
+              --notes "Automated nightly pre-release builds. Assets keep only the current nightly and one previous nightly." \
+              --prerelease
+          fi
+
+      - name: Keep only current + previous nightly versions, then upload current
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NIGHTLY_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.nightly_dry_run || false }}
+        run: |
+          set -euo pipefail
+
+          # Discover existing nightly versions from asset names:
+          # scrcpy-gui-<platform>-v<version>.zip
+          mapfile -t EXISTING_VERSIONS < <(
+            gh release view nightly --json assets --jq '.assets[].name' \
+            | sed -nE 's/^scrcpy-gui-(windows|linux|macos)-v(.+)\.zip$/\2/p' \
+            | sort -Vu
+          )
+
+          PREVIOUS_VERSION=""
+          if [ ${#EXISTING_VERSIONS[@]} -gt 0 ]; then
+            PREVIOUS_VERSION=$(
+              printf '%s\n' "${EXISTING_VERSIONS[@]}" \
+              | grep -v "^${NIGHTLY_VERSION}$" \
+              | sort -Vr \
+              | head -n1 || true
+            )
+          fi
+
+          echo "Nightly dry run: ${NIGHTLY_DRY_RUN}"
+          echo "Current nightly version: ${NIGHTLY_VERSION}"
+          echo "Previous nightly version: ${PREVIOUS_VERSION:-none}"
+
+          # Remove any nightly asset that is neither current nor previous
+          mapfile -t EXISTING_ASSETS < <(gh release view nightly --json assets --jq '.assets[].name')
+          for asset in "${EXISTING_ASSETS[@]}"; do
+            if [[ "$asset" =~ ^scrcpy-gui-(windows|linux|macos)-v(.+)\.zip$ ]]; then
+              asset_version="${BASH_REMATCH[2]}"
+              if [[ "$asset_version" != "$NIGHTLY_VERSION" && "$asset_version" != "$PREVIOUS_VERSION" ]]; then
+                if [[ "${NIGHTLY_DRY_RUN}" == "true" ]]; then
+                  echo "[DRY RUN] Would delete asset: $asset"
+                else
+                  gh release delete-asset nightly "$asset" --yes || true
+                fi
+              fi
+            fi
+          done
+
+          # Upload current nightly assets (idempotent for same-day reruns)
+          if [[ "${NIGHTLY_DRY_RUN}" == "true" ]]; then
+            echo "[DRY RUN] Would upload: scrcpy-gui-windows-v${NIGHTLY_VERSION}.zip"
+            echo "[DRY RUN] Would upload: scrcpy-gui-linux-v${NIGHTLY_VERSION}.zip"
+            echo "[DRY RUN] Would upload: scrcpy-gui-macos-v${NIGHTLY_VERSION}.zip"
+          else
+            gh release upload nightly "scrcpy-gui-windows-v${NIGHTLY_VERSION}.zip" --clobber
+            gh release upload nightly "scrcpy-gui-linux-v${NIGHTLY_VERSION}.zip" --clobber
+            gh release upload nightly "scrcpy-gui-macos-v${NIGHTLY_VERSION}.zip" --clobber
+          fi
+
+          # Update release metadata each run for clarity
+          if [[ "${NIGHTLY_DRY_RUN}" == "true" ]]; then
+            echo "[DRY RUN] Would edit release title/notes for nightly"
+          else
+            gh release edit nightly \
+              --title "Nightly Builds (v${NIGHTLY_VERSION})" \
+              --notes "Latest nightly: v${NIGHTLY_VERSION}; Previous nightly: ${PREVIOUS_VERSION:-none}; Source branch: master; Commit: ${GITHUB_SHA}"
+          fi
