@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:scrcpy_gui_prod/pages/app_drawer_page.dart';
 import 'package:scrcpy_gui_prod/pages/scripts_page.dart';
 import 'package:scrcpy_gui_prod/pages/favorites_page.dart';
 import 'package:scrcpy_gui_prod/pages/resources_page.dart';
@@ -14,6 +15,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'models/settings_model.dart';
 import 'pages/home_page.dart';
+import 'services/app_icon_controller.dart';
 import 'services/command_builder_service.dart';
 import 'services/device_manager_service.dart';
 import 'services/settings_service.dart';
@@ -51,6 +53,10 @@ Future<void> main() async {
   final settingsService = SettingsService();
   final settings = await settingsService.loadSettings();
 
+  final iconController = AppIconController(
+    fetchMethod: settings.iconFetchMethod,
+  );
+
   runApp(
     MultiProvider(
       providers: [
@@ -59,6 +65,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<CommandBuilderService>.value(
           value: commandBuilder,
+        ),
+        ChangeNotifierProvider<AppIconController>.value(
+          value: iconController,
         ),
       ],
       child: ScrcpyGuiApp(settings: settings),
@@ -106,7 +115,7 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
         return 1;
       case 'Scripts':
       case 'Bat Files': // Legacy support
-        return _currentSettings.showBatFilesTab ? 2 : 0;
+        return _currentSettings.showBatFilesTab ? 3 : 0;
       default:
         return 0; // Home
     }
@@ -121,8 +130,8 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
           setState(() {
             _currentSettings = newSettings;
             // Adjust selectedIndex if Scripts tab was hidden and user was on a tab after it
-            if (!newSettings.showBatFilesTab && selectedIndex >= 2) {
-              selectedIndex = selectedIndex > 2 ? selectedIndex - 1 : selectedIndex;
+            if (!newSettings.showBatFilesTab && selectedIndex >= 3) {
+              selectedIndex = selectedIndex > 3 ? selectedIndex - 1 : selectedIndex;
             }
           });
         }
@@ -151,6 +160,7 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
           onNavigateToSettings: () => setState(() => selectedIndex = pages.length - 1),
         ),
         const FavoritesPage(),
+        const AppDrawerPage(),
         if (_currentSettings.showBatFilesTab) const ScriptsPage(),
         const ResourcesPage(),
         const ShortcutsPage(),

@@ -36,8 +36,6 @@ class SettingsService {
 
   /// Migrate settings by adding any new panels that don't exist in saved settings
   void _migratePanels(AppSettings settings) {
-    final existingIds = settings.panelOrder.map((p) => p.id).toSet();
-
     // Remove deprecated panels (e.g., shortcuts panel)
     final deprecatedPanelIds = {'shortcuts'};
     settings.panelOrder.removeWhere((panel) => deprecatedPanelIds.contains(panel.id));

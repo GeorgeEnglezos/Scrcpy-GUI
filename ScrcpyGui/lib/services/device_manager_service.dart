@@ -14,6 +14,7 @@ library;
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/phone_info_model.dart';
+import '../services/app_icon_cache.dart';
 import '../services/terminal_service.dart';
 
 /// Service for managing Android device connections and information
@@ -168,13 +169,19 @@ class DeviceManagerService extends ChangeNotifier {
   /// Logs completion timestamp in debug mode.
   Future<void> _loadDeviceData(String deviceId) async {
     final packages = await TerminalService.listPackages(deviceId: deviceId);
-    final packageLabels = await TerminalService.listPackagesWithLabels(
-      deviceId: deviceId,
-    );
-    final rawEncoders = await TerminalService.loadScrcpyEncoders(
-      deviceId: deviceId,
-    );
 
+    // Fetch the cache so we can immediately hydrate labels that are already known.
+    final cachedLabels = await AppIconCache.loadCachedLabels();
+
+    // We construct the labels Map but we do NOT fetch anything via the network
+    // or cache files here. It just initializes with known labels or empty mappings 
+    // to allow the UI to quickly display package paths while it asks AppIconService to resolve the real labels.
+    final Map<String, String> packageLabels = {
+      for (var pkg in packages)
+        pkg: (cachedLabels[pkg]?.isNotEmpty == true) ? cachedLabels[pkg]! : pkg,
+    };
+
+    final rawEncoders = await TerminalService.loadScrcpyEncoders(deviceId: deviceId);
     final videoCodecsEncoders = TerminalService.parseVideoEncoders(rawEncoders);
     final audioCodecsEncoders = TerminalService.parseAudioEncoders(rawEncoders);
 

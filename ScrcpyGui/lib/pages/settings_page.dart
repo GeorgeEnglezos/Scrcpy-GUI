@@ -10,6 +10,8 @@ import '../widgets/surrounding_panel.dart';
 import '../widgets/custom_checkbox.dart';
 import '../widgets/custom_dropdown.dart';
 import '../widgets/custom_multi_dropdown.dart';
+import 'package:provider/provider.dart';
+import '../services/app_icon_controller.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -230,6 +232,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -393,6 +396,80 @@ class _SettingsPageState extends State<SettingsPage> {
               _saveSettings();
             },
             tooltip: 'Select one or more modifier keys used for scrcpy shortcuts (e.g. lctrl+rctrl). Defaults to left Alt or left Super if not set.',
+          ),
+          const SizedBox(height: 24),
+          const Divider(color: AppColors.hover),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Row(
+              children: [
+                Consumer<AppIconController>(
+                  builder: (context, controller, _) => ElevatedButton.icon(
+                    onPressed: controller.isLoading
+                        ? null
+                        : () => context.read<AppIconController>().fetchMissing(forceUpdate: true),
+                    icon: controller.isLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.cloud_download, size: 18),
+                    label: Text(controller.isLoading ? 'Scraping...' : 'Scrape Missing App Info'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Flexible(
+                  child: Text(
+                    'Fetches icons & names for all apps on the current device from the web.',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    await context.read<AppIconController>().clearCache();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('App icon and label cache cleared.'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.delete_sweep, size: 18),
+                  label: const Text('Clear Internal Cache'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Flexible(
+                  child: Text(
+                    'Deletes local icon/label copies. Helpful if scraping failed previously.',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

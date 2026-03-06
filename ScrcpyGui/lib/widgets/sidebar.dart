@@ -44,6 +44,7 @@ class Sidebar extends StatelessWidget {
     final List<_SidebarItem> items = [
       const _SidebarItem(icon: Icons.home, label: 'Home'),
       const _SidebarItem(icon: Icons.favorite, label: 'Favorites'),
+      const _SidebarItem(icon: Icons.grid_view, label: 'App Drawer'),
       if (showBatFilesTab)
         const _SidebarItem(icon: Icons.terminal, label: 'Scripts'),
       const _SidebarItem(icon: Icons.folder, label: 'Resources'),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../services/icon_fetch_strategy.dart';
 
 class PanelSettings {
   String id;
@@ -71,6 +72,7 @@ class AppSettings {
   String bootTab;
   String settingsDirectory;
   List<String> shortcutMod;
+  IconFetchMethod iconFetchMethod;
 
   AppSettings({
     required this.panelOrder,
@@ -84,6 +86,7 @@ class AppSettings {
     this.bootTab = 'Home',
     this.settingsDirectory = '',
     this.shortcutMod = const [],
+    this.iconFetchMethod = IconFetchMethod.adbScrape,
   });
 
   factory AppSettings.defaultSettings() {
@@ -99,6 +102,7 @@ class AppSettings {
       bootTab: 'Home',
       settingsDirectory: '',
       shortcutMod: const [],
+      iconFetchMethod: IconFetchMethod.adbScrape,
     );
   }
 
@@ -119,6 +123,7 @@ class AppSettings {
       bootTab: json['bootTab'] as String? ?? 'Home',
       settingsDirectory: json['settingsDirectory'] as String? ?? '',
       shortcutMod: (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
+      iconFetchMethod: iconFetchMethodFromString(json['iconFetchMethod'] as String?),
     );
   }
 
@@ -135,6 +140,7 @@ class AppSettings {
       'bootTab': bootTab,
       'settingsDirectory': settingsDirectory,
       'shortcutMod': shortcutMod,
+      'iconFetchMethod': iconFetchMethod.name,
     };
   }
 

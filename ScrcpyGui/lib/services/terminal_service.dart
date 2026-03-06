@@ -13,7 +13,6 @@ library;
 
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import '../constants/package_names.dart';
 import 'settings_service.dart';
 
 /// Service for executing terminal commands and managing system processes
@@ -563,72 +562,6 @@ class TerminalService {
         .map((line) => line.replaceAll('package:', '').trim())
         .where((p) => p.isNotEmpty)
         .toList();
-  }
-
-  /// Get the display label for a specific package
-  ///
-  /// Uses a hybrid approach:
-  /// 1. Checks common package names dictionary (fast, from constants file)
-  /// 2. Falls back to showing the complete package name
-  ///
-  /// [deviceId] Target device ID (not used in current implementation)
-  /// [packageName] Package name to query (e.g., 'com.android.chrome')
-  ///
-  /// Returns the app's display name or full package name if not recognized
-  ///
-  /// Example:
-  /// ```dart
-  /// final label = await TerminalService.getPackageLabel('abc123', 'com.android.chrome');
-  /// // Returns: 'Chrome' (from dictionary)
-  ///
-  /// final label2 = await TerminalService.getPackageLabel('abc123', 'com.unknown.app');
-  /// // Returns: 'com.unknown.app' (fallback to full package name)
-  /// ```
-  static Future<String> getPackageLabel(
-    String deviceId,
-    String packageName,
-  ) async {
-    // Check common packages first
-    if (commonPackageNames.containsKey(packageName)) {
-      return commonPackageNames[packageName]!;
-    }
-
-    // Fallback: Return full package name
-    return packageName;
-  }
-
-  /// Lists installed packages with their display labels
-  ///
-  /// Retrieves both package names and user-facing app names.
-  /// This is slower than [listPackages] as it queries each package individually.
-  ///
-  /// [deviceId] Target device ID
-  /// [includeSystemApps] If false (default), only shows user-installed apps
-  ///
-  /// Returns a map of package name to display label
-  ///
-  /// Example:
-  /// ```dart
-  /// final packages = await TerminalService.listPackagesWithLabels('abc123');
-  /// // {'com.android.chrome': 'Chrome', 'com.whatsapp': 'WhatsApp'}
-  /// ```
-  static Future<Map<String, String>> listPackagesWithLabels({
-    required String deviceId,
-    bool includeSystemApps = false,
-  }) async {
-    final packages = await listPackages(
-      deviceId: deviceId,
-      includeSystemApps: includeSystemApps,
-    );
-
-    final Map<String, String> packageLabels = {};
-
-    for (var package in packages) {
-      final label = await getPackageLabel(deviceId, package);
-      packageLabels[package] = label;
-    }
-
-    return packageLabels;
   }
 
   /// Loads scrcpy encoders once for a device
