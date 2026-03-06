@@ -792,10 +792,29 @@ jobs:
           fi
 
           # Update release metadata each run for clarity
+          CURRENT_BODY=$(gh release view nightly --json body --jq '.body' || true)
+          STATIC_SECTION=$(printf '%s' "$CURRENT_BODY" | awk '/^---$/{found=1; next} found{print}' || true)
+
+          DYNAMIC_NOTES="Latest nightly: v${NIGHTLY_VERSION}
+Previous nightly: ${PREVIOUS_VERSION:-none}
+Source branch: main
+Commit: ${GITHUB_SHA}"
+
+          if [[ -n "$STATIC_SECTION" ]]; then
+            RELEASE_NOTES="${DYNAMIC_NOTES}
+
+---
+${STATIC_SECTION}"
+          else
+            RELEASE_NOTES="${DYNAMIC_NOTES}"
+          fi
+
           if [[ "${NIGHTLY_DRY_RUN}" == "true" ]]; then
             echo "[DRY RUN] Would edit release title/notes for nightly"
+            echo "[DRY RUN] Notes would be:"
+            printf '%s\n' "$RELEASE_NOTES"
           else
             gh release edit nightly \
               --title "Nightly Builds (v${NIGHTLY_VERSION})" \
-              --notes "Latest nightly: v${NIGHTLY_VERSION}; Previous nightly: ${PREVIOUS_VERSION:-none}; Source branch: main; Commit: ${GITHUB_SHA}"
+              --notes "$RELEASE_NOTES"
           fi
