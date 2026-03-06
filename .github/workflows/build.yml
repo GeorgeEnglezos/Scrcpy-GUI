@@ -793,7 +793,7 @@ jobs:
 
           # Update release metadata each run for clarity
           CURRENT_BODY=$(gh release view nightly --json body --jq '.body' || true)
-          STATIC_SECTION=$(printf '%s' "$CURRENT_BODY" | awk '/^---$/{found=1; next} found{print}' || true)
+          STATIC_SECTION=$(printf '%s' "$CURRENT_BODY" | tr -d '\r' | awk '/^---$/{found=1; next} found{print}' || true)
 
           DYNAMIC_NOTES=$(printf 'Latest nightly: v%s\nPrevious nightly: %s\nSource branch: main\nCommit: %s' \
             "${NIGHTLY_VERSION}" "${PREVIOUS_VERSION:-none}" "${GITHUB_SHA}")
