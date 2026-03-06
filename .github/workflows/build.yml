@@ -2,11 +2,11 @@ name: Build Multi-Platform
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
     tags:
       - 'v*'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
   schedule:
     # 21:00 UTC = 23:00 Europe/Athens (adjust if you want a different hour)
     - cron: '0 21 * * *'
@@ -37,7 +37,7 @@ jobs:
           set -euo pipefail
 
           NIGHTLY_CONTEXT="false"
-          if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]] || [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && "${GITHUB_REF}" == "refs/heads/master" ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]] || [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && "${GITHUB_REF}" == "refs/heads/main" ]]; then
             NIGHTLY_CONTEXT="true"
           fi
 
@@ -698,7 +698,7 @@ jobs:
   update-nightly-release:
     needs: [detect-nightly-changes, build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
-    if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')) && needs.detect-nightly-changes.outputs.has_changes == 'true'
+    if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')) && needs.detect-nightly-changes.outputs.has_changes == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -797,5 +797,5 @@ jobs:
           else
             gh release edit nightly \
               --title "Nightly Builds (v${NIGHTLY_VERSION})" \
-              --notes "Latest nightly: v${NIGHTLY_VERSION}; Previous nightly: ${PREVIOUS_VERSION:-none}; Source branch: master; Commit: ${GITHUB_SHA}"
+              --notes "Latest nightly: v${NIGHTLY_VERSION}; Previous nightly: ${PREVIOUS_VERSION:-none}; Source branch: main; Commit: ${GITHUB_SHA}"
           fi
