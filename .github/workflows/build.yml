@@ -795,16 +795,11 @@ jobs:
           CURRENT_BODY=$(gh release view nightly --json body --jq '.body' || true)
           STATIC_SECTION=$(printf '%s' "$CURRENT_BODY" | awk '/^---$/{found=1; next} found{print}' || true)
 
-          DYNAMIC_NOTES="Latest nightly: v${NIGHTLY_VERSION}
-Previous nightly: ${PREVIOUS_VERSION:-none}
-Source branch: main
-Commit: ${GITHUB_SHA}"
+          DYNAMIC_NOTES=$(printf 'Latest nightly: v%s\nPrevious nightly: %s\nSource branch: main\nCommit: %s' \
+            "${NIGHTLY_VERSION}" "${PREVIOUS_VERSION:-none}" "${GITHUB_SHA}")
 
           if [[ -n "$STATIC_SECTION" ]]; then
-            RELEASE_NOTES="${DYNAMIC_NOTES}
-
----
-${STATIC_SECTION}"
+            RELEASE_NOTES=$(printf '%s\n\n---\n%s' "$DYNAMIC_NOTES" "$STATIC_SECTION")
           else
             RELEASE_NOTES="${DYNAMIC_NOTES}"
           fi
