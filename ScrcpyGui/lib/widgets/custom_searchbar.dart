@@ -12,6 +12,7 @@ class CustomSearchBar extends StatefulWidget {
   final VoidCallback? onClear;
   final VoidCallback? onReload;
   final List<String> suggestions;
+  final Widget Function(String suggestion)? suggestionLeadingBuilder;
   final bool enabled;
   final String? tooltip;
 
@@ -23,6 +24,7 @@ class CustomSearchBar extends StatefulWidget {
     this.onClear,
     this.onReload,
     this.suggestions = const [],
+    this.suggestionLeadingBuilder,
     this.enabled = true,
     this.tooltip,
   });
@@ -178,6 +180,9 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                     itemCount: _filteredSuggestions.length,
                     itemBuilder: (context, index) {
                       final item = _filteredSuggestions[index];
+                      final leading = widget.suggestionLeadingBuilder?.call(
+                        item,
+                      );
                       return InkWell(
                         onTap: () => _onSuggestionTap(item),
                         child: Padding(
@@ -185,9 +190,22 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                             horizontal: kRowHorizontalPadding,
                             vertical: kRowVerticalPadding,
                           ),
-                          child: Text(
-                            item,
-                            style: TextStyle(color: AppColors.textSecondary),
+                          child: Row(
+                            children: [
+                              if (leading != null) ...[
+                                leading,
+                                const SizedBox(width: 8),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  item,
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -273,10 +291,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
     );
 
     if (widget.tooltip != null) {
-      return Tooltip(
-        message: widget.tooltip!,
-        child: searchBar,
-      );
+      return Tooltip(message: widget.tooltip!, child: searchBar);
     }
 
     return searchBar;

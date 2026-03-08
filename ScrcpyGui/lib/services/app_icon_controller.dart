@@ -1,31 +1,25 @@
 /// App Icon Controller
 ///
 /// ChangeNotifier that owns all icon/label state for the App Drawer and
-/// Settings page. Single source of truth — no page calls AppIconCache or
+/// Settings page. Single source of truth - no page calls AppIconCache or
 /// strategies directly.
-///
-/// Load order in loadForDevice():
-///   1. AppIconCache.loadCachedLabels()  → populate labels from _labels.json
-///   2. AppIconCache.getCachedIconIfExists() ×N (parallel) → populate icons from disk
-///   3. notifyListeners() → UI renders cache hits immediately
-///   4. If uncached packages remain → delegate to active strategy (TODO: stubs)
 library;
 
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../constants/package_names.dart';
+import '../models/app_drawer_settings_model.dart';
 import 'app_icon_cache.dart';
 import 'icon_fetch_strategy.dart';
+import 'settings_service.dart';
 import 'strategies/adb_scrape_strategy.dart';
 import 'strategies/helper_apk_strategy.dart';
 import 'strategies/one_click_export_strategy.dart';
 
 class AppIconController extends ChangeNotifier {
-  // ── State ────────────────────────────────────────────────────────────────
-
   /// Icons keyed by package name.
-  /// null  = not yet attempted
-  /// File('') = sentinel — attempted, no icon found
+  /// null = not yet attempted
+  /// File('') = sentinel - attempted, no icon found
   /// File(path) = cached icon on disk
   final Map<String, File?> icons = {};
 
@@ -37,30 +31,24 @@ class AppIconController extends ChangeNotifier {
   int progress = 0;
   int total = 0;
   String? currentDeviceId;
-  IconFetchMethod fetchMethod;
+  AppDrawerSettings appDrawerSettings;
 
   static final File _sentinel = File('');
 
   bool _cancelled = false;
+  bool _isRunning = false;
 
-  AppIconController({this.fetchMethod = IconFetchMethod.adbScrape});
+  AppIconController({AppDrawerSettings? appDrawerSettings})
+    : appDrawerSettings = appDrawerSettings ?? AppDrawerSettings();
 
-  // ── Strategy selection ────────────────────────────────────────────────────
-
-  IconFetchStrategy _buildStrategy() => switch (fetchMethod) {
+  IconFetchStrategy _buildStrategy() =>
+      switch (appDrawerSettings.iconFetchMethod) {
         IconFetchMethod.adbScrape => AdbScrapeStrategy(),
         IconFetchMethod.helperApk => HelperApkStrategy(),
         IconFetchMethod.oneClickExport => OneClickExportStrategy(),
       };
 
-  // ── Public API ────────────────────────────────────────────────────────────
-
   /// Loads icons and labels for [packages] on [deviceId].
-  ///
-  /// Step 1: Hydrate labels from disk cache immediately.
-  /// Step 2: Hydrate icons from disk cache in parallel.
-  /// Step 3: Notify listeners so UI renders cache hits.
-  /// Step 4: If uncached packages remain, delegate to active strategy.
   Future<void> loadForDevice(String deviceId, List<String> packages) async {
     _cancelled = false;
     currentDeviceId = deviceId;
@@ -70,14 +58,14 @@ class AppIconController extends ChangeNotifier {
     icons.clear();
     labels.clear();
 
-    // Step 1: Labels from _labels.json
+    // Step 1: Labels from _labels.json.
     final cachedLabels = await AppIconCache.loadCachedLabels();
     for (final pkg in packages) {
       final cached = cachedLabels[pkg];
       labels[pkg] = (cached != null && cached.isNotEmpty) ? cached : pkg;
     }
 
-    // Hydrate labels from local dictionary for any that are still raw package names
+    // Hydrate labels from local dictionary for any still using raw package names.
     for (final pkg in packages) {
       if (labels[pkg] == pkg) {
         final dictLabel = getLocalDictionaryLabel(pkg);
@@ -88,7 +76,7 @@ class AppIconController extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    // Step 2: Icons from disk cache (parallel)
+    // Step 2: Icons from disk cache (parallel).
     final cacheResults = await Future.wait(
       packages.map((pkg) async {
         final file = await AppIconCache.getCachedIconIfExists(pkg);
@@ -101,25 +89,22 @@ class AppIconController extends ChangeNotifier {
       if (entry.value != null) {
         icons[entry.key] = entry.value;
       } else {
-        icons[entry.key] = null; // pending
+        icons[entry.key] = null;
         uncached.add(entry.key);
       }
     }
 
     progress = packages.length - uncached.length;
-
-    // Step 3: Notify — UI shows everything cached so far
     notifyListeners();
 
-    // Step 4: Nothing uncached → done, skip strategy entirely
+    // Step 3: Nothing uncached -> done.
     if (uncached.isEmpty) {
       isLoading = false;
       notifyListeners();
       return;
     }
 
-    // Check if a labels cache already exists. If so, mark uncached as sentinel
-    // and return — the user can explicitly trigger fetchMissing() to fetch more.
+    // Step 4: If labels cache exists, defer network fetch until explicit action.
     final hasLabels = await AppIconCache.hasLabelsCache();
     if (hasLabels) {
       for (final pkg in uncached) {
@@ -130,12 +115,10 @@ class AppIconController extends ChangeNotifier {
       return;
     }
 
-    // No cache at all — attempt strategy (will throw UnimplementedError until implemented)
     await _runStrategy(uncached, forceUpdate: false);
   }
 
   /// Re-fetches all packages using the active strategy, bypassing cache.
-  /// Called by the "Scrape Missing Info" button in Settings and App Drawer.
   Future<void> fetchMissing({bool forceUpdate = true}) async {
     if (currentDeviceId == null || labels.isEmpty) return;
     _cancelled = false;
@@ -143,14 +126,13 @@ class AppIconController extends ChangeNotifier {
     await _runStrategy(packages, forceUpdate: forceUpdate);
   }
 
-  /// Resets in-memory icon/label state without touching the disk cache.
+  /// Resets in-memory icon/label state without touching disk cache.
   Future<void> clearCache() async {
     _cancelled = true;
     _resetMemoryState();
   }
 
-  /// Resets in-memory state without touching the disk cache.
-  /// Use when no device is selected (e.g. device disconnected).
+  /// Resets in-memory state without touching disk cache.
   void resetState() {
     _cancelled = true;
     _resetMemoryState();
@@ -172,19 +154,141 @@ class AppIconController extends ChangeNotifier {
   }
 
   /// Looks up [packageName] in the local hardcoded dictionary.
-  /// Returns the package name itself if not found.
   String getLocalDictionaryLabel(String packageName) {
     return commonPackageNames[packageName] ?? packageName;
   }
 
-  // ── Internal ──────────────────────────────────────────────────────────────
+  /// Persist the current app drawer settings to disk.
+  Future<void> saveSettings() async {
+    await SettingsService().saveAppDrawerSettings(appDrawerSettings);
+    notifyListeners();
+  }
 
-  Future<void> _runStrategy(List<String> packages, {required bool forceUpdate}) async {
+  /// Toggle favorite status for a package.
+  void toggleFavorite(String packageName) {
+    if (appDrawerSettings.favorites.contains(packageName)) {
+      appDrawerSettings.favorites.remove(packageName);
+    } else {
+      appDrawerSettings.favorites.add(packageName);
+    }
+    saveSettings();
+  }
+
+  /// Check if a package is favorited.
+  bool isFavorite(String packageName) =>
+      appDrawerSettings.favorites.contains(packageName);
+
+  /// Toggle script as favorite.
+  void toggleScriptFavorite(String scriptPath) {
+    if (appDrawerSettings.favorites.contains(scriptPath)) {
+      appDrawerSettings.favorites.remove(scriptPath);
+    } else {
+      appDrawerSettings.favorites.add(scriptPath);
+    }
+    saveSettings();
+  }
+
+  /// Check if a script is favorited.
+  bool isScriptFavorite(String scriptPath) =>
+      appDrawerSettings.favorites.contains(scriptPath);
+
+  // Group management
+
+  /// Create a new empty group with [name].
+  void createGroup(String name) {
+    appDrawerSettings.groups.add(AppGroup(name: name));
+    saveSettings();
+  }
+
+  /// Rename group at [index] to [newName].
+  void renameGroup(int index, String newName) {
+    if (index < 0 || index >= appDrawerSettings.groups.length) return;
+    appDrawerSettings.groups[index].name = newName;
+    saveSettings();
+  }
+
+  /// Delete group at [index]. Apps in it become ungrouped.
+  void deleteGroup(int index) {
+    if (index < 0 || index >= appDrawerSettings.groups.length) return;
+    appDrawerSettings.groups.removeAt(index);
+    saveSettings();
+  }
+
+  /// Move group from [oldIndex] to [newIndex].
+  void reorderGroup(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= appDrawerSettings.groups.length) return;
+    if (newIndex < 0 || newIndex >= appDrawerSettings.groups.length) return;
+    final group = appDrawerSettings.groups.removeAt(oldIndex);
+    appDrawerSettings.groups.insert(newIndex, group);
+    saveSettings();
+  }
+
+  /// Move [packageName] into the group at [groupIndex].
+  /// Removes from any other group first.
+  void moveToGroup(String packageName, int groupIndex) {
+    if (groupIndex < 0 || groupIndex >= appDrawerSettings.groups.length) return;
+    for (final group in appDrawerSettings.groups) {
+      group.items.remove(packageName);
+    }
+    appDrawerSettings.groups[groupIndex].items.add(packageName);
+    saveSettings();
+  }
+
+  /// Remove [packageName] from whichever group currently contains it.
+  void removeFromGroup(String packageName) {
+    for (final group in appDrawerSettings.groups) {
+      group.items.remove(packageName);
+    }
+    saveSettings();
+  }
+
+  /// Returns the index of the group containing [packageName], or -1.
+  int groupIndexOf(String packageName) {
+    for (var i = 0; i < appDrawerSettings.groups.length; i++) {
+      if (appDrawerSettings.groups[i].items.contains(packageName)) return i;
+    }
+    return -1;
+  }
+
+  void _autoCreateGroups(Map<String, String> categories) {
+    final grouped = <String, List<String>>{};
+    for (final entry in categories.entries) {
+      if (labels.containsKey(entry.key)) {
+        grouped.putIfAbsent(entry.value, () => []).add(entry.key);
+      }
+    }
+
+    appDrawerSettings.groups.removeWhere((g) => g.isAutoGenerated);
+
+    for (final entry in grouped.entries) {
+      appDrawerSettings.groups.add(
+        AppGroup(name: entry.key, items: entry.value, isAutoGenerated: true),
+      );
+    }
+
+    saveSettings();
+  }
+
+  Future<void> _runStrategy(
+    List<String> packages, {
+    required bool forceUpdate,
+  }) async {
+    if (_isRunning) {
+      return;
+    }
+    if (currentDeviceId == null) {
+      return;
+    }
+
+    _isRunning = true;
     isLoading = true;
     notifyListeners();
 
     try {
-      await _buildStrategy().fetchAll(
+      final strategy = _buildStrategy();
+
+      await strategy.fetchAll(
+        deviceId: currentDeviceId!,
         packages: packages,
         labels: labels,
         batchSize: 10,
@@ -201,16 +305,23 @@ class AppIconController extends ChangeNotifier {
           progress = icons.values.where((v) => v != null).length;
           notifyListeners();
         },
+        onCategoriesLoaded: (categories) {
+          if (appDrawerSettings.autoGroupByCategory) {
+            _autoCreateGroups(categories);
+          }
+        },
       );
-    } on UnimplementedError catch (e) {
-      // Strategy not yet implemented — log and continue gracefully.
-      // The UI already shows whatever was loaded from cache.
-      debugPrint('[AppIconController] Strategy not implemented: $e');
-    } catch (e) {
-      debugPrint('[AppIconController] Strategy error: $e');
+    } on UnimplementedError {
+      return;
+    } catch (_) {
+      return;
+    } finally {
+      if (labels.isNotEmpty) {
+        await AppIconCache.saveLabels(labels);
+      }
+      _isRunning = false;
+      isLoading = false;
+      notifyListeners();
     }
-
-    isLoading = false;
-    notifyListeners();
   }
 }

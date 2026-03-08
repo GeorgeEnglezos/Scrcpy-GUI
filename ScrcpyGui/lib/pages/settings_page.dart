@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
 import '../models/settings_model.dart';
 import '../services/settings_service.dart';
@@ -12,6 +13,7 @@ import '../widgets/custom_dropdown.dart';
 import '../widgets/custom_multi_dropdown.dart';
 import 'package:provider/provider.dart';
 import '../services/app_icon_controller.dart';
+import '../services/app_icon_cache.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -23,6 +25,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final SettingsService _settingsService = SettingsService();
   late AppSettings _settings;
+  String _appIconCacheDirectory = '';
   bool _isLoading = true;
 
   final MultiSelectController<String> _shortcutModController =
@@ -46,6 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadSettings() async {
     final settings = await _settingsService.loadSettings();
     final settingsDir = await _settingsService.getSettingsDirectory();
+    final appIconCacheDir = await AppIconCache.cacheDir();
 
     if (settings.recordingsDirectory.isEmpty) {
       settings.recordingsDirectory = '$settingsDir/Recordings';
@@ -69,6 +73,7 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       _settings = settings;
       _settings.settingsDirectory = settingsDir;
+      _appIconCacheDirectory = appIconCacheDir.path;
       _isLoading = false;
     });
 
@@ -232,7 +237,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -296,14 +300,27 @@ class _SettingsPageState extends State<SettingsPage> {
                 bool isWideScreen = constraints.maxWidth > 1400;
 
                 if (isWideScreen) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  return StaggeredGrid.count(
+                    crossAxisCount: 10,
+                    mainAxisSpacing: 24,
+                    crossAxisSpacing: 24,
                     children: [
-                      Expanded(flex: 3, child: _buildFunctionalitySection()),
-                      const SizedBox(width: 24),
-                      Expanded(flex: 3, child: _buildUserInterfaceSection()),
-                      const SizedBox(width: 24),
-                      Expanded(flex: 4, child: _buildDirectorySection()),
+                      StaggeredGridTile.fit(
+                        crossAxisCellCount: 3,
+                        child: _buildFunctionalitySection(),
+                      ),
+                      StaggeredGridTile.fit(
+                        crossAxisCellCount: 3,
+                        child: _buildUserInterfaceSection(),
+                      ),
+                      StaggeredGridTile.fit(
+                        crossAxisCellCount: 4,
+                        child: _buildDirectorySection(),
+                      ),
+                      StaggeredGridTile.fit(
+                        crossAxisCellCount: 3,
+                        child: _buildAppDrawerSection(),
+                      ),
                     ],
                   );
                 } else {
@@ -314,6 +331,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       _buildUserInterfaceSection(),
                       const SizedBox(height: 24),
                       _buildDirectorySection(),
+                      const SizedBox(height: 24),
+                      _buildAppDrawerSection(),
                     ],
                   );
                 }
@@ -323,6 +342,25 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
+
+  List<String> _availableBootTabs() {
+    return [
+      'Home',
+      'Favorites',
+      if (_settings.showAppDrawerTab) 'App Drawer',
+      if (_settings.showBatFilesTab) 'Scripts',
+    ];
+  }
+
+  String _resolvedBootTabValue() {
+    final availableTabs = _availableBootTabs();
+    final normalizedBootTab = _settings.bootTab == 'Bat Files'
+        ? 'Scripts'
+        : _settings.bootTab;
+
+    if (availableTabs.contains(normalizedBootTab)) return normalizedBootTab;
+    return 'Home';
   }
 
   Widget _buildFunctionalitySection() {
@@ -351,6 +389,25 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: (value) {
               setState(() {
                 _settings.showBatFilesTab = value;
+                if (!value &&
+                    (_settings.bootTab == 'Scripts' ||
+                        _settings.bootTab == 'Bat Files')) {
+                  _settings.bootTab = 'Home';
+                }
+              });
+              _saveSettings();
+            },
+          ),
+          const SizedBox(height: 16),
+          CustomCheckbox(
+            label: 'Show App Drawer tab',
+            value: _settings.showAppDrawerTab,
+            onChanged: (value) {
+              setState(() {
+                _settings.showAppDrawerTab = value;
+                if (!value && _settings.bootTab == 'App Drawer') {
+                  _settings.bootTab = 'Home';
+                }
               });
               _saveSettings();
             },
@@ -369,12 +426,8 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 16),
           CustomDropdown(
             label: 'Boot Tab',
-            value: _settings.showBatFilesTab
-                ? _settings.bootTab
-                : (_settings.bootTab == 'Scripts' || _settings.bootTab == 'Bat Files' ? 'Home' : _settings.bootTab),
-            items: _settings.showBatFilesTab
-                ? const ['Home', 'Favorites', 'Scripts']
-                : const ['Home', 'Favorites'],
+            value: _resolvedBootTabValue(),
+            items: _availableBootTabs(),
             onChanged: (value) {
               if (value != null) {
                 setState(() {
@@ -395,7 +448,60 @@ class _SettingsPageState extends State<SettingsPage> {
               });
               _saveSettings();
             },
-            tooltip: 'Select one or more modifier keys used for scrcpy shortcuts (e.g. lctrl+rctrl). Defaults to left Alt or left Super if not set.',
+            tooltip:
+                'Select one or more modifier keys used for scrcpy shortcuts (e.g. lctrl+rctrl). Defaults to left Alt or left Super if not set.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserInterfaceSection() {
+    return SurroundingPanel(
+      icon: Icons.dashboard,
+      title: 'User Interface',
+      showButton: false,
+      lockedExpanded: true,
+      contentPadding: const EdgeInsets.all(12),
+      child: _buildPanelOrderTable(),
+    );
+  }
+
+  Widget _buildAppDrawerSection() {
+    return SurroundingPanel(
+      icon: Icons.grid_view,
+      title: 'App Drawer',
+      showButton: false,
+      lockedExpanded: true,
+      contentPadding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          CustomCheckbox(
+            label: 'Auto-group apps by Android category',
+            value: context
+                .read<AppIconController>()
+                .appDrawerSettings
+                .autoGroupByCategory,
+            onChanged: (value) {
+              final controller = context.read<AppIconController>();
+              controller.appDrawerSettings.autoGroupByCategory = value;
+              controller.saveSettings();
+              setState(() {});
+            },
+          ),
+          const SizedBox(height: 16),
+          CustomCheckbox(
+            label: 'Show scripts in App Drawer',
+            value: context
+                .read<AppIconController>()
+                .appDrawerSettings
+                .showScripts,
+            onChanged: (value) {
+              final controller = context.read<AppIconController>();
+              controller.appDrawerSettings.showScripts = value;
+              controller.saveSettings();
+              setState(() {});
+            },
           ),
           const SizedBox(height: 24),
           const Divider(color: AppColors.hover),
@@ -408,20 +514,34 @@ class _SettingsPageState extends State<SettingsPage> {
                   builder: (context, controller, _) => ElevatedButton.icon(
                     onPressed: controller.isLoading
                         ? null
-                        : () => context.read<AppIconController>().fetchMissing(forceUpdate: true),
+                        : () => context.read<AppIconController>().fetchMissing(
+                            forceUpdate: true,
+                          ),
                     icon: controller.isLoading
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Icon(Icons.cloud_download, size: 18),
-                    label: Text(controller.isLoading ? 'Scraping...' : 'Scrape Missing App Info'),
+                    label: Text(
+                      controller.isLoading
+                          ? 'Scraping...'
+                          : 'Scrape Missing App Info',
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -429,7 +549,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 const Flexible(
                   child: Text(
                     'Fetches icons & names for all apps on the current device from the web.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -457,15 +580,23 @@ class _SettingsPageState extends State<SettingsPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange.shade700,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 const Flexible(
                   child: Text(
                     'Deletes local icon/label copies. Helpful if scraping failed previously.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -476,23 +607,14 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildUserInterfaceSection() {
-    return SurroundingPanel(
-      icon: Icons.dashboard,
-      title: 'User Interface',
-      showButton: false,
-      lockedExpanded: true,
-      contentPadding: const EdgeInsets.all(12),
-      child: _buildPanelOrderTable(),
-    );
-  }
-
   Widget _buildPanelOrderTable() {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppColors.textSecondary.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         children: [
@@ -572,7 +694,9 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.1)),
+          bottom: BorderSide(
+            color: AppColors.textSecondary.withValues(alpha: 0.1),
+          ),
         ),
       ),
       child: Row(
@@ -702,7 +826,9 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 16),
           _buildDirectoryRow(
-            Platform.isWindows ? 'Scripts Directory (.bat, .cmd)' : 'Scripts Directory (.sh${Platform.isMacOS ? ', .command' : ''})',
+            Platform.isWindows
+                ? 'Scripts Directory (.bat, .cmd)'
+                : 'Scripts Directory (.sh${Platform.isMacOS ? ', .command' : ''})',
             _settings.batDirectory,
             onBrowse: () => _pickDirectory((path) {
               _settings.batDirectory = path;
@@ -711,9 +837,16 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 16),
           _buildDirectoryRow(
+            'App Icons & _labels.json Location',
+            _appIconCacheDirectory,
+            showBrowseButton: false,
+          ),
+          const SizedBox(height: 16),
+          _buildDirectoryRow(
             'Settings Location',
             _settings.settingsDirectory,
-            showButton: false,
+            showOpenButton: false,
+            showBrowseButton: false,
           ),
         ],
       ),
@@ -725,7 +858,8 @@ class _SettingsPageState extends State<SettingsPage> {
     String path, {
     VoidCallback? onBrowse,
     VoidCallback? onClear,
-    bool showButton = true,
+    bool showOpenButton = true,
+    bool showBrowseButton = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -765,7 +899,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
 
-            if (showButton) ...[
+            if (showOpenButton) ...[
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () => _openFolder(path),
@@ -786,7 +920,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ],
 
-            if (showButton) ...[
+            if (showBrowseButton) ...[
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: onBrowse,

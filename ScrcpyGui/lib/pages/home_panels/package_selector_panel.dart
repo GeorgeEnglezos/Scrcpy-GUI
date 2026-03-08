@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../services/app_icon_cache.dart';
 import '../../services/device_manager_service.dart';
 import '../../services/command_builder_service.dart';
+import '../../theme/app_colors.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_searchbar.dart';
 import '../../widgets/surrounding_panel.dart';
@@ -21,7 +25,8 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
   List<String> packages = [];
   Map<String, String> packageLabels = {}; // package -> app name
   Map<String, String> reverseLabels = {}; // app name -> package
-  DeviceManagerService? _deviceManager; // Add this field
+  final Map<String, File?> _packageIconByName = {};
+  DeviceManagerService? _deviceManager;
 
   @override
   void initState() {
@@ -51,26 +56,67 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
         packages = [];
         packageLabels = {};
         reverseLabels = {};
+        _packageIconByName.clear();
       });
       return;
     }
+
     final info = DeviceManagerService.devicesInfo[deviceId];
-    if (info != null) {
-      setState(() {
-        packages = info.packages;
-        packageLabels = info.packageLabels;
-        // Create reverse mapping: app name -> package name
-        reverseLabels = {
-          for (var entry in info.packageLabels.entries) entry.value: entry.key
-        };
-      });
-    } else {
+    if (info == null) {
       setState(() {
         packages = [];
         packageLabels = {};
         reverseLabels = {};
+        _packageIconByName.clear();
       });
+      return;
     }
+
+    setState(() {
+      packages = info.packages;
+      packageLabels = info.packageLabels;
+      // Create reverse mapping: app name -> package name
+      reverseLabels = {
+        for (var entry in info.packageLabels.entries) entry.value: entry.key,
+      };
+    });
+
+    await _hydratePackageIcons(info.packages);
+  }
+
+  Future<void> _hydratePackageIcons(List<String> packageNames) async {
+    final results = await Future.wait(
+      packageNames.map((packageName) async {
+        final iconFile = await AppIconCache.getCachedIconIfExists(packageName);
+        return MapEntry(packageName, iconFile);
+      }),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _packageIconByName
+        ..clear()
+        ..addAll(Map.fromEntries(results));
+    });
+  }
+
+  Widget _buildPackageIcon(File? iconFile) {
+    if (iconFile != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.file(
+          iconFile,
+          width: 18,
+          height: 18,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) =>
+              Icon(Icons.android, size: 18, color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return Icon(Icons.android, size: 18, color: AppColors.textSecondary);
   }
 
   void _updateCommandBuilder() {
@@ -93,7 +139,6 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
 
   @override
   void dispose() {
-    // Use the saved reference instead of Provider.of(context)
     _deviceManager?.selectedDeviceNotifier.removeListener(_onDeviceChanged);
     super.dispose();
   }
@@ -104,9 +149,9 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
     final appNames = packageLabels.values.toList()..sort();
 
     return SurroundingPanel(
-      title: "Applications",
+      title: 'Applications',
       icon: Icons.apps,
-      panelType: "Package Selector",
+      panelType: 'Package Selector',
       showButton: false,
       clearController: widget.clearController,
       onClearPressed: _clearAllFields,
@@ -114,9 +159,16 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
         children: [
           const SizedBox(height: 20),
           CustomSearchBar(
-            hintText: "Search App...",
+            hintText: 'Search App...',
             value: selectedAppName,
             suggestions: appNames,
+            suggestionLeadingBuilder: (appName) {
+              final packageName = reverseLabels[appName];
+              final iconFile = packageName != null
+                  ? _packageIconByName[packageName]
+                  : null;
+              return _buildPackageIcon(iconFile);
+            },
             onChanged: (value) {
               setState(() {
                 selectedAppName = value;

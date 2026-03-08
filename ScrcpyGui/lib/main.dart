@@ -52,9 +52,10 @@ Future<void> main() async {
   // Load settings
   final settingsService = SettingsService();
   final settings = await settingsService.loadSettings();
+  final appDrawerSettings = await settingsService.loadAppDrawerSettings();
 
   final iconController = AppIconController(
-    fetchMethod: settings.iconFetchMethod,
+    appDrawerSettings: appDrawerSettings,
   );
 
   runApp(
@@ -66,9 +67,7 @@ Future<void> main() async {
         ChangeNotifierProvider<CommandBuilderService>.value(
           value: commandBuilder,
         ),
-        ChangeNotifierProvider<AppIconController>.value(
-          value: iconController,
-        ),
+        ChangeNotifierProvider<AppIconController>.value(value: iconController),
       ],
       child: ScrcpyGuiApp(settings: settings),
     ),
@@ -110,15 +109,28 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
   }
 
   int _getInitialTabIndex() {
-    switch (_currentSettings.bootTab) {
-      case 'Favorites':
-        return 1;
-      case 'Scripts':
-      case 'Bat Files': // Legacy support
-        return _currentSettings.showBatFilesTab ? 3 : 0;
-      default:
-        return 0; // Home
-    }
+    final visibleTabs = _visibleTabLabelsFor(_currentSettings);
+    final normalizedBootTab = _normalizeBootTab(_currentSettings.bootTab);
+    final index = visibleTabs.indexOf(normalizedBootTab);
+    return index >= 0 ? index : 0;
+  }
+
+  String _normalizeBootTab(String bootTab) {
+    // Legacy support for older persisted value.
+    if (bootTab == 'Bat Files') return 'Scripts';
+    return bootTab;
+  }
+
+  List<String> _visibleTabLabelsFor(AppSettings settings) {
+    return [
+      'Home',
+      'Favorites',
+      if (settings.showAppDrawerTab) 'App Drawer',
+      if (settings.showBatFilesTab) 'Scripts',
+      'Resources',
+      'Shortcuts',
+      'Settings',
+    ];
   }
 
   void _startSettingsPolling() {
@@ -126,13 +138,23 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
     Future.delayed(const Duration(milliseconds: 500), () async {
       if (mounted) {
         final newSettings = await _settingsService.loadSettings();
-        if (newSettings.showBatFilesTab != _currentSettings.showBatFilesTab) {
+        final tabsVisibilityChanged =
+            newSettings.showBatFilesTab != _currentSettings.showBatFilesTab ||
+            newSettings.showAppDrawerTab != _currentSettings.showAppDrawerTab;
+
+        if (tabsVisibilityChanged) {
+          final currentTabs = _visibleTabLabelsFor(_currentSettings);
+          final currentTabLabel =
+              selectedIndex >= 0 && selectedIndex < currentTabs.length
+              ? currentTabs[selectedIndex]
+              : 'Home';
+
+          final newTabs = _visibleTabLabelsFor(newSettings);
+          final newIndex = newTabs.indexOf(currentTabLabel);
+
           setState(() {
             _currentSettings = newSettings;
-            // Adjust selectedIndex if Scripts tab was hidden and user was on a tab after it
-            if (!newSettings.showBatFilesTab && selectedIndex >= 3) {
-              selectedIndex = selectedIndex > 3 ? selectedIndex - 1 : selectedIndex;
-            }
+            selectedIndex = newIndex >= 0 ? newIndex : 0;
           });
         }
         _startSettingsPolling();
@@ -155,17 +177,18 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
   /// - 2: ResourcesPage - Documentation, links, and helpful commands
   /// - 3: SettingsPage - Application preferences and panel customization
   List<Widget> get pages => [
-        HomePage(
-          panelOrder: _currentSettings.panelOrder,
-          onNavigateToSettings: () => setState(() => selectedIndex = pages.length - 1),
-        ),
-        const FavoritesPage(),
-        const AppDrawerPage(),
-        if (_currentSettings.showBatFilesTab) const ScriptsPage(),
-        const ResourcesPage(),
-        const ShortcutsPage(),
-        const SettingsPage(),
-      ];
+    HomePage(
+      panelOrder: _currentSettings.panelOrder,
+      onNavigateToSettings: () =>
+          setState(() => selectedIndex = pages.length - 1),
+    ),
+    const FavoritesPage(),
+    if (_currentSettings.showAppDrawerTab) const AppDrawerPage(),
+    if (_currentSettings.showBatFilesTab) const ScriptsPage(),
+    const ResourcesPage(),
+    const ShortcutsPage(),
+    const SettingsPage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -180,10 +203,14 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
             Sidebar(
               selectedIndex: selectedIndex,
               showBatFilesTab: _currentSettings.showBatFilesTab,
+              showAppDrawerTab: _currentSettings.showAppDrawerTab,
               onItemSelected: (index) {
                 // Clear command builder when leaving Home page (index 0)
                 if (selectedIndex == 0 && index != 0) {
-                  final commandService = Provider.of<CommandBuilderService>(context, listen: false);
+                  final commandService = Provider.of<CommandBuilderService>(
+                    context,
+                    listen: false,
+                  );
                   commandService.resetToDefaults();
                 }
                 setState(() => selectedIndex = index);

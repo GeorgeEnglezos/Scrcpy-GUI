@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:scrcpy_gui_prod/widgets/command_panel.dart';
 import 'package:scrcpy_gui_prod/widgets/surrounding_panel.dart';
+import '../services/app_icon_cache.dart';
 import '../services/settings_service.dart';
 import '../services/commands_service.dart';
 import '../services/terminal_service.dart';
@@ -17,7 +18,13 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
+  static final RegExp _startAppArgPattern = RegExp(
+    r'''(?:^|\s)-{1,2}start-app(?:=|\s+)(?:"([^"]+)"|'([^']+)'|([^\s]+))''',
+    caseSensitive: false,
+  );
+
   final CommandsService _commandsService = CommandsService();
+  final Map<String, File?> _iconByPackage = {};
 
   String lastCommand = '';
   List<String> favorites = [];
@@ -40,6 +47,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
         mostUsed = commands.getTopMostUsed(limit: 10);
         isLoading = false;
       });
+
+      final allCommands = <String>{
+        if (lastCommand.isNotEmpty) lastCommand,
+        ...favorites,
+        ...mostUsed,
+      };
+      await _hydrateCommandIcons(allCommands);
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
@@ -53,11 +67,107 @@ class _FavoritesPageState extends State<FavoritesPage> {
     }
   }
 
-  // ⬇⬇⬇ NEW — run a command when panel tapped + increase counter
+  String? _extractStartAppPackage(String command) {
+    final match = _startAppArgPattern.firstMatch(command);
+    if (match == null) return null;
+    return match.group(1) ?? match.group(2) ?? match.group(3);
+  }
+
+  bool _hasFlag(String command, String flagName) {
+    final target = flagName.toLowerCase();
+    final tokens = command.toLowerCase().split(RegExp(r'\s+'));
+    for (final token in tokens) {
+      if (token == '--$target' || token == '-$target') return true;
+      if (token.startsWith('--$target=') || token.startsWith('-$target=')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _hydrateCommandIcons(Set<String> commands) async {
+    final packages = <String>{};
+    for (final command in commands) {
+      final packageName = _extractStartAppPackage(command);
+      if (packageName != null && packageName.isNotEmpty) {
+        packages.add(packageName);
+      }
+    }
+    if (packages.isEmpty) return;
+
+    var changed = false;
+    for (final packageName in packages) {
+      if (_iconByPackage.containsKey(packageName)) continue;
+      _iconByPackage[packageName] = await AppIconCache.getCachedIconIfExists(
+        packageName,
+      );
+      changed = true;
+    }
+
+    if (changed && mounted) {
+      setState(() {});
+    }
+  }
+
+  Widget _buildPackageIcon(File? iconFile) {
+    if (iconFile != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.file(
+          iconFile,
+          width: 18,
+          height: 18,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) =>
+              Icon(Icons.apps, size: 18, color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return Icon(Icons.apps, size: 18, color: AppColors.textSecondary);
+  }
+
+  Widget _buildFlagIcon(IconData icon, String tooltip) {
+    return Tooltip(
+      message: tooltip,
+      child: Icon(icon, size: 16, color: AppColors.textSecondary),
+    );
+  }
+
+  Widget? _buildCommandLeadingIcons(String command) {
+    final packageName = _extractStartAppPackage(command);
+    final items = <Widget>[];
+
+    if (packageName != null && packageName.isNotEmpty) {
+      final iconFile = _iconByPackage[packageName];
+      items.add(
+        Tooltip(message: packageName, child: _buildPackageIcon(iconFile)),
+      );
+    }
+
+    if (_hasFlag(command, 'record')) {
+      items.add(_buildFlagIcon(Icons.videocam, 'Recording'));
+    }
+    if (_hasFlag(command, 'new-display')) {
+      items.add(_buildFlagIcon(Icons.monitor, 'New display window'));
+    }
+    if (_hasFlag(command, 'turn-screen-off')) {
+      items.add(_buildFlagIcon(Icons.dark_mode, 'Turn screen off'));
+    }
+    if (items.isEmpty) return null;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(items.length * 2 - 1, (index) {
+        if (index.isOdd) return const SizedBox(width: 6);
+        return items[index ~/ 2];
+      }),
+    );
+  }
+
   Future<void> _runCommand(String command) async {
     final commandsService = CommandsService();
 
-    // increase usage counter
     await commandsService.trackCommandExecution(command);
 
     if (!mounted) return;
@@ -83,11 +193,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
       );
     }
 
-    // update most-used list
     await _loadData();
   }
 
-  // ⬇⬇⬇ NEW: same dialog used in Actions Panel
   void _showOutputDialog(String command, String output) {
     showDialog(
       context: context,
@@ -154,7 +262,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
       String baseFilename = nameParts.isEmpty ? 'scrcpy' : nameParts.join('_');
 
-      // Determine file extension and content based on platform
       String fileExtension;
       String fileContent;
 
@@ -162,9 +269,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
         fileExtension = '.bat';
         fileContent = '@echo off\n$command\npause';
       } else {
-        // macOS/Linux - use shell script
         fileExtension = Platform.isMacOS ? '.command' : '.sh';
-        fileContent = '#!/bin/bash\n$command\nread -p "Press any key to continue..."';
+        fileContent =
+            '#!/bin/bash\n$command\nread -p "Press any key to continue..."';
       }
 
       String filename = baseFilename;
@@ -177,7 +284,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
       final file = File('$downloadsDir/$filename$fileExtension');
       await file.writeAsString(fileContent);
 
-      // Make executable on Unix systems
       if (!Platform.isWindows) {
         await Process.run('chmod', ['+x', file.path]);
       }
@@ -233,6 +339,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   : CommandPanel(
                       command: lastCommand,
                       displayCommand: _display(lastCommand),
+                      leading: _buildCommandLeadingIcons(lastCommand),
                       showDelete: false,
                       onTap: () => _runCommand(lastCommand),
                       onDownload: () => _downloadAsBat(lastCommand),
@@ -257,6 +364,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         (index) => CommandPanel(
                           command: favorites[index],
                           displayCommand: _display(favorites[index]),
+                          leading: _buildCommandLeadingIcons(favorites[index]),
                           onTap: () => _runCommand(favorites[index]),
                           onDownload: () => _downloadAsBat(favorites[index]),
                           onDelete: () => _deleteFromFavorites(index),
@@ -283,6 +391,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         (index) => CommandPanel(
                           command: mostUsed[index],
                           displayCommand: _display(mostUsed[index]),
+                          leading: _buildCommandLeadingIcons(mostUsed[index]),
                           showDelete: false,
                           onTap: () => _runCommand(mostUsed[index]),
                           onDownload: () => _downloadAsBat(mostUsed[index]),

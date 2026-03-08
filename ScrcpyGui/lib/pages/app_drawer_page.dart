@@ -1,22 +1,22 @@
 /// App Drawer Page
-///
-/// Displays installed apps on the connected Android device as a searchable
-/// icon grid. Tapping an app launches a standalone scrcpy session for that app.
-///
-/// Icons are loaded from disk cache via AppIconController. Repeat visits are
-/// instant. Use "Scrape Missing Info" to fetch icons not yet cached.
 library;
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
+import '../services/app_icon_cache.dart';
 import '../services/app_icon_controller.dart';
 import '../services/device_manager_service.dart';
+import '../services/icon_fetch_strategy.dart';
 import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
 
 const _kGridMinTileWidth = 110.0;
+const _kGroupHeaderBorderRadius = 12.0;
+const _kGroupHeaderPadding = 10.0;
 
 class AppDrawerPage extends StatefulWidget {
   const AppDrawerPage({super.key});
@@ -26,20 +26,31 @@ class AppDrawerPage extends StatefulWidget {
 }
 
 class _AppDrawerPageState extends State<AppDrawerPage> {
+  static final RegExp _startAppArgPattern = RegExp(
+    r'''(?:^|\s)-{1,2}start-app=(?:"([^"]+)"|'([^']+)'|([^\s]+))''',
+    caseSensitive: false,
+  );
+
   String _searchQuery = '';
   DeviceManagerService? _deviceManager;
   bool _commandExpanded = false;
   late TextEditingController _cmdController;
   bool _cmdDirty = false;
+  final Map<String, String?> _scriptPackageByPath = {};
+  final Map<String, File?> _scriptCachedIcons = {};
+  bool _scriptIconRefreshScheduled = false;
 
   @override
   void initState() {
     super.initState();
     _cmdController = TextEditingController(
-      text: SettingsService.currentSettings?.appDrawerSettings.appLaunchCommand ?? '',
+      text: SettingsService.currentAppDrawerSettings?.appLaunchCommand ?? '',
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _deviceManager = Provider.of<DeviceManagerService>(context, listen: false);
+      _deviceManager = Provider.of<DeviceManagerService>(
+        context,
+        listen: false,
+      );
       _deviceManager!.selectedDeviceNotifier.addListener(_onDeviceChanged);
       _loadPackages();
     });
@@ -55,7 +66,9 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   void _onDeviceChanged() => _loadPackages();
 
   Future<void> _loadPackages() async {
-    final dm = _deviceManager ?? Provider.of<DeviceManagerService>(context, listen: false);
+    final dm =
+        _deviceManager ??
+        Provider.of<DeviceManagerService>(context, listen: false);
     final deviceId = dm.selectedDevice;
     final controller = Provider.of<AppIconController>(context, listen: false);
 
@@ -94,20 +107,24 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   }
 
   Future<void> _saveCommand() async {
-    final settings = SettingsService.currentSettings;
-    if (settings == null) return;
-    settings.appDrawerSettings.appLaunchCommand = _cmdController.text.trim();
-    await SettingsService().saveSettings(settings);
+    final controller = Provider.of<AppIconController>(context, listen: false);
+    controller.appDrawerSettings.appLaunchCommand = _cmdController.text.trim();
+    await controller.saveSettings();
     setState(() => _cmdDirty = false);
   }
 
   Future<void> _launchApp(String packageName) async {
-    final dm = _deviceManager ?? Provider.of<DeviceManagerService>(context, listen: false);
+    final dm =
+        _deviceManager ??
+        Provider.of<DeviceManagerService>(context, listen: false);
     final deviceId = dm.selectedDevice;
     if (deviceId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No device connected'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('No device connected'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
       return;
@@ -116,9 +133,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     final controller = Provider.of<AppIconController>(context, listen: false);
     final label = controller.labels[packageName] ?? packageName;
 
-    // Build command from saved template
-    final settings = SettingsService.currentSettings;
-    var template = (settings?.appDrawerSettings.appLaunchCommand ?? '').trim();
+    var template = controller.appDrawerSettings.appLaunchCommand.trim();
     if (template.isEmpty) {
       template = 'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
     }
@@ -130,17 +145,16 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }
     buffer.write(' --start-app=$packageName');
     if (!template.contains('--window-title')) {
-      buffer.write(' --window-title=$label');
+      buffer.write(' --window-title="$label"');
     }
 
     final cmd = buffer.toString();
-    debugPrint('[AppDrawer] Launching: $cmd');
     await TerminalService.runCommandInNewTerminal(cmd);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Launching $label…'),
+          content: Text('Launching $label...'),
           backgroundColor: AppColors.primary,
           duration: const Duration(seconds: 2),
         ),
@@ -158,9 +172,780 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }).toList();
   }
 
-  // ---------------------------------------------------------------------------
-  // Build
-  // ---------------------------------------------------------------------------
+  List<File> _loadScriptFiles() {
+    final settings = SettingsService.currentSettings;
+    if (settings == null) return [];
+    final dir = Directory(settings.batDirectory);
+    if (!dir.existsSync()) return [];
+
+    final extensions = Platform.isWindows
+        ? ['.bat', '.cmd']
+        : Platform.isMacOS
+        ? ['.sh', '.command']
+        : ['.sh'];
+
+    final files =
+        dir
+            .listSync()
+            .whereType<File>()
+            .where(
+              (f) =>
+                  extensions.any((ext) => f.path.toLowerCase().endsWith(ext)),
+            )
+            .toList()
+          ..sort(
+            (a, b) => p
+                .basename(a.path)
+                .toLowerCase()
+                .compareTo(p.basename(b.path).toLowerCase()),
+          );
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      return files
+          .where((f) => p.basename(f.path).toLowerCase().contains(q))
+          .toList();
+    }
+    return files;
+  }
+
+  Future<void> _launchScript(File script) async {
+    try {
+      if (Platform.isWindows) {
+        await Process.run('cmd', [
+          '/c',
+          'start',
+          '',
+          script.path,
+        ], runInShell: true);
+      } else {
+        await Process.run('chmod', ['+x', script.path]);
+        await Process.run('open', ['-a', 'Terminal', script.path]);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Running ${p.basename(script.path)}...'),
+            backgroundColor: AppColors.primary,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to run script: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String? _extractStartAppPackage(String scriptText) {
+    final match = _startAppArgPattern.firstMatch(scriptText);
+    if (match == null) return null;
+    return match.group(1) ?? match.group(2) ?? match.group(3);
+  }
+
+  String? _extractScriptPackage(File script) {
+    if (_scriptPackageByPath.containsKey(script.path)) {
+      return _scriptPackageByPath[script.path];
+    }
+    try {
+      final contents = script.readAsStringSync();
+      final packageName = _extractStartAppPackage(contents);
+      _scriptPackageByPath[script.path] = packageName;
+      return packageName;
+    } catch (_) {
+      _scriptPackageByPath[script.path] = null;
+      return null;
+    }
+  }
+
+  File? _iconFromController(AppIconController controller, String? packageName) {
+    if (packageName == null) return null;
+    final iconEntry = controller.icons[packageName];
+    if (iconEntry?.path.isEmpty == true) return null;
+    return iconEntry;
+  }
+
+  void _scheduleScriptIconRefresh(
+    List<File> scripts,
+    AppIconController controller,
+  ) {
+    if (_scriptIconRefreshScheduled) return;
+    _scriptIconRefreshScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _scriptIconRefreshScheduled = false;
+      await _hydrateScriptCachedIcons(scripts, controller);
+    });
+  }
+
+  Future<void> _hydrateScriptCachedIcons(
+    List<File> scripts,
+    AppIconController controller,
+  ) async {
+    final packages = <String>{};
+    for (final script in scripts) {
+      final packageName = _extractScriptPackage(script);
+      if (packageName != null) packages.add(packageName);
+    }
+    if (packages.isEmpty) return;
+
+    final missing = packages.where((pkg) {
+      if (_scriptCachedIcons.containsKey(pkg)) return false;
+      return _iconFromController(controller, pkg) == null;
+    }).toList();
+    if (missing.isEmpty) return;
+
+    var changed = false;
+    for (final packageName in missing) {
+      final cached = await AppIconCache.getCachedIconIfExists(packageName);
+      _scriptCachedIcons[packageName] = cached;
+      changed = true;
+    }
+    if (changed && mounted) {
+      setState(() {});
+    }
+  }
+
+  void _showContextMenu(
+    BuildContext context,
+    Offset position,
+    String pkg,
+    AppIconController controller,
+  ) {
+    final isFav = controller.isFavorite(pkg);
+    final currentGroupIndex = controller.groupIndexOf(pkg);
+
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx,
+        position.dy,
+      ),
+      color: AppColors.surface,
+      items: [
+        PopupMenuItem(
+          onTap: () => controller.toggleFavorite(pkg),
+          child: Row(
+            children: [
+              Icon(
+                isFav ? Icons.favorite : Icons.favorite_border,
+                size: 18,
+                color: isFav ? Colors.pinkAccent : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isFav ? 'Remove from Favorites' : 'Add to Favorites',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: pkg));
+            ScaffoldMessenger.of(this.context).showSnackBar(
+              SnackBar(
+                content: Text('Copied: $pkg'),
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          },
+          child: Row(
+            children: [
+              Icon(Icons.copy, size: 18, color: AppColors.textSecondary),
+              const SizedBox(width: 8),
+              Text(
+                'Copy Package Name',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          onTap: () {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (!mounted) return;
+              _showMoveToGroupMenu(position, pkg, controller);
+            });
+          },
+          child: Row(
+            children: [
+              Icon(
+                Icons.drive_file_move_outline,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Move to Group',
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+        if (currentGroupIndex >= 0)
+          PopupMenuItem(
+            onTap: () => controller.removeFromGroup(pkg),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.remove_circle_outline,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Remove from Group',
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showScriptContextMenu(
+    BuildContext context,
+    Offset position,
+    File script,
+    AppIconController controller,
+  ) {
+    final isFav = controller.isScriptFavorite(script.path);
+
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx,
+        position.dy,
+      ),
+      color: AppColors.surface,
+      items: [
+        PopupMenuItem(
+          onTap: () => controller.toggleScriptFavorite(script.path),
+          child: Row(
+            children: [
+              Icon(
+                isFav ? Icons.favorite : Icons.favorite_border,
+                size: 18,
+                color: isFav ? Colors.pinkAccent : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isFav ? 'Remove from Favorites' : 'Add to Favorites',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          onTap: () {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (!mounted) return;
+              _showScriptMoveToGroupMenu(position, script, controller);
+            });
+          },
+          child: Row(
+            children: [
+              Icon(
+                Icons.drive_file_move_outline,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Move to Group',
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showScriptMoveToGroupMenu(
+    Offset position,
+    File script,
+    AppIconController controller,
+  ) {
+    final groups = controller.appDrawerSettings.groups;
+
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx + 10,
+        position.dy,
+        position.dx + 10,
+        position.dy,
+      ),
+      color: AppColors.surface,
+      items: [
+        for (var i = 0; i < groups.length; i++)
+          PopupMenuItem(
+            onTap: () {
+              if (!groups[i].items.contains(script.path)) {
+                groups[i].items.add(script.path);
+                controller.saveSettings();
+              }
+            },
+            child: Row(
+              children: [
+                Icon(Icons.folder_outlined, size: 18, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Text(
+                  groups[i].name,
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        PopupMenuItem(
+          onTap: () {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (!mounted) return;
+              _showCreateGroupDialog(script.path, controller);
+            });
+          },
+          child: Row(
+            children: [
+              Icon(
+                Icons.create_new_folder_outlined,
+                size: 18,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'New Group...',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showMoveToGroupMenu(
+    Offset position,
+    String pkg,
+    AppIconController controller,
+  ) {
+    final groups = controller.appDrawerSettings.groups;
+
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx + 10,
+        position.dy,
+        position.dx + 10,
+        position.dy,
+      ),
+      color: AppColors.surface,
+      items: [
+        for (var i = 0; i < groups.length; i++)
+          PopupMenuItem(
+            onTap: () => controller.moveToGroup(pkg, i),
+            child: Row(
+              children: [
+                Icon(Icons.folder_outlined, size: 18, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Text(
+                  groups[i].name,
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        PopupMenuItem(
+          onTap: () {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (!mounted) return;
+              _showCreateGroupDialog(pkg, controller);
+            });
+          },
+          child: Row(
+            children: [
+              Icon(
+                Icons.create_new_folder_outlined,
+                size: 18,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'New Group...',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showCreateGroupDialog(
+    String? movePackage,
+    AppIconController controller,
+  ) async {
+    final nameController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text(
+          'New Group',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          style: TextStyle(color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: 'Group name',
+            hintStyle: TextStyle(color: AppColors.textSecondary),
+          ),
+          onSubmitted: (_) {
+            final name = nameController.text.trim();
+            if (name.isNotEmpty) {
+              controller.createGroup(name);
+              if (movePackage != null) {
+                controller.moveToGroup(
+                  movePackage,
+                  controller.appDrawerSettings.groups.length - 1,
+                );
+              }
+              Navigator.pop(ctx);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                controller.createGroup(name);
+                if (movePackage != null) {
+                  controller.moveToGroup(
+                    movePackage,
+                    controller.appDrawerSettings.groups.length - 1,
+                  );
+                }
+                Navigator.pop(ctx);
+              }
+            },
+            child: Text('Create', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showManageGroupsDialog(AppIconController controller) {
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final groups = controller.appDrawerSettings.groups;
+          return AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: Row(
+              children: [
+                Icon(Icons.folder_outlined, color: AppColors.primary, size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  'Manage Groups',
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 18),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 400,
+              height: 400,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: groups.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No groups yet. Create one below.',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: groups.length,
+                            itemBuilder: (ctx, index) {
+                              final group = groups[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.background,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.divider),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.folder,
+                                      size: 20,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () => _showRenameGroupDialog(
+                                          controller,
+                                          index,
+                                          setDialogState,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                group.name,
+                                                style: TextStyle(
+                                                  color: AppColors.textPrimary,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '(${group.items.length})',
+                                              style: TextStyle(
+                                                color: AppColors.textSecondary,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            if (group.isAutoGenerated) ...[
+                                              const SizedBox(width: 4),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary
+                                                      .withValues(alpha: 0.15),
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  'auto',
+                                                  style: TextStyle(
+                                                    color: AppColors.primary,
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.arrow_upward,
+                                        size: 18,
+                                        color: index > 0
+                                            ? AppColors.textSecondary
+                                            : AppColors.divider,
+                                      ),
+                                      onPressed: index > 0
+                                          ? () {
+                                              controller.reorderGroup(
+                                                index,
+                                                index - 1,
+                                              );
+                                              setDialogState(() {});
+                                            }
+                                          : null,
+                                      splashRadius: 16,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 32,
+                                        minHeight: 32,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.arrow_downward,
+                                        size: 18,
+                                        color: index < groups.length - 1
+                                            ? AppColors.textSecondary
+                                            : AppColors.divider,
+                                      ),
+                                      onPressed: index < groups.length - 1
+                                          ? () {
+                                              controller.reorderGroup(
+                                                index,
+                                                index + 1,
+                                              );
+                                              setDialogState(() {});
+                                            }
+                                          : null,
+                                      splashRadius: 16,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 32,
+                                        minHeight: 32,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete_outline,
+                                        size: 18,
+                                        color: Colors.red.shade300,
+                                      ),
+                                      onPressed: () {
+                                        controller.deleteGroup(index);
+                                        setDialogState(() {});
+                                      },
+                                      splashRadius: 16,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 32,
+                                        minHeight: 32,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showCreateGroupDialog(
+                        null,
+                        controller,
+                      ).then((_) => setDialogState(() {})),
+                      icon: Icon(Icons.add, size: 18, color: AppColors.primary),
+                      label: Text(
+                        'Add Group',
+                        style: TextStyle(color: AppColors.primary),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.primary),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Done', style: TextStyle(color: AppColors.primary)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showRenameGroupDialog(
+    AppIconController controller,
+    int index,
+    void Function(void Function()) setDialogState,
+  ) {
+    final nameController = TextEditingController(
+      text: controller.appDrawerSettings.groups[index].name,
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text(
+          'Rename Group',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          style: TextStyle(color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: 'Group name',
+            hintStyle: TextStyle(color: AppColors.textSecondary),
+          ),
+          onSubmitted: (_) {
+            final name = nameController.text.trim();
+            if (name.isNotEmpty) {
+              controller.renameGroup(index, name);
+              setDialogState(() {});
+              Navigator.pop(ctx);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                controller.renameGroup(index, name);
+                setDialogState(() {});
+                Navigator.pop(ctx);
+              }
+            },
+            child: Text('Rename', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +965,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               else if (controller.labels.isEmpty && !controller.isLoading)
                 _buildEmpty()
               else
-                Expanded(child: _buildGrid(controller, packages)),
+                Expanded(child: _buildGroupedContent(controller, packages)),
             ],
           ),
         );
@@ -188,13 +973,529 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     );
   }
 
-  Widget _buildHeader(bool hasDevice, AppIconController controller, int filteredCount) {
+  Widget _buildGroupedContent(
+    AppIconController controller,
+    List<String> visible,
+  ) {
+    if (visible.isEmpty) {
+      return Center(
+        child: Text(
+          'No apps match "$_searchQuery"',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gridPadding = 16.0;
+        const spacing = 8.0;
+        final crossAxisCount = (constraints.maxWidth / _kGridMinTileWidth)
+            .floor()
+            .clamp(3, 12);
+        final tileWidth =
+            (constraints.maxWidth -
+                gridPadding * 2 -
+                spacing * (crossAxisCount - 1)) /
+            crossAxisCount;
+
+        final visibleSet = visible.toSet();
+
+        final favPackages = controller.appDrawerSettings.favorites
+            .where((pkg) => visibleSet.contains(pkg))
+            .toList();
+
+        final groups = controller.appDrawerSettings.groups;
+        final groupedPackages = <String>{};
+        for (final group in groups) {
+          groupedPackages.addAll(group.items);
+        }
+
+        final ungrouped = visible
+            .where((pkg) => !groupedPackages.contains(pkg))
+            .toList();
+
+        return ListView(
+          padding: const EdgeInsets.all(gridPadding),
+          children: [
+            if (favPackages.isNotEmpty) ...[
+              _buildSectionHeader(
+                icon: Icons.favorite,
+                iconColor: Colors.pinkAccent,
+                title: 'Favorites',
+                count: favPackages.length,
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: _buildWrappedGrid(
+                  controller,
+                  favPackages,
+                  crossAxisCount,
+                  spacing,
+                  tileWidth,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (controller.appDrawerSettings.showScripts) ...[
+              () {
+                final scripts = _loadScriptFiles();
+                if (scripts.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCollapsibleSectionHeader(
+                      title: 'Scripts',
+                      count: scripts.length,
+                      collapsed: controller.appDrawerSettings.scriptsCollapsed,
+                      onToggle: () {
+                        controller.appDrawerSettings.scriptsCollapsed =
+                            !controller.appDrawerSettings.scriptsCollapsed;
+                        controller.saveSettings();
+                      },
+                      onRename: null,
+                      onDelete: null,
+                      onMoveUp: null,
+                      onMoveDown: null,
+                    ),
+                    if (!controller.appDrawerSettings.scriptsCollapsed) ...[
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: _buildScriptGrid(
+                          controller,
+                          scripts,
+                          crossAxisCount,
+                          spacing,
+                          tileWidth,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }(),
+            ],
+            for (final group in groups) ...[
+              () {
+                final groupVisible = group.items
+                    .where((pkg) => visibleSet.contains(pkg))
+                    .toList();
+                if (groupVisible.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCollapsibleSectionHeader(
+                      title: group.name,
+                      count: groupVisible.length,
+                      collapsed: group.collapsed,
+                      onToggle: () {
+                        group.collapsed = !group.collapsed;
+                        controller.saveSettings();
+                      },
+                      onRename: () {
+                        final idx = controller.appDrawerSettings.groups.indexOf(
+                          group,
+                        );
+                        if (idx >= 0) {
+                          _showRenameGroupDialog(
+                            controller,
+                            idx,
+                            (fn) => setState(fn),
+                          );
+                        }
+                      },
+                      onDelete: () {
+                        final idx = controller.appDrawerSettings.groups.indexOf(
+                          group,
+                        );
+                        if (idx >= 0) {
+                          controller.deleteGroup(idx);
+                        }
+                      },
+                      onMoveUp:
+                          controller.appDrawerSettings.groups.indexOf(group) > 0
+                          ? () {
+                              final idx = controller.appDrawerSettings.groups
+                                  .indexOf(group);
+                              controller.reorderGroup(idx, idx - 1);
+                            }
+                          : null,
+                      onMoveDown:
+                          controller.appDrawerSettings.groups.indexOf(group) <
+                              controller.appDrawerSettings.groups.length - 1
+                          ? () {
+                              final idx = controller.appDrawerSettings.groups
+                                  .indexOf(group);
+                              controller.reorderGroup(idx, idx + 1);
+                            }
+                          : null,
+                    ),
+                    if (!group.collapsed) ...[
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: _buildWrappedGrid(
+                          controller,
+                          groupVisible,
+                          crossAxisCount,
+                          spacing,
+                          tileWidth,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }(),
+            ],
+            if (ungrouped.isNotEmpty && groups.isNotEmpty) ...[
+              _buildCollapsibleSectionHeader(
+                title: 'Other',
+                count: ungrouped.length,
+                collapsed: controller.appDrawerSettings.otherCollapsed,
+                onToggle: () {
+                  controller.appDrawerSettings.otherCollapsed =
+                      !controller.appDrawerSettings.otherCollapsed;
+                  controller.saveSettings();
+                },
+                onRename: null,
+                onDelete: null,
+                onMoveUp: null,
+                onMoveDown: null,
+              ),
+              if (!controller.appDrawerSettings.otherCollapsed) ...[
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: _buildWrappedGrid(
+                    controller,
+                    ungrouped,
+                    crossAxisCount,
+                    spacing,
+                    tileWidth,
+                  ),
+                ),
+              ],
+            ] else if (ungrouped.isNotEmpty && groups.isEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: _buildWrappedGrid(
+                  controller,
+                  ungrouped,
+                  crossAxisCount,
+                  spacing,
+                  tileWidth,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildScriptGrid(
+    AppIconController controller,
+    List<File> scripts,
+    int crossAxisCount,
+    double spacing,
+    double tileWidth,
+  ) {
+    _scheduleScriptIconRefresh(scripts, controller);
+    final tileHeight = tileWidth / 1.0;
+    return Wrap(
+      spacing: spacing,
+      runSpacing: spacing,
+      children: scripts.map((script) {
+        final name = p.basenameWithoutExtension(script.path);
+        final packageName = _extractScriptPackage(script);
+        final iconFile =
+            _iconFromController(controller, packageName) ??
+            _scriptCachedIcons[packageName];
+        return SizedBox(
+          width: tileWidth,
+          height: tileHeight,
+          child: _ScriptTile(
+            name: name,
+            tileWidth: tileWidth,
+            iconFile: iconFile,
+            onTap: () => _launchScript(script),
+            scriptPath: script.path,
+            isFavorite: controller.isScriptFavorite(script.path),
+            onSecondaryTap: (position) =>
+                _showScriptContextMenu(context, position, script, controller),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required int count,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: iconColor.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(_kGroupHeaderPadding),
+        decoration: BoxDecoration(
+          color: iconColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(_kGroupHeaderBorderRadius),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 18, color: iconColor),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  color: iconColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCollapsibleSectionHeader({
+    required String title,
+    required int count,
+    required bool collapsed,
+    required VoidCallback? onToggle,
+    VoidCallback? onRename,
+    VoidCallback? onDelete,
+    VoidCallback? onMoveUp,
+    VoidCallback? onMoveDown,
+  }) {
+    final isCollapsible = onToggle != null;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: onToggle,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(_kGroupHeaderPadding),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(_kGroupHeaderBorderRadius),
+            border: isCollapsible && !collapsed
+                ? Border(
+                    bottom: BorderSide(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      width: 1,
+                    ),
+                  )
+                : null,
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.folder, size: 18, color: AppColors.primary),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (onRename != null || onDelete != null)
+                Container(
+                  margin: const EdgeInsets.only(right: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
+                    color: AppColors.surface,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'rename':
+                          onRename?.call();
+                          break;
+                        case 'delete':
+                          onDelete?.call();
+                          break;
+                        case 'up':
+                          onMoveUp?.call();
+                          break;
+                        case 'down':
+                          onMoveDown?.call();
+                          break;
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      if (onMoveUp != null)
+                        const PopupMenuItem(
+                          value: 'up',
+                          child: Text('Move Up'),
+                        ),
+                      if (onMoveDown != null)
+                        const PopupMenuItem(
+                          value: 'down',
+                          child: Text('Move Down'),
+                        ),
+                      if (onRename != null)
+                        const PopupMenuItem(
+                          value: 'rename',
+                          child: Text('Rename'),
+                        ),
+                      if (onDelete != null)
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.red.shade300),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              if (isCollapsible)
+                Icon(
+                  collapsed ? Icons.expand_more : Icons.expand_less,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWrappedGrid(
+    AppIconController controller,
+    List<String> packages,
+    int crossAxisCount,
+    double spacing,
+    double tileWidth,
+  ) {
+    final tileHeight = tileWidth / 1.0;
+    return Wrap(
+      spacing: spacing,
+      runSpacing: spacing,
+      children: packages.map((pkg) {
+        final iconEntry = controller.icons[pkg];
+        final isSentinel = iconEntry?.path.isEmpty == true;
+        return SizedBox(
+          width: tileWidth,
+          height: tileHeight,
+          child: _AppTile(
+            packageName: pkg,
+            label: (controller.labels[pkg]?.isNotEmpty == true)
+                ? controller.labels[pkg]!
+                : pkg,
+            iconFile: isSentinel ? null : iconEntry,
+            iconLoading: !controller.icons.containsKey(pkg),
+            tileWidth: tileWidth,
+            isFavorite: controller.isFavorite(pkg),
+            onTap: () => _launchApp(pkg),
+            onSecondaryTap: (position) =>
+                _showContextMenu(context, position, pkg, controller),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildHeader(
+    bool hasDevice,
+    AppIconController controller,
+    int filteredCount,
+  ) {
     final totalCount = controller.labels.length;
     return Container(
       color: AppColors.surface,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: Row(
         children: [
+          // [LEFT SECTION - Icon, Title, Count]
           Icon(Icons.grid_view, color: AppColors.primary, size: 22),
           const SizedBox(width: 10),
           Text(
@@ -211,7 +1512,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               '$filteredCount / $totalCount apps',
               style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
+
+          // [CENTER SPACING]
           const Spacer(),
+
+          // [LOADING INDICATOR]
           if (controller.isLoading) ...[
             SizedBox(
               width: 16,
@@ -223,35 +1528,31 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Loading icons…',
+              'Loading icons...',
               style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
             ),
             const SizedBox(width: 12),
           ],
-          if (!controller.isLoading && hasDevice && totalCount > 0) ...[
-            Tooltip(
-              message: 'Check web for missing icons & names',
-              child: IconButton(
-                icon: const Icon(Icons.cloud_download, size: 20),
-                color: AppColors.textSecondary,
-                hoverColor: AppColors.hover,
-                onPressed: _fetchMissingInfo,
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          // Search field
+
+          // [SEARCH BAR - Centered with larger size]
           if (hasDevice && totalCount > 0)
             SizedBox(
-              width: 220,
-              height: 36,
+              width: 240,
+              height: 40,
               child: TextField(
                 onChanged: (v) => setState(() => _searchQuery = v),
                 style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
                 decoration: InputDecoration(
-                  hintText: 'Search apps…',
-                  hintStyle: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                  prefixIcon: Icon(Icons.search, color: AppColors.textSecondary, size: 18),
+                  hintText: 'Search apps...',
+                  hintStyle: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: AppColors.textSecondary,
+                    size: 18,
+                  ),
                   filled: true,
                   fillColor: AppColors.background,
                   contentPadding: EdgeInsets.zero,
@@ -270,18 +1571,93 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 ),
               ),
             ),
-          const SizedBox(width: 8),
-          // Clear icon cache button
+          const SizedBox(width: 12),
+
+          // [RIGHT CONTROLS - Icon fetch dropdown]
+          if (hasDevice)
+            Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: controller.appDrawerSettings.iconFetchMethod.name,
+                  isDense: true,
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+                  dropdownColor: AppColors.surface,
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'helperApk',
+                      child: Text('Helper APK'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'adbScrape',
+                      child: Text('ADB Scrape'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'oneClickExport',
+                      child: Text('One-Click Export'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      controller.appDrawerSettings.iconFetchMethod =
+                          iconFetchMethodFromString(value);
+                      controller.saveSettings();
+                    }
+                  },
+                ),
+              ),
+            ),
+          if (hasDevice) const SizedBox(width: 8),
+
+          // [Cloud download button]
+          if (!controller.isLoading && hasDevice && totalCount > 0)
+            Tooltip(
+              message: 'Fetch missing app names & icons from web',
+              child: IconButton(
+                icon: const Icon(Icons.cloud_download, size: 20),
+                color: AppColors.textSecondary,
+                hoverColor: AppColors.hover,
+                onPressed: _fetchMissingInfo,
+              ),
+            ),
+          if (!controller.isLoading && hasDevice && totalCount > 0)
+            const SizedBox(width: 4),
+
+          // [Manage groups button]
+          if (!controller.isLoading && hasDevice && totalCount > 0)
+            Tooltip(
+              message: 'Manage Groups',
+              child: IconButton(
+                icon: const Icon(Icons.folder_outlined, size: 20),
+                color: AppColors.textSecondary,
+                hoverColor: AppColors.hover,
+                onPressed: () => _showManageGroupsDialog(controller),
+              ),
+            ),
+          if (!controller.isLoading && hasDevice && totalCount > 0)
+            const SizedBox(width: 8),
+
+          // [Clear cache button]
           if (hasDevice)
             Tooltip(
               message: 'Clear icon cache',
               child: IconButton(
-                icon: Icon(Icons.delete_sweep_outlined, color: AppColors.textSecondary),
+                icon: Icon(
+                  Icons.delete_sweep_outlined,
+                  color: AppColors.textSecondary,
+                ),
                 onPressed: _clearIconCache,
                 splashRadius: 18,
               ),
             ),
-          // Reload button
+
+          // [Reload button]
           if (hasDevice)
             Tooltip(
               message: 'Reload apps',
@@ -302,7 +1678,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.phone_android, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+            Icon(
+              Icons.phone_android,
+              size: 64,
+              color: AppColors.textSecondary.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 16),
             Text(
               'No device connected',
@@ -311,7 +1691,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             const SizedBox(height: 8),
             Text(
               'Connect an Android device to see its apps here.',
-              style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.6), fontSize: 13),
+              style: TextStyle(
+                color: AppColors.textSecondary.withValues(alpha: 0.6),
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -325,7 +1708,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.apps, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+            Icon(
+              Icons.apps,
+              size: 64,
+              color: AppColors.textSecondary.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 16),
             Text(
               'No user apps found',
@@ -338,7 +1725,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   }
 
   Widget _buildCommandBar() {
-    const defaultCmd = 'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
+    const defaultCmd =
+        'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
     return AnimatedSize(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeInOut,
@@ -351,10 +1739,17 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             InkWell(
               onTap: () => setState(() => _commandExpanded = !_commandExpanded),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Row(
                   children: [
-                    Icon(Icons.terminal, size: 16, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.terminal,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'App Launch Command',
@@ -398,10 +1793,16 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                           ),
                           decoration: InputDecoration(
                             hintText: defaultCmd,
-                            hintStyle: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                            hintStyle: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
                             filled: true,
                             fillColor: AppColors.background,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: AppColors.divider),
@@ -422,7 +1823,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     Tooltip(
                       message: 'Reset to default',
                       child: IconButton(
-                        icon: Icon(Icons.restore, size: 20, color: AppColors.textSecondary),
+                        icon: Icon(
+                          Icons.restore,
+                          size: 20,
+                          color: AppColors.textSecondary,
+                        ),
                         splashRadius: 18,
                         onPressed: () {
                           setState(() {
@@ -436,7 +1841,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     Tooltip(
                       message:
                           '--serial, --start-app, and --window-title\n(if not present) are appended automatically',
-                      child: Icon(Icons.info_outline, size: 18, color: AppColors.textSecondary),
+                      child: Icon(
+                        Icons.info_outline,
+                        size: 18,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -446,54 +1855,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       ),
     );
   }
-
-  Widget _buildGrid(AppIconController controller, List<String> visible) {
-    if (visible.isEmpty) {
-      return Center(
-        child: Text(
-          'No apps match "$_searchQuery"',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const gridPadding = 16.0;
-        const spacing = 8.0;
-        final crossAxisCount = (constraints.maxWidth / _kGridMinTileWidth).floor().clamp(3, 12);
-        final tileWidth = (constraints.maxWidth - gridPadding * 2 - spacing * (crossAxisCount - 1)) / crossAxisCount;
-        return GridView.builder(
-          padding: const EdgeInsets.all(gridPadding),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: spacing,
-            crossAxisSpacing: spacing,
-            childAspectRatio: 0.82,
-          ),
-          itemCount: visible.length,
-          itemBuilder: (context, index) {
-            final pkg = visible[index];
-            final iconEntry = controller.icons[pkg];
-            final isSentinel = iconEntry?.path.isEmpty == true;
-            return _AppTile(
-              packageName: pkg,
-              label: (controller.labels[pkg]?.isNotEmpty == true) ? controller.labels[pkg]! : pkg,
-              iconFile: isSentinel ? null : iconEntry,
-              iconLoading: !controller.icons.containsKey(pkg),
-              tileWidth: tileWidth,
-              onTap: () => _launchApp(pkg),
-            );
-          },
-        );
-      },
-    );
-  }
 }
-
-// ---------------------------------------------------------------------------
-// _AppTile
-// ---------------------------------------------------------------------------
 
 class _AppTile extends StatefulWidget {
   final String packageName;
@@ -501,7 +1863,9 @@ class _AppTile extends StatefulWidget {
   final File? iconFile;
   final bool iconLoading;
   final double tileWidth;
+  final bool isFavorite;
   final VoidCallback onTap;
+  final void Function(Offset position) onSecondaryTap;
 
   const _AppTile({
     required this.packageName,
@@ -509,7 +1873,9 @@ class _AppTile extends StatefulWidget {
     required this.iconFile,
     required this.iconLoading,
     required this.tileWidth,
+    required this.isFavorite,
     required this.onTap,
+    required this.onSecondaryTap,
   });
 
   @override
@@ -527,6 +1893,8 @@ class _AppTileState extends State<_AppTile> {
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
+        onSecondaryTapUp: (details) =>
+            widget.onSecondaryTap(details.globalPosition),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
@@ -540,31 +1908,61 @@ class _AppTileState extends State<_AppTile> {
                   : AppColors.divider,
             ),
           ),
-          padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+          padding: EdgeInsets.zero,
           child: Stack(
             children: [
-              // Icon centered in the space above the label area
-              Positioned.fill(
-                bottom: 34,
-                child: Center(child: _buildIcon()),
-              ),
-              // Label pinned to bottom, max 2 lines (~34 px), text flows top-down
+              if (widget.isFavorite)
+                Positioned(
+                  top: 0,
+                  left: _hovered ? 0 : null,
+                  right: _hovered ? null : 0,
+                  child: Icon(
+                    Icons.favorite,
+                    size: 14,
+                    color: Colors.pinkAccent,
+                  ),
+                ),
+              if (_hovered)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: GestureDetector(
+                    onTapUp: (details) =>
+                        widget.onSecondaryTap(details.globalPosition),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.more_vert,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned.fill(bottom: 26, child: Center(child: _buildIcon())),
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: 34,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: Text(
-                    widget.label,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 11,
-                      height: 1.3,
+                height: 26,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Text(
+                      widget.label,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 11,
+                        height: 1.3,
+                      ),
                     ),
                   ),
                 ),
@@ -577,7 +1975,6 @@ class _AppTileState extends State<_AppTile> {
   }
 
   Widget _buildIcon() {
-    // Icon occupies ~55% of the tile width, clamped to a sensible range.
     final size = (widget.tileWidth * 0.55).clamp(32.0, 96.0);
 
     if (widget.iconLoading) {
@@ -621,7 +2018,129 @@ class _AppTileState extends State<_AppTile> {
         color: AppColors.primary.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(Icons.android, color: AppColors.primary.withValues(alpha: 0.6), size: size * 0.6),
+      child: Icon(
+        Icons.android,
+        color: AppColors.primary.withValues(alpha: 0.6),
+        size: size * 0.6,
+      ),
+    );
+  }
+}
+
+class _ScriptTile extends StatefulWidget {
+  final String name;
+  final double tileWidth;
+  final File? iconFile;
+  final VoidCallback onTap;
+  final String scriptPath;
+  final bool isFavorite;
+  final void Function(Offset position) onSecondaryTap;
+
+  const _ScriptTile({
+    required this.name,
+    required this.tileWidth,
+    required this.iconFile,
+    required this.onTap,
+    required this.scriptPath,
+    required this.isFavorite,
+    required this.onSecondaryTap,
+  });
+
+  @override
+  State<_ScriptTile> createState() => _ScriptTileState();
+}
+
+class _ScriptTileState extends State<_ScriptTile> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = (widget.tileWidth * 0.55).clamp(32.0, 96.0);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        onSecondaryTapUp: (details) =>
+            widget.onSecondaryTap(details.globalPosition),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? AppColors.primary.withValues(alpha: 0.12)
+                : AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _hovered
+                  ? AppColors.primary.withValues(alpha: 0.4)
+                  : AppColors.divider,
+            ),
+          ),
+          padding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                bottom: 34,
+                child: Center(
+                  child: widget.iconFile != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(
+                            widget.iconFile!,
+                            width: size,
+                            height: size,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) =>
+                                _scriptPlaceholder(size),
+                          ),
+                        )
+                      : _scriptPlaceholder(size),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 26,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Text(
+                      widget.name,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 11,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _scriptPlaceholder(double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.blue.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(
+        Icons.description_outlined,
+        color: Colors.blue.withValues(alpha: 0.7),
+        size: size * 0.5,
+      ),
     );
   }
 }

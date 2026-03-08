@@ -1,5 +1,4 @@
 import 'dart:convert';
-import '../services/icon_fetch_strategy.dart';
 
 class PanelSettings {
   String id;
@@ -51,34 +50,25 @@ List<PanelSettings> defaultPanels = [
   PanelSettings(id: 'camera', displayName: 'Camera Commands', visible: false),
   PanelSettings(id: 'input', displayName: 'Input Control', visible: false),
   PanelSettings(id: 'display', displayName: 'Display/Window', visible: false),
-  PanelSettings(id: 'network', displayName: 'Network/Connection', visible: false),
+  PanelSettings(
+    id: 'network',
+    displayName: 'Network/Connection',
+    visible: false,
+  ),
   PanelSettings(id: 'virtual', displayName: 'Virtual Display Commands'),
   PanelSettings(id: 'recording', displayName: 'Recording Commands'),
-  PanelSettings(id: 'advanced', displayName: 'Advanced/Developer', visible: false),
+  PanelSettings(
+    id: 'advanced',
+    displayName: 'Advanced/Developer',
+    visible: false,
+  ),
   PanelSettings(id: 'otg', displayName: 'OTG Mode', visible: false),
-  PanelSettings(id: 'running', displayName: 'Running Instances', visible: false),
+  PanelSettings(
+    id: 'running',
+    displayName: 'Running Instances',
+    visible: false,
+  ),
 ];
-
-/// Settings specific to the App Drawer page.
-/// Extend this class as more App Drawer preferences are added.
-class AppDrawerSettings {
-  String appLaunchCommand;
-
-  static const String _defaultCommand =
-      'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
-
-  AppDrawerSettings({
-    this.appLaunchCommand = _defaultCommand,
-  });
-
-  factory AppDrawerSettings.fromJson(Map<String, dynamic> json) =>
-      AppDrawerSettings(
-        appLaunchCommand:
-            json['appLaunchCommand'] as String? ?? _defaultCommand,
-      );
-
-  Map<String, dynamic> toJson() => {'appLaunchCommand': appLaunchCommand};
-}
 
 /// App-wide settings
 class AppSettings {
@@ -89,12 +79,11 @@ class AppSettings {
   String batDirectory; // NOTE: Also stores .sh/.command files on macOS/Linux
   bool openCmdWindows;
   bool showBatFilesTab; // NOTE: Shows script files on all platforms
+  bool showAppDrawerTab;
   bool showManualIpInput;
   String bootTab;
   String settingsDirectory;
   List<String> shortcutMod;
-  IconFetchMethod iconFetchMethod;
-  AppDrawerSettings appDrawerSettings;
 
   AppSettings({
     required this.panelOrder,
@@ -104,13 +93,12 @@ class AppSettings {
     required this.batDirectory,
     this.openCmdWindows = false,
     this.showBatFilesTab = true,
+    this.showAppDrawerTab = true,
     this.showManualIpInput = false,
     this.bootTab = 'Home',
     this.settingsDirectory = '',
     this.shortcutMod = const [],
-    this.iconFetchMethod = IconFetchMethod.adbScrape,
-    AppDrawerSettings? appDrawerSettings,
-  }) : appDrawerSettings = appDrawerSettings ?? AppDrawerSettings();
+  });
 
   factory AppSettings.defaultSettings() {
     return AppSettings(
@@ -121,12 +109,11 @@ class AppSettings {
       batDirectory: '',
       openCmdWindows: false,
       showBatFilesTab: true,
+      showAppDrawerTab: true,
       showManualIpInput: false,
       bootTab: 'Home',
       settingsDirectory: '',
       shortcutMod: const [],
-      iconFetchMethod: IconFetchMethod.adbScrape,
-      appDrawerSettings: AppDrawerSettings(),
     );
   }
 
@@ -143,14 +130,12 @@ class AppSettings {
       batDirectory: json['batDirectory'] as String? ?? '',
       openCmdWindows: json['openCmdWindows'] as bool? ?? false,
       showBatFilesTab: json['showBatFilesTab'] as bool? ?? true,
+      showAppDrawerTab: json['showAppDrawerTab'] as bool? ?? true,
       showManualIpInput: json['showManualIpInput'] as bool? ?? false,
       bootTab: json['bootTab'] as String? ?? 'Home',
       settingsDirectory: json['settingsDirectory'] as String? ?? '',
-      shortcutMod: (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
-      iconFetchMethod: iconFetchMethodFromString(json['iconFetchMethod'] as String?),
-      appDrawerSettings: AppDrawerSettings.fromJson(
-        (json['appDrawerSettings'] as Map<String, dynamic>?) ?? {},
-      ),
+      shortcutMod:
+          (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
 
@@ -163,12 +148,11 @@ class AppSettings {
       'batDirectory': batDirectory,
       'openCmdWindows': openCmdWindows,
       'showBatFilesTab': showBatFilesTab,
+      'showAppDrawerTab': showAppDrawerTab,
       'showManualIpInput': showManualIpInput,
       'bootTab': bootTab,
       'settingsDirectory': settingsDirectory,
       'shortcutMod': shortcutMod,
-      'iconFetchMethod': iconFetchMethod.name,
-      'appDrawerSettings': appDrawerSettings.toJson(),
     };
   }
 
