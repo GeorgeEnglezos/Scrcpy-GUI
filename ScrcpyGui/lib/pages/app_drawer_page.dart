@@ -150,7 +150,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }
 
     final cmd = buffer.toString();
-    await TerminalService.runCommandInNewTerminal(cmd);
+    final openCmdWindows =
+        SettingsService.currentSettings?.openCmdWindows ?? true;
+    if (openCmdWindows) {
+      await TerminalService.runCommandInNewTerminal(cmd);
+    } else {
+      await TerminalService.runCommand(cmd);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models/scrcpy_instance_model.dart';
+import '../../services/settings_service.dart';
 import '../../services/terminal_service.dart';
 import '../../utils/clear_notifier.dart';
 import '../../widgets/surrounding_panel.dart';
@@ -139,8 +140,13 @@ class _InstancesPanelState extends State<InstancesPanel> {
   void _rerunCommand(ScrcpyInstance instance) async {
     if (!mounted) return;
     if (instance.fullCommand != null) {
-      // Run command without opening new terminal window
-      await TerminalService.runCommand(instance.fullCommand!);
+      final openCmdWindows =
+          SettingsService.currentSettings?.openCmdWindows ?? false;
+      if (openCmdWindows) {
+        await TerminalService.runCommandInNewTerminal(instance.fullCommand!);
+      } else {
+        await TerminalService.runCommand(instance.fullCommand!);
+      }
       // Give it a moment to start, then refresh
       await Future.delayed(const Duration(milliseconds: 1000));
       if (mounted) {
