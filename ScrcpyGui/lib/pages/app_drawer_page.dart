@@ -1,6 +1,7 @@
 /// App Drawer Page
 library;
 
+import 'dart:developer' as dev;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -145,7 +146,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }
     buffer.write(' --start-app=$packageName');
     if (!template.contains('--window-title')) {
-      buffer.write(' --window-title="$label"');
+      buffer.write(' --window-title=$packageName');
     }
 
     final cmd = buffer.toString();

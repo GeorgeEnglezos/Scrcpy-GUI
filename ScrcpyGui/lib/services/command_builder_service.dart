@@ -172,7 +172,8 @@ class CommandBuilderService extends ChangeNotifier {
     } else {
       finalWindowTitle += "ScrcpyGui";
     }
-    final windowTitlePart = '--window-title=$finalWindowTitle';
+    final escapedWindowTitle = finalWindowTitle.replaceAll('"', '\\"');
+    final windowTitlePart = '"--window-title=$escapedWindowTitle"';
 
     // Add device serial if selected
     final deviceSerial = deviceManagerService?.selectedDevice;
