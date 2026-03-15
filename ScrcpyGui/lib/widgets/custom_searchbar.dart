@@ -13,6 +13,9 @@ class CustomSearchBar extends StatefulWidget {
   final VoidCallback? onReload;
   final List<String> suggestions;
   final Widget Function(String suggestion)? suggestionLeadingBuilder;
+  /// Optional custom matcher. When provided, a suggestion is included if this
+  /// returns true. Replaces the default `.contains(query)` check.
+  final bool Function(String suggestion, String query)? suggestionMatcher;
   final bool enabled;
   final String? tooltip;
 
@@ -25,6 +28,7 @@ class CustomSearchBar extends StatefulWidget {
     this.onReload,
     this.suggestions = const [],
     this.suggestionLeadingBuilder,
+    this.suggestionMatcher,
     this.enabled = true,
     this.tooltip,
   });
@@ -98,13 +102,14 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
 
   void _updateFilteredSuggestions() {
     setState(() {
-      if (_controller.text.isEmpty) {
+      final query = _controller.text;
+      if (query.isEmpty) {
         _filteredSuggestions = widget.suggestions;
       } else {
+        final q = query.toLowerCase();
+        final matcher = widget.suggestionMatcher;
         _filteredSuggestions = widget.suggestions
-            .where(
-              (s) => s.toLowerCase().contains(_controller.text.toLowerCase()),
-            )
+            .where((s) => matcher != null ? matcher(s, query) : s.toLowerCase().contains(q))
             .toList();
       }
     });

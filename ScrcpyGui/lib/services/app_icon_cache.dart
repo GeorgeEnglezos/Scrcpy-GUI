@@ -64,10 +64,13 @@ class AppIconCache {
     return file.exists();
   }
 
-  /// Deletes the entire app_icons/ directory (icons + labels).
+  /// Deletes the contents of the app_icons/ directory (icons + labels) but keeps the folder.
   static Future<void> clearCache() async {
     final dir = await cacheDir();
-    if (await dir.exists()) await dir.delete(recursive: true);
+    if (!await dir.exists()) return;
+    for (final entity in dir.listSync()) {
+      await entity.delete(recursive: true);
+    }
   }
 
   /// Returns the number of cached PNG icon files.

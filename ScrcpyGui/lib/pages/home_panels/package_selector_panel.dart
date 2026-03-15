@@ -23,8 +23,8 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
   String selectedPackage = '';
   String selectedAppName = '';
   List<String> packages = [];
-  Map<String, String> packageLabels = {}; // package -> app name
-  Map<String, String> reverseLabels = {}; // app name -> package
+  Map<String, String> packageLabels = {}; // package -> label
+  Map<String, String> reverseLabels = {}; // label -> package
   final Map<String, File?> _packageIconByName = {};
   DeviceManagerService? _deviceManager;
 
@@ -72,12 +72,20 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
       return;
     }
 
+    // Merge cached labels so entries still equal to their package name get resolved.
+    final cachedLabels = await AppIconCache.loadCachedLabels();
+    final mergedLabels = {
+      for (var entry in info.packageLabels.entries)
+        entry.key: (entry.value == entry.key && cachedLabels[entry.key]?.isNotEmpty == true)
+            ? cachedLabels[entry.key]!
+            : entry.value,
+    };
+
     setState(() {
       packages = info.packages;
-      packageLabels = info.packageLabels;
-      // Create reverse mapping: app name -> package name
+      packageLabels = mergedLabels;
       reverseLabels = {
-        for (var entry in info.packageLabels.entries) entry.value: entry.key,
+        for (var entry in mergedLabels.entries) entry.value: entry.key,
       };
     });
 
@@ -145,8 +153,7 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
 
   @override
   Widget build(BuildContext context) {
-    // Get list of app names for display
-    final appNames = packageLabels.values.toList()..sort();
+    final suggestions = packageLabels.values.toList()..sort();
 
     return SurroundingPanel(
       title: 'Applications',
@@ -161,7 +168,12 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
           CustomSearchBar(
             hintText: 'Search App...',
             value: selectedAppName,
-            suggestions: appNames,
+            suggestions: suggestions,
+            suggestionMatcher: (label, query) {
+              final q = query.toLowerCase();
+              final pkg = reverseLabels[label] ?? '';
+              return label.toLowerCase().contains(q) || pkg.toLowerCase().contains(q);
+            },
             suggestionLeadingBuilder: (appName) {
               final packageName = reverseLabels[appName];
               final iconFile = packageName != null
