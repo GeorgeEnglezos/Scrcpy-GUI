@@ -13,15 +13,20 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import '../icon_fetch_strategy.dart';
 import '../terminal_service.dart';
 import '../app_icon_cache.dart';
 
 class HelperApkStrategy implements IconFetchStrategy {
+  final bool autoInstall;
+
+  const HelperApkStrategy({this.autoInstall = false});
+
   static const String _apkPackage = 'com.george.iconhelper';
   static const String _apkName = 'IconHelper-debug.apk';
   // Helper app exports to shared external storage (accessible by ADB)
-  static const String _exportDir = '/sdcard/iconhelper';
+  static const String _exportDir = '/sdcard/Android/data/com.george.iconhelper/files/iconhelper';
   static const Duration _pollInterval = Duration(milliseconds: 500);
   static const Duration _pollTimeout = Duration(seconds: 120);
 
@@ -41,26 +46,44 @@ class HelperApkStrategy implements IconFetchStrategy {
     required void Function(String pkg, String label) onLabelDiscovered,
     required void Function(Map<String, File?> partial) onBatchDone,
     void Function(Map<String, String> categories)? onCategoriesLoaded,
+    void Function(int current, int total, String status)? onProgress,
   }) async {
     try {
-      // Step 1: Ensure APK is installed
+      stdout.writeln('[HelperApkStrategy] Starting fetch for device: $deviceId (autoInstall=$autoInstall)');
+
+      // Step 1: Check APK is installed; auto-install if requested
+      stdout.writeln('[HelperApkStrategy] Step 1: Checking if APK is installed...');
       final isInstalled = await _isApkInstalled(deviceId);
+      stdout.writeln('[HelperApkStrategy] APK installed: $isInstalled');
       if (!isInstalled) {
-        await _installApk(deviceId);
+        if (autoInstall) {
+          stdout.writeln('[HelperApkStrategy] Installing APK...');
+          await _installApk(deviceId);
+          stdout.writeln('[HelperApkStrategy] APK installed successfully');
+        } else {
+          throw Exception(
+            'Helper APK is not installed on device $deviceId. Enable "Auto-install via ADB" to install it automatically.',
+          );
+        }
       }
 
       // Step 2: Trigger export on device
+      stdout.writeln('[HelperApkStrategy] Step 2: Triggering export...');
       await _triggerExport(deviceId);
 
       // Step 3: Wait for export to complete (poll for labels.json)
+      stdout.writeln('[HelperApkStrategy] Step 3: Polling for export completion...');
       final success = await _pollForExportCompletion(deviceId);
       if (!success) {
         throw Exception('Export timed out after ${_pollTimeout.inSeconds}s');
       }
+      stdout.writeln('[HelperApkStrategy] Export complete');
 
       // Step 4: Pull files from device
+      stdout.writeln('[HelperApkStrategy] Step 4: Pulling files from device...');
       final tempDir = await _createTempDirectory();
       await _pullExportFiles(deviceId, tempDir);
+      stdout.writeln('[HelperApkStrategy] Files pulled to: ${tempDir.path}');
 
       // Step 5: Parse labels.json
       final labelsJson = await _parseLabelsJson(tempDir);
@@ -131,29 +154,48 @@ class HelperApkStrategy implements IconFetchStrategy {
       final result = await TerminalService.runCommand(
         '${_adbFor(deviceId)} shell pm list packages | grep $_apkPackage',
       );
+      stdout.writeln('[HelperApkStrategy] pm list packages result: "$result"');
       return result.isNotEmpty;
-    } catch (_) {
+    } catch (e) {
+      stdout.writeln('[HelperApkStrategy] _isApkInstalled error: $e');
       return false;
     }
   }
 
   Future<void> _installApk(String deviceId) async {
-    // APK is in android_helper/build/outputs/apk/debug/ (sibling directory to ScrcpyGui)
-    final apkPath = '../android_helper/build/outputs/apk/debug/$_apkName';
-    if (!await File(apkPath).exists()) {
-      throw Exception(
-        'Helper APK not found at $apkPath. Build android_helper first: cd ../android_helper && ./gradlew build',
-      );
+    // Extract the bundled APK asset to a temp file, then install via ADB.
+    stdout.writeln('[HelperApkStrategy] Loading bundled APK asset...');
+    final data = await rootBundle.load('assets/$_apkName');
+    final tempFile = File(
+      '${Directory.systemTemp.path}${Platform.pathSeparator}$_apkName',
+    );
+    stdout.writeln('[HelperApkStrategy] Writing APK to temp: ${tempFile.path} (${data.lengthInBytes} bytes)');
+    await tempFile.writeAsBytes(data.buffer.asUint8List(), flush: true);
+    try {
+      // Use Process.run with explicit args to avoid shell quoting issues on Windows.
+      final adbExe = TerminalService.adbExecutable;
+      stdout.writeln('[HelperApkStrategy] Running: $adbExe -s $deviceId install ${tempFile.path}');
+      final result = await Process.run(adbExe, ['-s', deviceId, 'install', tempFile.path]);
+      final out = result.stdout.toString();
+      final err = result.stderr.toString();
+      stdout.writeln('[HelperApkStrategy] adb install exit=${result.exitCode} stdout="$out" stderr="$err"');
+      // adb install prints "Success" on success; any non-zero exit or stderr indicates failure.
+      if (result.exitCode != 0 || (!out.contains('Success') && err.isNotEmpty)) {
+        throw Exception(
+          'adb install failed (exit ${result.exitCode}): ${err.isNotEmpty ? err : out}',
+        );
+      }
+    } finally {
+      await tempFile.delete();
     }
-    await TerminalService.runCommand('${_adbFor(deviceId)} install "$apkPath"');
   }
 
   Future<void> _triggerExport(String deviceId) async {
     await TerminalService.runCommand(
-      '${_adbFor(deviceId)} shell am start -n $_apkPackage/.MainActivity',
+      '${_adbFor(deviceId)} shell am start -n $_apkPackage/.MainActivity --ez auto_export true',
     );
-    // Give the app a moment to launch
-    await Future.delayed(const Duration(seconds: 1));
+    // Give the app a moment to launch and start exporting
+    await Future.delayed(const Duration(seconds: 2));
   }
 
   Future<bool> _pollForExportCompletion(String deviceId) async {

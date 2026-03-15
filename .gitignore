@@ -95,6 +95,8 @@ app.*.symbols
 # Android
 *.apk
 *.aab
+# Allow the bundled helper APK asset
+!ScrcpyGui/assets/IconHelper-debug.apk
 *.dex
 *.so
 **/android/**/gradle-wrapper.jar
@@ -179,6 +181,7 @@ app.*.symbols
 # =============================================================================
 .claude/
 ScrcpyGui/notes/
+ScrcpyGui/.worktrees/
 
 # =============================================================================
 # Miscellaneous

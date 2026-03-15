@@ -6,7 +6,7 @@ import 'dart:io';
 
 /// The user-selectable fetch method.
 /// Stored as a string in AppSettings JSON.
-enum IconFetchMethod { adbScrape, helperApk, oneClickExport }
+enum IconFetchMethod { adbScrape, helperApk }
 
 /// Parses [value] to [IconFetchMethod], defaulting to [IconFetchMethod.adbScrape].
 IconFetchMethod iconFetchMethodFromString(String? value) {
@@ -29,5 +29,7 @@ abstract class IconFetchStrategy {
     required void Function(String pkg, String label) onLabelDiscovered,
     required void Function(Map<String, File?> partial) onBatchDone,
     void Function(Map<String, String> categories)? onCategoriesLoaded,
+    /// Called after each package is processed. [current] is 1-based.
+    void Function(int current, int total, String status)? onProgress,
   });
 }

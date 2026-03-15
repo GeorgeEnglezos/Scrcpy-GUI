@@ -135,6 +135,21 @@ class TerminalService {
     }
   }
 
+  /// Like [runCommand] but returns the full [ProcessResult] (stdout, stderr, exitCode).
+  static Future<ProcessResult> runCommandWithResult(String command) async {
+    final environment = Platform.isWindows
+        ? null
+        : {
+            'PATH': '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
+          };
+
+    return Process.run(
+      Platform.isWindows ? 'cmd' : 'bash',
+      Platform.isWindows ? ['/c', command] : ['-c', command],
+      environment: environment,
+    );
+  }
+
   /// Runs a command in a new terminal window (cross-platform)
   ///
   /// Opens a new terminal window and executes the command within it.

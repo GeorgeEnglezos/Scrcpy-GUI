@@ -1,7 +1,6 @@
 /// App Drawer Page
 library;
 
-import 'dart:developer' as dev;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +13,7 @@ import '../services/icon_fetch_strategy.dart';
 import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const _kGridMinTileWidth = 110.0;
 const _kGroupHeaderBorderRadius = 12.0;
@@ -41,6 +41,9 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   final Map<String, File?> _scriptCachedIcons = {};
   bool _scriptIconRefreshScheduled = false;
 
+  // Session-state checkbox options (not persisted)
+  bool _helperApkAutoInstall = false;
+
   @override
   void initState() {
     super.initState();
@@ -64,9 +67,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     super.dispose();
   }
 
-  void _onDeviceChanged() => _loadPackages();
+  void _onDeviceChanged() {
+    stdout.writeln('[AppDrawerPage._onDeviceChanged] fired! selectedDevice=${_deviceManager?.selectedDevice}');
+    _loadPackages();
+  }
 
   Future<void> _loadPackages() async {
+    stdout.writeln('[AppDrawerPage._loadPackages] called');
     final dm =
         _deviceManager ??
         Provider.of<DeviceManagerService>(context, listen: false);
@@ -93,17 +100,17 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   }
 
   Future<void> _fetchMissingInfo() async {
+    stdout.writeln('[AppDrawerPage._fetchMissingInfo] called helperApkAutoInstall=$_helperApkAutoInstall');
     final controller = Provider.of<AppIconController>(context, listen: false);
-    await controller.fetchMissing(forceUpdate: true);
+    stdout.writeln('[AppDrawerPage._fetchMissingInfo] controller.labels=${controller.labels.length} icons=${controller.icons.length} isLoading=${controller.isLoading}');
+    await controller.fetchMissing(
+      forceUpdate: true,
+      helperApkAutoInstall: _helperApkAutoInstall,
+    );
+    stdout.writeln('[AppDrawerPage._fetchMissingInfo] done');
   }
 
   Future<void> _reload() async {
-    _loadPackages();
-  }
-
-  Future<void> _clearIconCache() async {
-    final controller = Provider.of<AppIconController>(context, listen: false);
-    await controller.clearCache();
     _loadPackages();
   }
 
@@ -971,6 +978,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 _buildNoDevice()
               else if (controller.labels.isEmpty && !controller.isLoading)
                 _buildEmpty()
+              else if (_isAwaitingFirstLoad(controller))
+                _buildManualLoadEmptyState(controller)
               else
                 Expanded(child: _buildGroupedContent(controller, packages)),
             ],
@@ -1026,15 +1035,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
           padding: const EdgeInsets.all(gridPadding),
           children: [
             if (favPackages.isNotEmpty) ...[
-              _buildSectionHeader(
+              _buildPanelSection(
                 icon: Icons.favorite,
-                iconColor: Colors.pinkAccent,
                 title: 'Favorites',
                 count: favPackages.length,
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
+                accentColor: Colors.pinkAccent,
+                collapsed: false,
+                onToggle: null,
                 child: _buildWrappedGrid(
                   controller,
                   favPackages,
@@ -1052,33 +1059,25 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildCollapsibleSectionHeader(
+                    _buildPanelSection(
+                      icon: Icons.description_outlined,
                       title: 'Scripts',
                       count: scripts.length,
+                      accentColor: AppColors.primary,
                       collapsed: controller.appDrawerSettings.scriptsCollapsed,
                       onToggle: () {
                         controller.appDrawerSettings.scriptsCollapsed =
                             !controller.appDrawerSettings.scriptsCollapsed;
                         controller.saveSettings();
                       },
-                      onRename: null,
-                      onDelete: null,
-                      onMoveUp: null,
-                      onMoveDown: null,
-                    ),
-                    if (!controller.appDrawerSettings.scriptsCollapsed) ...[
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: _buildScriptGrid(
-                          controller,
-                          scripts,
-                          crossAxisCount,
-                          spacing,
-                          tileWidth,
-                        ),
+                      child: _buildScriptGrid(
+                        controller,
+                        scripts,
+                        crossAxisCount,
+                        spacing,
+                        tileWidth,
                       ),
-                    ],
+                    ),
                     const SizedBox(height: 16),
                   ],
                 );
@@ -1093,9 +1092,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildCollapsibleSectionHeader(
+                    _buildPanelSection(
+                      icon: Icons.folder,
                       title: group.name,
                       count: groupVisible.length,
+                      accentColor: AppColors.primary,
                       collapsed: group.collapsed,
                       onToggle: () {
                         group.collapsed = !group.collapsed;
@@ -1138,56 +1139,47 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                               controller.reorderGroup(idx, idx + 1);
                             }
                           : null,
-                    ),
-                    if (!group.collapsed) ...[
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: _buildWrappedGrid(
-                          controller,
-                          groupVisible,
-                          crossAxisCount,
-                          spacing,
-                          tileWidth,
-                        ),
+                      child: _buildWrappedGrid(
+                        controller,
+                        groupVisible,
+                        crossAxisCount,
+                        spacing,
+                        tileWidth,
                       ),
-                    ],
+                    ),
                     const SizedBox(height: 16),
                   ],
                 );
               }(),
             ],
             if (ungrouped.isNotEmpty && groups.isNotEmpty) ...[
-              _buildCollapsibleSectionHeader(
+              _buildPanelSection(
+                icon: Icons.apps,
                 title: 'Other',
                 count: ungrouped.length,
+                accentColor: AppColors.primary,
                 collapsed: controller.appDrawerSettings.otherCollapsed,
                 onToggle: () {
                   controller.appDrawerSettings.otherCollapsed =
                       !controller.appDrawerSettings.otherCollapsed;
                   controller.saveSettings();
                 },
-                onRename: null,
-                onDelete: null,
-                onMoveUp: null,
-                onMoveDown: null,
-              ),
-              if (!controller.appDrawerSettings.otherCollapsed) ...[
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: _buildWrappedGrid(
-                    controller,
-                    ungrouped,
-                    crossAxisCount,
-                    spacing,
-                    tileWidth,
-                  ),
+                child: _buildWrappedGrid(
+                  controller,
+                  ungrouped,
+                  crossAxisCount,
+                  spacing,
+                  tileWidth,
                 ),
-              ],
+              ),
             ] else if (ungrouped.isNotEmpty && groups.isEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
+              _buildPanelSection(
+                icon: Icons.apps,
+                title: 'Apps',
+                count: ungrouped.length,
+                accentColor: AppColors.primary,
+                collapsed: false,
+                onToggle: null,
                 child: _buildWrappedGrid(
                   controller,
                   ungrouped,
@@ -1239,219 +1231,193 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     );
   }
 
-  Widget _buildSectionHeader({
+  Widget _buildPanelSection({
     required IconData icon,
-    required Color iconColor,
-    required String title,
-    required int count,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: iconColor.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(_kGroupHeaderPadding),
-        decoration: BoxDecoration(
-          color: iconColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(_kGroupHeaderBorderRadius),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, size: 18, color: iconColor),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  color: iconColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCollapsibleSectionHeader({
     required String title,
     required int count,
     required bool collapsed,
     required VoidCallback? onToggle,
+    required Widget child,
+    required Color accentColor,
     VoidCallback? onRename,
     VoidCallback? onDelete,
     VoidCallback? onMoveUp,
     VoidCallback? onMoveDown,
   }) {
+    final headerColor = accentColor;
     final isCollapsible = onToggle != null;
+    final showExpandedContent = !isCollapsible || !collapsed;
+    final borderRadius = BorderRadius.circular(_kGroupHeaderBorderRadius);
+
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        borderRadius: borderRadius,
+        border: Border.all(color: headerColor.withValues(alpha: 0.3), width: 1),
       ),
-      child: InkWell(
-        onTap: onToggle,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(_kGroupHeaderPadding),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(_kGroupHeaderBorderRadius),
-            border: isCollapsible && !collapsed
-                ? Border(
-                    bottom: BorderSide(
-                      color: AppColors.primary.withValues(alpha: 0.25),
-                      width: 1,
-                    ),
-                  )
-                : null,
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.folder, size: 18, color: AppColors.primary),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: onToggle,
+            borderRadius: borderRadius,
+            child: Container(
+              padding: const EdgeInsets.all(_kGroupHeaderPadding),
+              decoration: BoxDecoration(
+                color: headerColor.withValues(alpha: 0.1),
+                borderRadius: showExpandedContent
+                    ? const BorderRadius.only(
+                        topLeft: Radius.circular(_kGroupHeaderBorderRadius),
+                        topRight: Radius.circular(_kGroupHeaderBorderRadius),
+                      )
+                    : borderRadius,
+                border: showExpandedContent
+                    ? Border(
+                        bottom: BorderSide(
+                          color: headerColor.withValues(alpha: 0.25),
+                          width: 1,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$count',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                      )
+                    : null,
               ),
-              if (onRename != null || onDelete != null)
-                Container(
-                  margin: const EdgeInsets.only(right: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: headerColor.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, size: 18, color: headerColor),
                   ),
-                  child: PopupMenuButton<String>(
-                    icon: Icon(
-                      Icons.more_vert,
-                      size: 18,
-                      color: AppColors.primary,
-                    ),
-                    color: AppColors.surface,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'rename':
-                          onRename?.call();
-                          break;
-                        case 'delete':
-                          onDelete?.call();
-                          break;
-                        case 'up':
-                          onMoveUp?.call();
-                          break;
-                        case 'down':
-                          onMoveDown?.call();
-                          break;
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      if (onMoveUp != null)
-                        const PopupMenuItem(
-                          value: 'up',
-                          child: Text('Move Up'),
-                        ),
-                      if (onMoveDown != null)
-                        const PopupMenuItem(
-                          value: 'down',
-                          child: Text('Move Down'),
-                        ),
-                      if (onRename != null)
-                        const PopupMenuItem(
-                          value: 'rename',
-                          child: Text('Rename'),
-                        ),
-                      if (onDelete != null)
-                        PopupMenuItem(
-                          value: 'delete',
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
                           child: Text(
-                            'Delete',
-                            style: TextStyle(color: Colors.red.shade300),
+                            title,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                    ],
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: headerColor.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '$count',
+                            style: TextStyle(
+                              color: headerColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              if (isCollapsible)
-                Icon(
-                  collapsed ? Icons.expand_more : Icons.expand_less,
-                  size: 20,
-                  color: AppColors.primary,
-                ),
-            ],
+                  if (onRename != null || onDelete != null)
+                    Container(
+                      margin: const EdgeInsets.only(right: 4),
+                      decoration: BoxDecoration(
+                        color: headerColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.more_vert,
+                          size: 18,
+                          color: headerColor,
+                        ),
+                        color: AppColors.surface,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onSelected: (value) {
+                          switch (value) {
+                            case 'rename':
+                              onRename?.call();
+                              break;
+                            case 'delete':
+                              onDelete?.call();
+                              break;
+                            case 'up':
+                              onMoveUp?.call();
+                              break;
+                            case 'down':
+                              onMoveDown?.call();
+                              break;
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          if (onMoveUp != null)
+                            const PopupMenuItem(
+                              value: 'up',
+                              child: Text('Move Up'),
+                            ),
+                          if (onMoveDown != null)
+                            const PopupMenuItem(
+                              value: 'down',
+                              child: Text('Move Down'),
+                            ),
+                          if (onRename != null)
+                            const PopupMenuItem(
+                              value: 'rename',
+                              child: Text('Rename'),
+                            ),
+                          if (onDelete != null)
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(
+                                'Delete',
+                                style: TextStyle(color: Colors.red.shade300),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  if (isCollapsible)
+                    Icon(
+                      collapsed ? Icons.expand_more : Icons.expand_less,
+                      size: 20,
+                      color: headerColor,
+                    ),
+                ],
+              ),
+            ),
           ),
-        ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            child: ConstrainedBox(
+              constraints: showExpandedContent
+                  ? const BoxConstraints()
+                  : const BoxConstraints(maxHeight: 0),
+              child: ClipRect(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    top: 12,
+                    left: 24,
+                    right: 24,
+                    bottom: 24,
+                  ),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1488,6 +1454,169 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Future<void> _showFetchMissingDialog() async {
+    final controller = Provider.of<AppIconController>(context, listen: false);
+
+    final missingCount = controller.labels.keys.where((pkg) {
+      final hasIcon =
+          controller.icons[pkg] != null &&
+          controller.icons[pkg]!.path.isNotEmpty;
+      final hasLabel = controller.labels[pkg] != pkg;
+      return !hasIcon || !hasLabel;
+    }).length;
+
+    var autoInstall = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: Text(
+              'Fetch Missing Icons & Labels',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
+            content: SizedBox(
+              width: 360,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    missingCount > 0
+                        ? '$missingCount app${missingCount == 1 ? '' : 's'} '
+                            'have missing icons or labels.'
+                        : 'All apps are up to date.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Fetch method',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: 36,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value:
+                            controller.appDrawerSettings.iconFetchMethod.name,
+                        isDense: true,
+                        isExpanded: true,
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                        ),
+                        dropdownColor: AppColors.surface,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'helperApk',
+                            child: Text('Helper APK'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'adbScrape',
+                            child: Text('ADB'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() {
+                              controller.appDrawerSettings.iconFetchMethod =
+                                  iconFetchMethodFromString(value);
+                            });
+                            controller.saveSettings();
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  if (controller.appDrawerSettings.iconFetchMethod ==
+                      IconFetchMethod.helperApk) ...[
+                    const SizedBox(height: 10),
+                    _buildCheckboxRow(
+                      label: 'Auto-install via ADB',
+                      value: autoInstall,
+                      onChanged: (v) =>
+                          setDialogState(() => autoInstall = v ?? false),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () => launchUrl(Uri.parse('https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk')),
+                      child: Row(
+                        children: [
+                          Icon(Icons.open_in_new, size: 12, color: AppColors.textSecondary),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              'Source: github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+              TextButton(
+                onPressed: missingCount > 0
+                    ? () {
+                        Navigator.pop(ctx);
+                        controller.fetchMissingOnly(
+                          helperApkAutoInstall: autoInstall,
+                          onError: (message) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(message),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 6),
+                              ),
+                            );
+                          },
+                        );
+                      }
+                    : null,
+                child: Text(
+                  'Continue',
+                  style: TextStyle(
+                    color: missingCount > 0
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -1531,11 +1660,16 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: AppColors.primary,
+                value: controller.total > 0
+                    ? controller.progress / controller.total
+                    : null,
               ),
             ),
             const SizedBox(width: 8),
             Text(
-              'Loading icons...',
+              controller.total > 0
+                  ? '${controller.progress} / ${controller.total}'
+                  : 'Loading...',
               style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
             ),
             const SizedBox(width: 12),
@@ -1580,57 +1714,15 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             ),
           const SizedBox(width: 12),
 
-          // [RIGHT CONTROLS - Icon fetch dropdown]
-          if (hasDevice)
-            Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: controller.appDrawerSettings.iconFetchMethod.name,
-                  isDense: true,
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
-                  dropdownColor: AppColors.surface,
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'helperApk',
-                      child: Text('Helper APK'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'adbScrape',
-                      child: Text('ADB Scrape'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'oneClickExport',
-                      child: Text('One-Click Export'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      controller.appDrawerSettings.iconFetchMethod =
-                          iconFetchMethodFromString(value);
-                      controller.saveSettings();
-                    }
-                  },
-                ),
-              ),
-            ),
-          if (hasDevice) const SizedBox(width: 8),
-
           // [Cloud download button]
           if (!controller.isLoading && hasDevice && totalCount > 0)
             Tooltip(
-              message: 'Fetch missing app names & icons from web',
+              message: 'Fetch missing icons & labels',
               child: IconButton(
                 icon: const Icon(Icons.cloud_download, size: 20),
                 color: AppColors.textSecondary,
                 hoverColor: AppColors.hover,
-                onPressed: _fetchMissingInfo,
+                onPressed: _showFetchMissingDialog,
               ),
             ),
           if (!controller.isLoading && hasDevice && totalCount > 0)
@@ -1649,20 +1741,6 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             ),
           if (!controller.isLoading && hasDevice && totalCount > 0)
             const SizedBox(width: 8),
-
-          // [Clear cache button]
-          if (hasDevice)
-            Tooltip(
-              message: 'Clear icon cache',
-              child: IconButton(
-                icon: Icon(
-                  Icons.delete_sweep_outlined,
-                  color: AppColors.textSecondary,
-                ),
-                onPressed: _clearIconCache,
-                splashRadius: 18,
-              ),
-            ),
 
           // [Reload button]
           if (hasDevice)
@@ -1706,6 +1784,346 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
           ],
         ),
       ),
+    );
+  }
+
+  bool _isAwaitingFirstLoad(AppIconController controller) {
+    if (controller.isLoading) {
+      stdout.writeln('[AppDrawerPage._isAwaitingFirstLoad] false (isLoading=true)');
+      return false;
+    }
+    if (controller.labels.isEmpty) {
+      stdout.writeln('[AppDrawerPage._isAwaitingFirstLoad] false (labels empty)');
+      return false;
+    }
+    if (controller.icons.isEmpty) {
+      stdout.writeln('[AppDrawerPage._isAwaitingFirstLoad] false (icons empty)');
+      return false;
+    }
+    final allNull = controller.icons.values.every((v) => v == null);
+    stdout.writeln('[AppDrawerPage._isAwaitingFirstLoad] result=$allNull icons=${controller.icons.length} nullCount=${controller.icons.values.where((v) => v == null).length} sentinelCount=${controller.icons.values.where((v) => v?.path.isEmpty == true).length}');
+    return allNull;
+  }
+
+  Widget _buildManualLoadEmptyState(AppIconController controller) {
+    return Expanded(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.apps_outlined,
+                  size: 52,
+                  color: AppColors.primary.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Choose how to load app data',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Select a method below, then tap Load Apps.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _buildMethodCard(
+                        controller: controller,
+                        method: IconFetchMethod.helperApk,
+                        icon: Icons.android,
+                        title: 'Helper APK',
+                        description:
+                            'Uses a small helper app on your device to extract icons and labels directly. Best icon quality and results.',
+                        badge: 'Recommended',
+                        checkboxes: [
+                          _buildCheckboxRow(
+                            label: 'Auto-install via ADB',
+                            value: _helperApkAutoInstall,
+                            onChanged: (v) => setState(
+                              () => _helperApkAutoInstall = v ?? false,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: () => launchUrl(Uri.parse('https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk')),
+                            child: Row(
+                              children: [
+                                Icon(Icons.open_in_new, size: 12, color: AppColors.textSecondary),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    'Source: github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
+                                    style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildMethodCard(
+                        controller: controller,
+                        method: IconFetchMethod.adbScrape,
+                        icon: Icons.terminal,
+                        title: 'ADB',
+                        description:
+                            'Pulls each APK from the device via ADB and extracts the launcher icon by scanning the zip for density-specific PNG/WebP files. Falls back to parsing resources.arsc for apps with obfuscated icon paths. Results may vary — for better coverage, try the Helper APK method.',
+                        checkboxes: const [],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildCachePathInfo(),
+                const SizedBox(height: 28),
+                SizedBox(
+                  height: 44,
+                  child: FilledButton.icon(
+                    onPressed: _fetchMissingInfo,
+                    icon: const Icon(Icons.download_rounded, size: 20),
+                    label: const Text(
+                      'Load Apps',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMethodCard({
+    required AppIconController controller,
+    required IconFetchMethod method,
+    required IconData icon,
+    required String title,
+    required String description,
+    String? badge,
+    List<Widget>? checkboxes,
+  }) {
+    final isSelected = controller.appDrawerSettings.iconFetchMethod == method;
+    return GestureDetector(
+      onTap: () {
+        controller.appDrawerSettings.iconFetchMethod = method;
+        controller.saveSettings();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.6)
+                : AppColors.divider,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Icon(Icons.check_circle, size: 16, color: AppColors.primary),
+              ],
+            ),
+            if (badge != null) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+            if (checkboxes != null && checkboxes.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ...checkboxes,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckboxRow({
+    required String label,
+    required bool value,
+    required void Function(bool?) onChanged,
+  }) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: Checkbox(
+              value: value,
+              onChanged: onChanged,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              activeColor: AppColors.primary,
+              side: BorderSide(color: AppColors.textSecondary),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCachePathInfo() {
+    return FutureBuilder<String>(
+      future: AppIconCache.cacheDir().then((d) => d.path),
+      builder: (context, snap) {
+        final path = snap.data ?? '...';
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.folder_open, size: 16, color: AppColors.textSecondary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Manual icon folder',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      path,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Drop PNG icons named by package name and edit _labels.json to add app names manually.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Open folder',
+                child: IconButton(
+                  icon: Icon(
+                    Icons.open_in_new,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                  splashRadius: 16,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
+                  onPressed: () async {
+                    if (Platform.isWindows) {
+                      await Process.run('explorer', [path]);
+                    } else if (Platform.isMacOS) {
+                      await Process.run('open', [path]);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

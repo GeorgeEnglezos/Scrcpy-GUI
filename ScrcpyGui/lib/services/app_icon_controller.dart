@@ -14,7 +14,6 @@ import 'icon_fetch_strategy.dart';
 import 'settings_service.dart';
 import 'strategies/adb_scrape_strategy.dart';
 import 'strategies/helper_apk_strategy.dart';
-import 'strategies/one_click_export_strategy.dart';
 
 class AppIconController extends ChangeNotifier {
   /// Icons keyed by package name.
@@ -30,6 +29,7 @@ class AppIconController extends ChangeNotifier {
   bool isLoading = false;
   int progress = 0;
   int total = 0;
+  String progressStatus = '';
   String? currentDeviceId;
   AppDrawerSettings appDrawerSettings;
 
@@ -41,25 +41,36 @@ class AppIconController extends ChangeNotifier {
   AppIconController({AppDrawerSettings? appDrawerSettings})
     : appDrawerSettings = appDrawerSettings ?? AppDrawerSettings();
 
-  IconFetchStrategy _buildStrategy() =>
+  IconFetchStrategy _buildStrategy({bool helperApkAutoInstall = false}) =>
       switch (appDrawerSettings.iconFetchMethod) {
-        IconFetchMethod.adbScrape => AdbScrapeStrategy(),
-        IconFetchMethod.helperApk => HelperApkStrategy(),
-        IconFetchMethod.oneClickExport => OneClickExportStrategy(),
+        IconFetchMethod.adbScrape => const AdbScrapeStrategy(),
+        IconFetchMethod.helperApk => HelperApkStrategy(
+            autoInstall: helperApkAutoInstall,
+          ),
       };
 
   /// Loads icons and labels for [packages] on [deviceId].
   Future<void> loadForDevice(String deviceId, List<String> packages) async {
+    stdout.writeln('[Controller.loadForDevice] START device=$deviceId packages=${packages.length} _isRunning=$_isRunning');
+    // If a strategy is in-flight, cancel it and reset the running flag so a
+    // fresh fetch can start after this load completes.
+    if (_isRunning) {
+      stdout.writeln('[Controller.loadForDevice] cancelling in-flight strategy, resetting _isRunning');
+      _cancelled = true;
+      _isRunning = false;
+    }
     _cancelled = false;
     currentDeviceId = deviceId;
     total = packages.length;
     progress = 0;
+    progressStatus = '';
 
     icons.clear();
     labels.clear();
 
     // Step 1: Labels from _labels.json.
     final cachedLabels = await AppIconCache.loadCachedLabels();
+    stdout.writeln('[Controller.loadForDevice] Step1: cachedLabels=${cachedLabels.length}');
     for (final pkg in packages) {
       final cached = cachedLabels[pkg];
       labels[pkg] = (cached != null && cached.isNotEmpty) ? cached : pkg;
@@ -95,40 +106,76 @@ class AppIconController extends ChangeNotifier {
     }
 
     progress = packages.length - uncached.length;
+    stdout.writeln('[Controller.loadForDevice] Step2: cached=${packages.length - uncached.length} uncached=${uncached.length}');
     notifyListeners();
 
     // Step 3: Nothing uncached -> done.
     if (uncached.isEmpty) {
+      stdout.writeln('[Controller.loadForDevice] Step3: all cached, done');
       isLoading = false;
       notifyListeners();
       return;
     }
 
-    // Step 4: If labels cache exists, defer network fetch until explicit action.
-    final hasLabels = await AppIconCache.hasLabelsCache();
-    if (hasLabels) {
-      for (final pkg in uncached) {
-        icons[pkg] = _sentinel;
-      }
-      isLoading = false;
-      notifyListeners();
-      return;
-    }
-
-    await _runStrategy(uncached, forceUpdate: false);
+    // Step 4: No cached icons found — leave icons as null and let the UI
+    // prompt the user to choose a fetch method manually.
+    stdout.writeln('[Controller.loadForDevice] Step4: ${uncached.length} uncached, leaving as null for manual fetch. icons nullCount=${icons.values.where((v) => v == null).length} sentinelCount=${icons.values.where((v) => v?.path.isEmpty == true).length}');
+    isLoading = false;
+    notifyListeners();
+    stdout.writeln('[Controller.loadForDevice] END isLoading=false');
   }
 
   /// Re-fetches all packages using the active strategy, bypassing cache.
-  Future<void> fetchMissing({bool forceUpdate = true}) async {
-    if (currentDeviceId == null || labels.isEmpty) return;
+  Future<void> fetchMissing({
+    bool forceUpdate = true,
+    bool helperApkAutoInstall = false,
+  }) async {
+    stdout.writeln('[Controller.fetchMissing] called currentDeviceId=$currentDeviceId labels=${labels.length} helperApkAutoInstall=$helperApkAutoInstall');
+    if (currentDeviceId == null || labels.isEmpty) {
+      stdout.writeln('[Controller.fetchMissing] EARLY RETURN currentDeviceId=$currentDeviceId labels=${labels.length}');
+      return;
+    }
     _cancelled = false;
     final packages = labels.keys.toList();
-    await _runStrategy(packages, forceUpdate: forceUpdate);
+    stdout.writeln('[Controller.fetchMissing] calling _runStrategy with ${packages.length} packages');
+    await _runStrategy(
+      packages,
+      forceUpdate: forceUpdate,
+      helperApkAutoInstall: helperApkAutoInstall,
+    );
+    stdout.writeln('[Controller.fetchMissing] _runStrategy returned');
   }
 
-  /// Resets in-memory icon/label state without touching disk cache.
+  /// Fetches only packages that are missing an icon or have no resolved label.
+  /// A package is "missing" if:
+  ///   - its icon is null or sentinel (File(''))
+  ///   - its label still equals the raw package name
+  Future<void> fetchMissingOnly({
+    bool helperApkAutoInstall = false,
+    void Function(String message)? onError,
+  }) async {
+    if (currentDeviceId == null || labels.isEmpty) return;
+    _cancelled = false;
+
+    final missing = labels.keys.where((pkg) {
+      final hasIcon = icons[pkg] != null && icons[pkg]!.path.isNotEmpty;
+      final hasLabel = labels[pkg] != pkg;
+      return !hasIcon || !hasLabel;
+    }).toList();
+
+    if (missing.isEmpty) return;
+    await _runStrategy(
+      missing,
+      forceUpdate: true,
+      helperApkAutoInstall: helperApkAutoInstall,
+      onError: onError,
+    );
+  }
+
+  /// Clears disk cache and resets in-memory icon/label state.
   Future<void> clearCache() async {
     _cancelled = true;
+    await AppIconCache.clearCache();
     _resetMemoryState();
   }
 
@@ -272,11 +319,16 @@ class AppIconController extends ChangeNotifier {
   Future<void> _runStrategy(
     List<String> packages, {
     required bool forceUpdate,
+    bool helperApkAutoInstall = false,
+    void Function(String message)? onError,
   }) async {
+    stdout.writeln('[Controller._runStrategy] START packages=${packages.length} _isRunning=$_isRunning currentDeviceId=$currentDeviceId');
     if (_isRunning) {
+      stdout.writeln('[Controller._runStrategy] EARLY RETURN: already running');
       return;
     }
     if (currentDeviceId == null) {
+      stdout.writeln('[Controller._runStrategy] EARLY RETURN: no device');
       return;
     }
 
@@ -285,13 +337,14 @@ class AppIconController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final strategy = _buildStrategy();
+      final strategy = _buildStrategy(helperApkAutoInstall: helperApkAutoInstall);
+      stdout.writeln('[Controller._runStrategy] strategy=${strategy.runtimeType}');
 
       await strategy.fetchAll(
         deviceId: currentDeviceId!,
         packages: packages,
         labels: labels,
-        batchSize: 10,
+        batchSize: 5,
         forceUpdate: forceUpdate,
         isCancelled: () => _cancelled,
         onLabelDiscovered: (pkg, label) {
@@ -299,6 +352,7 @@ class AppIconController extends ChangeNotifier {
           notifyListeners();
         },
         onBatchDone: (partial) {
+          stdout.writeln('[Controller._runStrategy] onBatchDone: ${partial.length} entries');
           for (final entry in partial.entries) {
             icons[entry.key] = entry.value ?? _sentinel;
           }
@@ -306,16 +360,31 @@ class AppIconController extends ChangeNotifier {
           notifyListeners();
         },
         onCategoriesLoaded: (categories) {
+          stdout.writeln('[Controller._runStrategy] onCategoriesLoaded: ${categories.length} categories');
           if (appDrawerSettings.autoGroupByCategory) {
             _autoCreateGroups(categories);
           }
         },
+        onProgress: (current, total, status) {
+          progress = current;
+          this.total = total;
+          progressStatus = status;
+          notifyListeners();
+        },
       );
-    } on UnimplementedError {
+      stdout.writeln('[Controller._runStrategy] fetchAll returned OK');
+    } on UnimplementedError catch (e) {
+      stderr.writeln('[Controller._runStrategy] Strategy not implemented: $e');
       return;
-    } catch (_) {
+    } catch (e, st) {
+      stderr.writeln('[Controller._runStrategy] Strategy error: $e\n$st');
+      onError?.call(e.toString());
       return;
     } finally {
+      final nullCount = icons.values.where((v) => v == null).length;
+      final sentinelCount = icons.values.where((v) => v?.path.isEmpty == true).length;
+      final fileCount = icons.values.where((v) => v != null && v.path.isNotEmpty).length;
+      stdout.writeln('[Controller._runStrategy] FINALLY: icons null=$nullCount sentinel=$sentinelCount file=$fileCount isLoading->false');
       if (labels.isNotEmpty) {
         await AppIconCache.saveLabels(labels);
       }

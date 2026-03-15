@@ -514,9 +514,39 @@ class _SettingsPageState extends State<SettingsPage> {
                   builder: (context, controller, _) => ElevatedButton.icon(
                     onPressed: controller.isLoading
                         ? null
-                        : () => context.read<AppIconController>().fetchMissing(
-                            forceUpdate: true,
-                          ),
+                        : () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: AppColors.surface,
+                                title: const Text(
+                                  'Scrape Missing App Info?',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                content: const Text(
+                                  'This will fetch icons and names for all apps on the current device from the web. This may take a while.',
+                                  style: TextStyle(color: AppColors.textSecondary),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.of(ctx).pop(true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('Scrape'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true && context.mounted) {
+                              context.read<AppIconController>().fetchMissing(forceUpdate: true);
+                            }
+                          },
                     icon: controller.isLoading
                         ? const SizedBox(
                             width: 16,
@@ -565,14 +595,44 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 ElevatedButton.icon(
                   onPressed: () async {
-                    await context.read<AppIconController>().clearCache();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('App icon and label cache cleared.'),
-                          backgroundColor: Colors.orange,
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: AppColors.surface,
+                        title: const Text(
+                          'Clear Internal Cache?',
+                          style: TextStyle(color: Colors.white),
                         ),
-                      );
+                        content: const Text(
+                          'This will delete all locally cached app icons and labels. You will need to scrape again to restore them.',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange.shade700,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Clear Cache'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true && mounted) {
+                      await context.read<AppIconController>().clearCache();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('App icon and label cache cleared.'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
                     }
                   },
                   icon: const Icon(Icons.delete_sweep, size: 18),
