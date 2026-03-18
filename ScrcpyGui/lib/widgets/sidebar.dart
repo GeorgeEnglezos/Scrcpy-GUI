@@ -49,7 +49,7 @@ class Sidebar extends StatelessWidget {
       const _SidebarItem(icon: Icons.home, label: 'Home'),
       const _SidebarItem(icon: Icons.favorite, label: 'Favorites'),
       if (showAppDrawerTab)
-        const _SidebarItem(icon: Icons.grid_view, label: 'App Drawer'),
+        const _SidebarItem(icon: Icons.grid_view, label: 'App Drawer', beta: true),
       if (showBatFilesTab)
         const _SidebarItem(icon: Icons.terminal, label: 'Scripts'),
       const _SidebarItem(icon: Icons.folder, label: 'Resources'),
@@ -109,6 +109,24 @@ class Sidebar extends StatelessWidget {
                                 fontSize: 11,
                               ),
                             ),
+                            if (item.beta) ...[
+                              const SizedBox(height: 2),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'BETA',
+                                  style: TextStyle(
+                                    color: Colors.amber,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -127,5 +145,6 @@ class Sidebar extends StatelessWidget {
 class _SidebarItem {
   final IconData icon;
   final String label;
-  const _SidebarItem({required this.icon, required this.label});
+  final bool beta;
+  const _SidebarItem({required this.icon, required this.label, this.beta = false});
 }
