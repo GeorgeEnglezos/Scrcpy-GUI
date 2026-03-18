@@ -31,12 +31,16 @@ class Sidebar extends StatelessWidget {
   /// Whether to show the Scripts tab (configurable in settings)
   final bool showBatFilesTab;
 
+  /// Whether to show the App Drawer tab (configurable in settings)
+  final bool showAppDrawerTab;
+
   /// Creates a navigation sidebar.
   const Sidebar({
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
     this.showBatFilesTab = true,
+    this.showAppDrawerTab = true,
   });
 
   @override
@@ -44,6 +48,8 @@ class Sidebar extends StatelessWidget {
     final List<_SidebarItem> items = [
       const _SidebarItem(icon: Icons.home, label: 'Home'),
       const _SidebarItem(icon: Icons.favorite, label: 'Favorites'),
+      if (showAppDrawerTab)
+        const _SidebarItem(icon: Icons.grid_view, label: 'App Drawer'),
       if (showBatFilesTab)
         const _SidebarItem(icon: Icons.terminal, label: 'Scripts'),
       const _SidebarItem(icon: Icons.folder, label: 'Resources'),
@@ -73,8 +79,10 @@ class Sidebar extends StatelessWidget {
                     onTap: () => onItemSelected(index),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      margin:
-                          const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: selected
                             ? AppColors.primary.withValues(alpha: 0.15)

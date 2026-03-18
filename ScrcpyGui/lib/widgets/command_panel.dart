@@ -42,6 +42,9 @@ class CommandPanel extends StatelessWidget {
   /// Callback when the panel is tapped
   final VoidCallback? onTap;
 
+  /// Optional leading content shown before the command text.
+  final Widget? leading;
+
   /// Callback for the delete button
   final VoidCallback? onDelete;
 
@@ -56,6 +59,7 @@ class CommandPanel extends StatelessWidget {
     super.key,
     required this.command,
     this.displayCommand,
+    this.leading,
     this.onTap,
     this.onDelete,
     this.onDownload,
@@ -76,8 +80,9 @@ class CommandPanel extends StatelessWidget {
           border: Border.all(color: AppColors.commandGrey),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            if (leading != null) ...[leading!, const SizedBox(width: 10)],
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(2),

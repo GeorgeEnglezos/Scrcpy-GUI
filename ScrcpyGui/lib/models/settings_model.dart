@@ -50,12 +50,24 @@ List<PanelSettings> defaultPanels = [
   PanelSettings(id: 'camera', displayName: 'Camera Commands', visible: false),
   PanelSettings(id: 'input', displayName: 'Input Control', visible: false),
   PanelSettings(id: 'display', displayName: 'Display/Window', visible: false),
-  PanelSettings(id: 'network', displayName: 'Network/Connection', visible: false),
+  PanelSettings(
+    id: 'network',
+    displayName: 'Network/Connection',
+    visible: false,
+  ),
   PanelSettings(id: 'virtual', displayName: 'Virtual Display Commands'),
   PanelSettings(id: 'recording', displayName: 'Recording Commands'),
-  PanelSettings(id: 'advanced', displayName: 'Advanced/Developer', visible: false),
+  PanelSettings(
+    id: 'advanced',
+    displayName: 'Advanced/Developer',
+    visible: false,
+  ),
   PanelSettings(id: 'otg', displayName: 'OTG Mode', visible: false),
-  PanelSettings(id: 'running', displayName: 'Running Instances', visible: false),
+  PanelSettings(
+    id: 'running',
+    displayName: 'Running Instances',
+    visible: false,
+  ),
 ];
 
 /// App-wide settings
@@ -67,6 +79,7 @@ class AppSettings {
   String batDirectory; // NOTE: Also stores .sh/.command files on macOS/Linux
   bool openCmdWindows;
   bool showBatFilesTab; // NOTE: Shows script files on all platforms
+  bool showAppDrawerTab;
   bool showManualIpInput;
   String bootTab;
   String settingsDirectory;
@@ -81,6 +94,7 @@ class AppSettings {
     required this.batDirectory,
     this.openCmdWindows = false,
     this.showBatFilesTab = true,
+    this.showAppDrawerTab = true,
     this.showManualIpInput = false,
     this.bootTab = 'Home',
     this.settingsDirectory = '',
@@ -97,6 +111,7 @@ class AppSettings {
       batDirectory: '',
       openCmdWindows: false,
       showBatFilesTab: true,
+      showAppDrawerTab: true,
       showManualIpInput: false,
       bootTab: 'Home',
       settingsDirectory: '',
@@ -118,10 +133,12 @@ class AppSettings {
       batDirectory: json['batDirectory'] as String? ?? '',
       openCmdWindows: json['openCmdWindows'] as bool? ?? false,
       showBatFilesTab: json['showBatFilesTab'] as bool? ?? true,
+      showAppDrawerTab: json['showAppDrawerTab'] as bool? ?? true,
       showManualIpInput: json['showManualIpInput'] as bool? ?? false,
       bootTab: json['bootTab'] as String? ?? 'Home',
       settingsDirectory: json['settingsDirectory'] as String? ?? '',
-      shortcutMod: (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
+      shortcutMod:
+          (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
       checkForUpdatesOnStartup: json['checkForUpdatesOnStartup'] as bool? ?? true,
     );
   }
@@ -135,6 +152,7 @@ class AppSettings {
       'batDirectory': batDirectory,
       'openCmdWindows': openCmdWindows,
       'showBatFilesTab': showBatFilesTab,
+      'showAppDrawerTab': showAppDrawerTab,
       'showManualIpInput': showManualIpInput,
       'bootTab': bootTab,
       'settingsDirectory': settingsDirectory,

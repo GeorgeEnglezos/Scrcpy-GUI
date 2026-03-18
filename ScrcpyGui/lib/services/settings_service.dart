@@ -1,13 +1,17 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import '../models/app_drawer_settings_model.dart';
 import '../models/settings_model.dart';
 
 class SettingsService {
   static AppSettings? _cachedSettings; // Cache settings in memory
+  static AppDrawerSettings? _cachedAppDrawerSettings;
 
   static AppSettings? get currentSettings => _cachedSettings;
+  static AppDrawerSettings? get currentAppDrawerSettings => _cachedAppDrawerSettings;
 
   final String _settingsFileName = 'scrcpy_gui_settings.json';
+  final String _appDrawerSettingsFileName = 'app_drawer_settings.json';
 
   /// Load settings from disk
   Future<AppSettings> loadSettings() async {
@@ -36,8 +40,6 @@ class SettingsService {
 
   /// Migrate settings by adding any new panels that don't exist in saved settings
   void _migratePanels(AppSettings settings) {
-    final existingIds = settings.panelOrder.map((p) => p.id).toSet();
-
     // Remove deprecated panels (e.g., shortcuts panel)
     final deprecatedPanelIds = {'shortcuts'};
     settings.panelOrder.removeWhere((panel) => deprecatedPanelIds.contains(panel.id));
@@ -113,5 +115,58 @@ class SettingsService {
     // Reset cache to default settings
     _cachedSettings = AppSettings.defaultSettings();
     await saveSettings(_cachedSettings!);
+    await resetAppDrawerSettings();
+  }
+
+  // ── App Drawer Settings ─────────────────────────────────────────────────
+
+  /// Load app drawer settings from disk
+  Future<AppDrawerSettings> loadAppDrawerSettings() async {
+    if (_cachedAppDrawerSettings != null) return _cachedAppDrawerSettings!;
+
+    final settingsDir = await getSettingsDirectory();
+    final file = File(p.join(settingsDir, _appDrawerSettingsFileName));
+
+    if (await file.exists()) {
+      final jsonString = await file.readAsString();
+      _cachedAppDrawerSettings = AppDrawerSettings.fromJsonString(jsonString);
+    } else {
+      _cachedAppDrawerSettings = AppDrawerSettings();
+      await saveAppDrawerSettings(_cachedAppDrawerSettings!);
+    }
+
+    return _cachedAppDrawerSettings!;
+  }
+
+  /// Save app drawer settings to disk
+  Future<bool> saveAppDrawerSettings(AppDrawerSettings settings) async {
+    try {
+      final settingsDir = await getSettingsDirectory();
+      final file = File(p.join(settingsDir, _appDrawerSettingsFileName));
+
+      if (!await file.exists()) {
+        await file.create(recursive: true);
+      }
+
+      await file.writeAsString(settings.toJsonString());
+      _cachedAppDrawerSettings = settings;
+      return true;
+    } catch (e) {
+      stderr.writeln('Failed to save app drawer settings: $e');
+      return false;
+    }
+  }
+
+  /// Reset app drawer settings to defaults
+  Future<void> resetAppDrawerSettings() async {
+    final settingsDir = await getSettingsDirectory();
+    final file = File(p.join(settingsDir, _appDrawerSettingsFileName));
+
+    if (await file.exists()) {
+      await file.delete();
+    }
+
+    _cachedAppDrawerSettings = AppDrawerSettings();
+    await saveAppDrawerSettings(_cachedAppDrawerSettings!);
   }
 }

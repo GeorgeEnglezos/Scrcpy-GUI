@@ -102,6 +102,12 @@ class _ResourcesPageState extends State<ResourcesPage> {
         'url': 'https://scrcpy-ui.web.app/',
       },
       {
+        'title': 'Helper APK',
+        'description':
+            'The Android helper app used by ScrcpyGUI to extract app icons and labels directly from your device.',
+        'url': 'https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
+      },
+      {
         'title': 'Support',
         'description':
             'Here is my Paypal if you want to support me. Thank you very much!',

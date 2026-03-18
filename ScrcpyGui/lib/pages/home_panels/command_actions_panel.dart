@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/command_panel.dart';
@@ -73,7 +72,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                 command: command,
                 displayCommand: displayCmd,
                 showDelete: false,
-                onDownload: () => _downloadAsBat(context, command),
+                onDownload: () => TerminalService.generateScript(context, command),
               ),
               const SizedBox(height: 12),
               Consumer<DeviceManagerService>(
@@ -133,7 +132,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                             ),
                           ),
                           IconButton(
-                            onPressed: () => _runCommand(context, command),
+                            onPressed: () => TerminalService.executeCommand(context, command),
                             icon: const Icon(Icons.play_arrow, size: 22),
                             style: IconButton.styleFrom(
                               backgroundColor: AppColors.runGreen,
@@ -338,78 +337,6 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
           ),
         );
       },
-    );
-  }
-
-  Future<void> _runCommand(BuildContext context, String command) async {
-    final commandsService = CommandsService();
-    final settings = SettingsService.currentSettings;
-
-    // Track command execution
-    await commandsService.trackCommandExecution(command);
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Running command...'),
-        backgroundColor: Colors.blueGrey,
-        duration: Duration(seconds: 1),
-      ),
-    );
-
-    // Use openCmdWindows setting to determine how to run the command
-    if (settings?.openCmdWindows ?? false) {
-      // Run in new terminal window (tracked for instances panel)
-      await TerminalService.runCommandInNewTerminal(command);
-
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Started in new window: $command'),
-          backgroundColor: Colors.green.shade700,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } else {
-      // Run in same terminal (original behavior)
-      final result = await TerminalService.runCommand(command);
-
-      if (!context.mounted) return;
-      if (result.isNotEmpty) {
-        _showOutputDialog(context, command, result);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to run command: $command'),
-            backgroundColor: Colors.red.shade700,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showOutputDialog(BuildContext context, String command, String output) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Output for: $command'),
-        content: SizedBox(
-          width: 600,
-          height: 400,
-          child: SingleChildScrollView(
-            child: SelectableText(
-              output.isNotEmpty ? output : 'No output received.',
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -629,91 +556,4 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
     );
   }
 
-  Future<void> _downloadAsBat(BuildContext context, String command) async {
-    try {
-      final settings = SettingsService.currentSettings;
-      final downloadsDir = settings?.downloadsDirectory;
-
-      if (downloadsDir == null || downloadsDir.isEmpty) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Downloads directory not configured in settings'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      final directory = Directory(downloadsDir);
-      if (!await directory.exists()) {
-        await directory.create(recursive: true);
-      }
-
-      List<String> nameParts = [];
-
-      if (command.contains('--record')) {
-        nameParts.add('recording');
-      }
-
-      final packageRegex = RegExp(r'--start-app[=\s]+([^\s]+)');
-      final match = packageRegex.firstMatch(command);
-      if (match != null) {
-        final packageName = match
-            .group(1)
-            ?.replaceAll('"', '')
-            .replaceAll("'", '');
-        if (packageName != null && packageName.isNotEmpty) {
-          nameParts.add(packageName);
-        }
-      }
-
-      String baseFilename = nameParts.isEmpty ? 'scrcpy' : nameParts.join('_');
-
-      // Determine file extension and content based on platform
-      String fileExtension;
-      String fileContent;
-
-      if (Platform.isWindows) {
-        fileExtension = '.bat';
-        fileContent = '@echo off\n$command\npause';
-      } else {
-        // macOS/Linux - use shell script
-        fileExtension = Platform.isMacOS ? '.command' : '.sh';
-        fileContent =
-            '#!/bin/bash\n$command\nread -p "Press any key to continue..."';
-      }
-
-      String filename = baseFilename;
-      int counter = 1;
-      while (await File('$downloadsDir/$filename$fileExtension').exists()) {
-        filename = '$baseFilename ($counter)';
-        counter++;
-      }
-
-      final file = File('$downloadsDir/$filename$fileExtension');
-      await file.writeAsString(fileContent);
-
-      // Make executable on Unix systems
-      if (!Platform.isWindows) {
-        await Process.run('chmod', ['+x', file.path]);
-      }
-
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Downloaded to ${file.path}'),
-          backgroundColor: AppColors.primary,
-        ),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error downloading: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 }

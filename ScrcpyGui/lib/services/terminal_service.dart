@@ -12,9 +12,10 @@
 library;
 
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import '../constants/package_names.dart';
 import 'settings_service.dart';
+import 'commands_service.dart';
 
 /// Service for executing terminal commands and managing system processes
 ///
@@ -48,7 +49,7 @@ class TerminalService {
   /// Used for display — the full path is preserved for execution and clipboard.
   static String toDisplayCommand(String cmd) {
     final exe = scrcpyExecutable;
-    if (exe == 'scrcpy') return cmd;
+    if (exe == 'scrcpy') return _stripSerial(cmd);
 
     // Normalise both sides for comparison so that mixed separators and
     // casing differences on Windows don't prevent the match.
@@ -63,7 +64,7 @@ class TerminalService {
     }
 
     if (matches) {
-      return 'scrcpy${cmd.substring(exe.length)}';
+      return _stripSerial('scrcpy${cmd.substring(exe.length)}');
     }
 
     // Also handle quoted executable: "C:\path\scrcpy.exe" --flags
@@ -76,10 +77,42 @@ class TerminalService {
       quotedMatches = normalizedCmd.startsWith(normalizedQuoted);
     }
     if (quotedMatches) {
-      return 'scrcpy${cmd.substring(quoted.length)}';
+      return _stripSerial('scrcpy${cmd.substring(quoted.length)}');
     }
 
-    return cmd;
+    return _stripSerial(cmd);
+  }
+
+  /// Strips `--serial <value>` / `--serial=<value>` / `-s <value>` from a
+  /// command string so device identifiers are not shown in the UI.
+  static String _stripSerial(String cmd) {
+    // --serial=value  or  --serial value  (with optional quotes)
+    cmd = cmd.replaceAll(
+      RegExp(r'\s*--serial(?:=|[ \t]+)"[^"]*"', caseSensitive: false),
+      '',
+    );
+    cmd = cmd.replaceAll(
+      RegExp(r"\s*--serial(?:=|[ \t]+)'[^']*'", caseSensitive: false),
+      '',
+    );
+    cmd = cmd.replaceAll(
+      RegExp(r'\s*--serial(?:=|[ \t]+)\S+', caseSensitive: false),
+      '',
+    );
+    // -s value  (with optional quotes)
+    cmd = cmd.replaceAll(
+      RegExp(r'\s+-s[ \t]+"[^"]*"'),
+      '',
+    );
+    cmd = cmd.replaceAll(
+      RegExp(r"\s+-s[ \t]+'[^']*'"),
+      '',
+    );
+    cmd = cmd.replaceAll(
+      RegExp(r'\s+-s[ \t]+\S+'),
+      '',
+    );
+    return cmd.trim();
   }
 
   /// Returns true if scrcpy is resolvable on the system PATH.
@@ -98,6 +131,307 @@ class TerminalService {
   ///
   /// Maps process ID to Process object for lifecycle management
   static final Map<int, Process> _runningProcesses = {};
+
+  /// Derives the base filename for a generated script from command flags.
+  /// Used internally by [generateScript].
+  /// Returns joined name parts from --record and --start-app flags,
+  /// falling back to 'scrcpy' if neither is present.
+  static String deriveScriptBaseName(String command) {
+    final nameParts = <String>[];
+
+    if (command.contains('--record')) {
+      nameParts.add('recording');
+    }
+
+    final packageRegex = RegExp(r'--start-app[=\s]+(?:\\?"([^"]+)\\?"|([^\s]+))');
+    final match = packageRegex.firstMatch(command);
+    if (match != null) {
+      final packageName = (match.group(1) ?? match.group(2) ?? '')
+          .replaceAll(r'\"', '')
+          .replaceAll('"', '')
+          .replaceAll("'", '')
+          .replaceAll(r'\', '');
+      if (packageName.isNotEmpty) {
+        nameParts.add(packageName);
+      }
+    }
+
+    return nameParts.isEmpty ? 'scrcpy' : nameParts.join('_');
+  }
+
+  /// Saves [command] as a platform-appropriate script file in the configured
+  /// downloads directory.
+  ///
+  /// [command] must already contain the full executable path
+  /// (as produced by [CommandBuilderService.fullCommand]).
+  /// It is written verbatim into the script file.
+  static Future<void> generateScript(
+    BuildContext context,
+    String command,
+  ) async {
+    final downloadsDir =
+        SettingsService.currentSettings?.downloadsDirectory ?? '';
+
+    if (downloadsDir.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Downloads directory not configured in settings'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final directory = Directory(downloadsDir);
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+
+      final baseFilename = deriveScriptBaseName(command);
+
+      String fileExtension;
+      String fileContent;
+
+      if (Platform.isWindows) {
+        fileExtension = '.bat';
+        fileContent = '@echo off\n$command\npause';
+      } else if (Platform.isMacOS) {
+        fileExtension = '.command';
+        fileContent =
+            '#!/bin/bash\n$command\nread -p "Press any key to continue..."';
+      } else {
+        fileExtension = '.sh';
+        fileContent =
+            '#!/bin/bash\n$command\nread -p "Press any key to continue..."';
+      }
+
+      // Find a free filename: try base first, then base (1), base (2), ...
+      String filename = baseFilename;
+      int counter = 1;
+      while (
+        await File('$downloadsDir/$filename$fileExtension').exists()
+      ) {
+        filename = '$baseFilename ($counter)';
+        counter++;
+      }
+
+      final file = File('$downloadsDir/$filename$fileExtension');
+      await file.writeAsString(fileContent);
+
+      if (!Platform.isWindows) {
+        await Process.run('chmod', ['+x', file.path]);
+      }
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Saved to ${file.path}'),
+          backgroundColor: Colors.green.shade700,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving script: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Universal entry point for running any shell command string.
+  ///
+  /// Respects the [SettingsService.currentSettings.openCmdWindows] setting:
+  /// - true  → opens in a new terminal window
+  /// - false → runs inline and shows output dialog
+  ///
+  /// Only tracks scrcpy commands in [CommandsService] history.
+  /// All snackbar/dialog feedback is handled here — callers show nothing.
+  static Future<void> executeCommand(
+    BuildContext context,
+    String command,
+  ) async {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Running command...'),
+        backgroundColor: Colors.blueGrey,
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    // Track only scrcpy commands (case-insensitive on Windows).
+    // INTENTIONAL CHANGE: the old _runCommand tracked all commands
+    // unconditionally. The new method tracks only scrcpy commands per spec,
+    // to avoid polluting history with ADB/utility commands.
+    final exe = scrcpyExecutable;
+    final isScrcpy = Platform.isWindows
+        ? command.toLowerCase().startsWith(exe.toLowerCase())
+        : command.startsWith(exe);
+    if (isScrcpy) {
+      await CommandsService().trackCommandExecution(command);
+    }
+
+    final openInNewWindow =
+        SettingsService.currentSettings?.openCmdWindows ?? false;
+
+    if (openInNewWindow) {
+      await runCommandInNewTerminal(command);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Started in new window: $command'),
+          backgroundColor: Colors.green.shade700,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      final result = await runCommand(command);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      if (result.isNotEmpty) {
+        _showOutputDialog(context, command, result);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to run command: $command'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Shows a scrollable output dialog for inline command results.
+  static void _showOutputDialog(
+    BuildContext context,
+    String command,
+    String output,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Output for: $command'),
+        content: SizedBox(
+          width: 600,
+          height: 400,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              output.isNotEmpty ? output : 'No output received.',
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Runs a script file from disk in a new terminal window.
+  ///
+  /// Always opens a new window regardless of [SettingsService] settings.
+  /// No success snackbar is shown — the terminal window is the feedback.
+  /// Shows an error snackbar on failure.
+  static Future<void> executeScriptFile(
+    BuildContext context,
+    String filePath,
+  ) async {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Running script...'),
+        backgroundColor: Colors.blueGrey,
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    try {
+      if (Platform.isWindows) {
+        // Use backslashes so cmd.exe resolves the path correctly.
+        final winPath = filePath.replaceAll('/', '\\');
+        await Process.start(
+          'cmd',
+          ['/c', 'start', 'cmd', '/k', winPath],
+        );
+      } else if (Platform.isMacOS) {
+        await Process.run('chmod', ['+x', filePath]);
+
+        if (filePath.endsWith('.command')) {
+          await Process.start('open', [filePath]);
+        } else {
+          // .sh: open in Terminal via osascript with PATH export
+          final escapedPath = filePath
+              .replaceAll('\\', '\\\\')
+              .replaceAll('"', '\\"');
+          await Process.start('osascript', [
+            '-e',
+            'tell application "Terminal" to do script '
+            '"export PATH=\\"/opt/homebrew/bin:/usr/local/bin:\\\$PATH\\" '
+            '&& $escapedPath"',
+          ]);
+        }
+      } else if (Platform.isLinux) {
+        await Process.run('chmod', ['+x', filePath]);
+
+        final terminals = [
+          'gnome-terminal',
+          'x-terminal-emulator',
+          'konsole',
+          'xfce4-terminal',
+          'lxterminal',
+        ];
+
+        String? terminalCmd;
+        for (final t in terminals) {
+          if (await _isCommandAvailable(t)) {
+            terminalCmd = t;
+            break;
+          }
+        }
+
+        if (terminalCmd == null) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No terminal emulator found. Install one of: '
+                'gnome-terminal, konsole, xfce4-terminal, lxterminal',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        await Process.start(terminalCmd, [
+          '--',
+          'bash',
+          '-c',
+          '$filePath; exec bash',
+        ]);
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error running script: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
+  }
 
   /// Runs a command in the same terminal and returns stdout
   ///
@@ -134,6 +468,22 @@ class TerminalService {
       stderr.writeln('Error running command: $e');
       return '';
     }
+  }
+
+  /// Like [runCommand] but returns the full [ProcessResult] (stdout, stderr, exitCode).
+  static Future<ProcessResult> runCommandWithResult(String command) async {
+    final environment = Platform.isWindows
+        ? null
+        : {
+            'PATH': '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
+          };
+
+    final result = await Process.run(
+      Platform.isWindows ? 'cmd' : 'bash',
+      Platform.isWindows ? ['/c', command] : ['-c', command],
+      environment: environment,
+    );
+    return result;
   }
 
   /// Runs a command in a new terminal window (cross-platform)
@@ -210,7 +560,6 @@ class TerminalService {
 
       _runningProcesses[process.pid] = process;
 
-      // Optional: listen to output
       process.stdout.transform(SystemEncoding().decoder).listen((data) {
         stdout.write('[PID ${process.pid}] $data');
       });
@@ -565,72 +914,6 @@ class TerminalService {
         .toList();
   }
 
-  /// Get the display label for a specific package
-  ///
-  /// Uses a hybrid approach:
-  /// 1. Checks common package names dictionary (fast, from constants file)
-  /// 2. Falls back to showing the complete package name
-  ///
-  /// [deviceId] Target device ID (not used in current implementation)
-  /// [packageName] Package name to query (e.g., 'com.android.chrome')
-  ///
-  /// Returns the app's display name or full package name if not recognized
-  ///
-  /// Example:
-  /// ```dart
-  /// final label = await TerminalService.getPackageLabel('abc123', 'com.android.chrome');
-  /// // Returns: 'Chrome' (from dictionary)
-  ///
-  /// final label2 = await TerminalService.getPackageLabel('abc123', 'com.unknown.app');
-  /// // Returns: 'com.unknown.app' (fallback to full package name)
-  /// ```
-  static Future<String> getPackageLabel(
-    String deviceId,
-    String packageName,
-  ) async {
-    // Check common packages first
-    if (commonPackageNames.containsKey(packageName)) {
-      return commonPackageNames[packageName]!;
-    }
-
-    // Fallback: Return full package name
-    return packageName;
-  }
-
-  /// Lists installed packages with their display labels
-  ///
-  /// Retrieves both package names and user-facing app names.
-  /// This is slower than [listPackages] as it queries each package individually.
-  ///
-  /// [deviceId] Target device ID
-  /// [includeSystemApps] If false (default), only shows user-installed apps
-  ///
-  /// Returns a map of package name to display label
-  ///
-  /// Example:
-  /// ```dart
-  /// final packages = await TerminalService.listPackagesWithLabels('abc123');
-  /// // {'com.android.chrome': 'Chrome', 'com.whatsapp': 'WhatsApp'}
-  /// ```
-  static Future<Map<String, String>> listPackagesWithLabels({
-    required String deviceId,
-    bool includeSystemApps = false,
-  }) async {
-    final packages = await listPackages(
-      deviceId: deviceId,
-      includeSystemApps: includeSystemApps,
-    );
-
-    final Map<String, String> packageLabels = {};
-
-    for (var package in packages) {
-      final label = await getPackageLabel(deviceId, package);
-      packageLabels[package] = label;
-    }
-
-    return packageLabels;
-  }
-
   /// Loads scrcpy encoders once for a device
   ///
   /// Executes `scrcpy --list-encoders -s [deviceId]` to retrieve available
@@ -643,7 +926,6 @@ class TerminalService {
   /// Note: Output should be parsed using [parseVideoEncoders] and [parseAudioEncoders]
   static Future<String> loadScrcpyEncoders({required String deviceId}) async {
     final cmd = '$scrcpyExecutable --list-encoders -s $deviceId';
-    stdout.writeln('Executing: $cmd');
     return await runCommand(cmd);
   }
 

@@ -12,6 +12,10 @@ class CustomSearchBar extends StatefulWidget {
   final VoidCallback? onClear;
   final VoidCallback? onReload;
   final List<String> suggestions;
+  final Widget Function(String suggestion)? suggestionLeadingBuilder;
+  /// Optional custom matcher. When provided, a suggestion is included if this
+  /// returns true. Replaces the default `.contains(query)` check.
+  final bool Function(String suggestion, String query)? suggestionMatcher;
   final bool enabled;
   final String? tooltip;
 
@@ -23,6 +27,8 @@ class CustomSearchBar extends StatefulWidget {
     this.onClear,
     this.onReload,
     this.suggestions = const [],
+    this.suggestionLeadingBuilder,
+    this.suggestionMatcher,
     this.enabled = true,
     this.tooltip,
   });
@@ -96,13 +102,14 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
 
   void _updateFilteredSuggestions() {
     setState(() {
-      if (_controller.text.isEmpty) {
+      final query = _controller.text;
+      if (query.isEmpty) {
         _filteredSuggestions = widget.suggestions;
       } else {
+        final q = query.toLowerCase();
+        final matcher = widget.suggestionMatcher;
         _filteredSuggestions = widget.suggestions
-            .where(
-              (s) => s.toLowerCase().contains(_controller.text.toLowerCase()),
-            )
+            .where((s) => matcher != null ? matcher(s, query) : s.toLowerCase().contains(q))
             .toList();
       }
     });
@@ -178,6 +185,9 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                     itemCount: _filteredSuggestions.length,
                     itemBuilder: (context, index) {
                       final item = _filteredSuggestions[index];
+                      final leading = widget.suggestionLeadingBuilder?.call(
+                        item,
+                      );
                       return InkWell(
                         onTap: () => _onSuggestionTap(item),
                         child: Padding(
@@ -185,9 +195,22 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                             horizontal: kRowHorizontalPadding,
                             vertical: kRowVerticalPadding,
                           ),
-                          child: Text(
-                            item,
-                            style: TextStyle(color: AppColors.textSecondary),
+                          child: Row(
+                            children: [
+                              if (leading != null) ...[
+                                leading,
+                                const SizedBox(width: 8),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  item,
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -273,10 +296,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
     );
 
     if (widget.tooltip != null) {
-      return Tooltip(
-        message: widget.tooltip!,
-        child: searchBar,
-      );
+      return Tooltip(message: widget.tooltip!, child: searchBar);
     }
 
     return searchBar;

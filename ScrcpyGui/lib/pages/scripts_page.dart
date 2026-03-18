@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:desktop_drop/desktop_drop.dart';
+import '../services/app_icon_cache.dart';
 import '../services/settings_service.dart';
+import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
 
 class ScriptFileGroup {
@@ -26,11 +28,18 @@ class ScriptsPage extends StatefulWidget {
 }
 
 class _ScriptsPageState extends State<ScriptsPage> {
+  static final RegExp _startAppArgPattern = RegExp(
+    r'''(?:^|\s)-{1,2}start-app=(?:"([^"]+)"|'([^']+)'|([^\s]+))''',
+    caseSensitive: false,
+  );
+
   final SettingsService _settingsService = SettingsService();
   bool _isLoading = true;
   List<ScriptFileGroup> _batFileGroups = [];
   String _currentDirectory = '';
   bool _isDragging = false;
+  final Map<String, String?> _scriptPackageByPath = {};
+  final Map<String, File?> _scriptIconByPackage = {};
 
   // Get platform-specific script extensions
   List<String> get _scriptExtensions {
@@ -169,19 +178,16 @@ class _ScriptsPageState extends State<ScriptsPage> {
           final bName = path.basename(b.path).toLowerCase();
           return aName.compareTo(bName);
         });
-        groups.add(ScriptFileGroup(
-          groupName: 'Root',
-          files: rootFiles,
-          isRoot: true,
-        ));
+        groups.add(
+          ScriptFileGroup(groupName: 'Root', files: rootFiles, isRoot: true),
+        );
       }
 
       // Add groups for each subdirectory
       for (final subDir in subDirectories) {
         final subDirFiles = await subDir
             .list()
-            .where((entity) =>
-                entity is File && _isScriptFile(entity.path))
+            .where((entity) => entity is File && _isScriptFile(entity.path))
             .toList();
 
         if (subDirFiles.isNotEmpty) {
@@ -191,11 +197,13 @@ class _ScriptsPageState extends State<ScriptsPage> {
             return aName.compareTo(bName);
           });
 
-          groups.add(ScriptFileGroup(
-            groupName: path.basename(subDir.path),
-            files: subDirFiles,
-            isRoot: false,
-          ));
+          groups.add(
+            ScriptFileGroup(
+              groupName: path.basename(subDir.path),
+              files: subDirFiles,
+              isRoot: false,
+            ),
+          );
         }
       }
 
@@ -209,78 +217,12 @@ class _ScriptsPageState extends State<ScriptsPage> {
       setState(() {
         _batFileGroups = groups;
       });
+      await _hydrateScriptIcons(groups);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading script files: $e'),
-            backgroundColor: Colors.red.shade700,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _runBatFile(String filePath) async {
-    try {
-      if (Platform.isWindows) {
-        // Windows: Run .bat or .cmd files in a new cmd window
-        await Process.start(
-          'cmd',
-          ['/c', 'start', 'cmd', '/k', filePath],
-          runInShell: true,
-        );
-      } else if (Platform.isMacOS) {
-        // macOS: Run .sh or .command files
-        // Ensure the script has execute permissions
-        await Process.run('chmod', ['+x', filePath]);
-
-        if (filePath.endsWith('.command')) {
-          // .command files can be opened directly (macOS convention)
-          await Process.start('open', [filePath]);
-        } else {
-          // .sh files need to be run in Terminal
-          // Wrap with PATH export to ensure adb and scrcpy are accessible
-          final wrappedCommand = 'export PATH="/opt/homebrew/bin:/usr/local/bin:\$PATH" && $filePath';
-          await Process.start('osascript', [
-            '-e',
-            'tell application "Terminal" to do script "$wrappedCommand"',
-          ]);
-        }
-      } else {
-        // Linux: Run .sh files
-        // Ensure the script has execute permissions
-        await Process.run('chmod', ['+x', filePath]);
-
-        // Try to find an available terminal emulator
-        final terminals = [
-          'gnome-terminal',
-          'x-terminal-emulator',
-          'konsole',
-          'xfce4-terminal',
-          'lxterminal',
-        ];
-
-        String? terminal;
-        for (var term in terminals) {
-          try {
-            final result = await Process.run('which', [term]);
-            if (result.exitCode == 0) {
-              terminal = term;
-              break;
-            }
-          } catch (_) {}
-        }
-
-        if (terminal != null) {
-          await Process.start(terminal, ['--', 'bash', '-c', '$filePath; exec bash']);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error running script: $e'),
             backgroundColor: Colors.red.shade700,
           ),
         );
@@ -313,6 +255,53 @@ class _ScriptsPageState extends State<ScriptsPage> {
           ),
         );
       }
+    }
+  }
+
+  String? _extractStartAppPackage(String scriptText) {
+    final match = _startAppArgPattern.firstMatch(scriptText);
+    if (match == null) return null;
+    return match.group(1) ?? match.group(2) ?? match.group(3);
+  }
+
+  String? _extractScriptPackage(FileSystemEntity entity) {
+    if (entity is! File) return null;
+    if (_scriptPackageByPath.containsKey(entity.path)) {
+      return _scriptPackageByPath[entity.path];
+    }
+    try {
+      final contents = entity.readAsStringSync();
+      final packageName = _extractStartAppPackage(contents);
+      _scriptPackageByPath[entity.path] = packageName;
+      return packageName;
+    } catch (_) {
+      _scriptPackageByPath[entity.path] = null;
+      return null;
+    }
+  }
+
+  Future<void> _hydrateScriptIcons(List<ScriptFileGroup> groups) async {
+    final packages = <String>{};
+    for (final group in groups) {
+      for (final entity in group.files) {
+        final packageName = _extractScriptPackage(entity);
+        if (packageName != null) {
+          packages.add(packageName);
+        }
+      }
+    }
+    if (packages.isEmpty) return;
+
+    var changed = false;
+    for (final packageName in packages) {
+      if (_scriptIconByPackage.containsKey(packageName)) continue;
+      _scriptIconByPackage[packageName] =
+          await AppIconCache.getCachedIconIfExists(packageName);
+      changed = true;
+    }
+
+    if (changed && mounted) {
+      setState(() {});
     }
   }
 
@@ -387,60 +376,77 @@ class _ScriptsPageState extends State<ScriptsPage> {
               // Drag and drop zone
               _buildDropZone(),
               const SizedBox(height: 24),
-            // Groups
-            if (_batFileGroups.isEmpty)
-              _buildEmptyState()
-            else
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  // Determine number of columns based on available width
-                  int crossAxisCount;
-                  if (constraints.maxWidth >= 1400) {
-                    crossAxisCount = 3; // 3 columns for very wide screens
-                  } else if (constraints.maxWidth >= 900) {
-                    crossAxisCount = 2; // 2 columns for medium-wide screens
-                  } else {
-                    crossAxisCount = 1; // 1 column for narrow screens
-                  }
+              // Groups
+              if (_batFileGroups.isEmpty)
+                _buildEmptyState()
+              else
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Determine number of columns based on available width
+                    int crossAxisCount;
+                    if (constraints.maxWidth >= 1400) {
+                      crossAxisCount = 3; // 3 columns for very wide screens
+                    } else if (constraints.maxWidth >= 900) {
+                      crossAxisCount = 2; // 2 columns for medium-wide screens
+                    } else {
+                      crossAxisCount = 1; // 1 column for narrow screens
+                    }
 
-                  // Create rows of panels
-                  final rows = <Widget>[];
-                  for (int i = 0; i < _batFileGroups.length; i += crossAxisCount) {
-                    final rowItems = <Widget>[];
-                    for (int j = 0; j < crossAxisCount && (i + j) < _batFileGroups.length; j++) {
-                      rowItems.add(
-                        Expanded(
-                          child: _buildGroupPanel(_batFileGroups[i + j]),
+                    // Create rows of panels
+                    final rows = <Widget>[];
+                    for (
+                      int i = 0;
+                      i < _batFileGroups.length;
+                      i += crossAxisCount
+                    ) {
+                      final rowItems = <Widget>[];
+                      for (
+                        int j = 0;
+                        j < crossAxisCount && (i + j) < _batFileGroups.length;
+                        j++
+                      ) {
+                        rowItems.add(
+                          Expanded(
+                            child: _buildGroupPanel(_batFileGroups[i + j]),
+                          ),
+                        );
+                      }
+
+                      // Fill remaining space if last row is incomplete
+                      while (rowItems.length < crossAxisCount) {
+                        rowItems.add(const Expanded(child: SizedBox.shrink()));
+                      }
+
+                      rows.add(
+                        Padding(
+                          padding: EdgeInsets.only(
+                            bottom: i + crossAxisCount < _batFileGroups.length
+                                ? 24
+                                : 0,
+                          ),
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                for (
+                                  int idx = 0;
+                                  idx < rowItems.length;
+                                  idx++
+                                ) ...[
+                                  rowItems[idx],
+                                  if (idx < rowItems.length - 1)
+                                    const SizedBox(width: 24),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
                       );
                     }
 
-                    // Fill remaining space if last row is incomplete
-                    while (rowItems.length < crossAxisCount) {
-                      rowItems.add(const Expanded(child: SizedBox.shrink()));
-                    }
-
-                    rows.add(
-                      Padding(
-                        padding: EdgeInsets.only(bottom: i + crossAxisCount < _batFileGroups.length ? 24 : 0),
-                        child: IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              for (int idx = 0; idx < rowItems.length; idx++) ...[
-                                rowItems[idx],
-                                if (idx < rowItems.length - 1) const SizedBox(width: 24),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  return Column(children: rows);
-                },
-              ),
+                    return Column(children: rows);
+                  },
+                ),
             ],
           ),
         ),
@@ -531,10 +537,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
             const SizedBox(height: 16),
             Text(
               'No script files found',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Text(
@@ -564,12 +567,39 @@ class _ScriptsPageState extends State<ScriptsPage> {
     return _buildFileList(group);
   }
 
+  Widget _buildScriptIcon(File? iconFile) {
+    if (iconFile != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.file(
+          iconFile,
+          width: 18,
+          height: 18,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.insert_drive_file,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      );
+    }
+
+    return Icon(
+      Icons.insert_drive_file,
+      size: 18,
+      color: AppColors.textSecondary,
+    );
+  }
+
   Widget _buildFileList(ScriptFileGroup group) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppColors.textSecondary.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         children: [
@@ -627,12 +657,18 @@ class _ScriptsPageState extends State<ScriptsPage> {
 
   Widget _buildFileRow(FileSystemEntity file) {
     final fileName = path.basename(file.path);
+    final packageName = _extractScriptPackage(file);
+    final iconFile = packageName != null
+        ? _scriptIconByPackage[packageName]
+        : null;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.1)),
+          bottom: BorderSide(
+            color: AppColors.textSecondary.withValues(alpha: 0.1),
+          ),
         ),
       ),
       child: Row(
@@ -641,11 +677,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
             flex: 4,
             child: Row(
               children: [
-                Icon(
-                  Icons.insert_drive_file,
-                  size: 18,
-                  color: AppColors.textSecondary,
-                ),
+                _buildScriptIcon(iconFile),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -665,7 +697,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
             child: Row(
               children: [
                 ElevatedButton.icon(
-                  onPressed: () => _runBatFile(file.path),
+                  onPressed: () => TerminalService.executeScriptFile(context, file.path),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(
@@ -676,7 +708,11 @@ class _ScriptsPageState extends State<ScriptsPage> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
-                  icon: const Icon(Icons.play_arrow, size: 16, color: Colors.white),
+                  icon: const Icon(
+                    Icons.play_arrow,
+                    size: 16,
+                    color: Colors.white,
+                  ),
                   label: const Text(
                     'Run',
                     style: TextStyle(color: Colors.white, fontSize: 12),
