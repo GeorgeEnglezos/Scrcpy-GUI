@@ -63,92 +63,64 @@ class UpdateService {
       client.connectionTimeout = _requestTimeout;
       client.userAgent = 'Scrcpy-GUI-App';
 
-      final request = await client.getUrl(Uri.parse(_releasesUrl));
-      final response = await request.close();
+      // Fetch stable releases and the fixed "nightly" release in parallel.
+      final stableRequest = await client.getUrl(Uri.parse(_releasesUrl));
+      final stableResponse = await stableRequest.close();
 
-      if (response.statusCode == 200) {
-        final content = await response
-            .transform(utf8.decoder)
-            .join()
-            .timeout(_requestTimeout);
-        final List<dynamic> releases = jsonDecode(content);
-
-        ReleaseInfo? latestStable;
-        ReleaseInfo? latestNightly;
-
-        for (final data in releases) {
-          final rawTag = data['tag_name'] as String?;
-          if (rawTag == null) continue;
-
-          // Strip leading 'v' prefix if present.
-          final version = rawTag.startsWith('v') ? rawTag.substring(1) : rawTag;
-          final isPrerelease = data['prerelease'] as bool? ?? true;
-          final notes = data['body'] as String?;
-          final url = data['html_url'] as String?;
-
-          final isNightlyTag = rawTag.contains('-nightly');
-
-          final info = ReleaseInfo(
-            version: version,
-            releaseNotes: notes,
-            downloadUrl: url,
-          );
-
-          // A stable release must have prerelease=false AND no -nightly tag.
-          if (!isPrerelease && !isNightlyTag && latestStable == null) {
-            latestStable = info;
-          }
-
-          // A nightly release is identified solely by the tag name convention.
-          if (isNightlyTag && latestNightly == null) {
-            latestNightly = info;
-          }
-
-          // Break early once we have found both.
-          if (latestStable != null && latestNightly != null) break;
-        }
-
-        // Fall back to the most recent release if no explicit stable was found.
-        final primaryStable = latestStable ??
-            (releases.isNotEmpty
-                ? () {
-                    final raw = releases[0]['tag_name'] as String? ?? '';
-                    return ReleaseInfo(
-                      version: raw.startsWith('v') ? raw.substring(1) : raw,
-                      releaseNotes: releases[0]['body'] as String?,
-                      downloadUrl: releases[0]['html_url'] as String?,
-                    );
-                  }()
-                : null);
-
-        if (primaryStable == null) throw Exception('No releases found');
-
-        final hasUpdate = isVersionGreater(primaryStable.version, currentVersion);
-
-        // Nightly must be newer than CURRENT and newer than latest STABLE to be relevant.
-        var hasNightlyUpdate = false;
-        if (latestNightly != null) {
-          hasNightlyUpdate =
-              isVersionGreater(latestNightly.version, currentVersion) &&
-                  isVersionGreater(latestNightly.version, primaryStable.version);
-        }
-
-        return UpdateService(
-          hasUpdate: hasUpdate,
-          latestVersion: primaryStable.version,
-          currentVersion: currentVersion,
-          releaseNotes: primaryStable.releaseNotes,
-          downloadUrl: primaryStable.downloadUrl,
-          hasNightlyUpdate: hasNightlyUpdate,
-          nightlyInfo: latestNightly,
-          stableInfo: primaryStable,
-        );
-      } else {
+      if (stableResponse.statusCode != 200) {
         throw HttpException(
-          'GitHub API returned ${response.statusCode}',
+          'GitHub API returned ${stableResponse.statusCode}',
           uri: Uri.parse(_releasesUrl),
         );
       }
+
+      final stableContent = await stableResponse
+          .transform(utf8.decoder)
+          .join()
+          .timeout(_requestTimeout);
+      final List<dynamic> releases = jsonDecode(stableContent);
+
+      // Find the latest stable release (prerelease=false, no "nightly" tag).
+      ReleaseInfo? latestStable;
+      for (final data in releases) {
+        final rawTag = data['tag_name'] as String?;
+        if (rawTag == null) continue;
+        final isPrerelease = data['prerelease'] as bool? ?? true;
+        if (!isPrerelease && rawTag != 'nightly') {
+          latestStable = ReleaseInfo(
+            version: rawTag.startsWith('v') ? rawTag.substring(1) : rawTag,
+            releaseNotes: data['body'] as String?,
+            downloadUrl: data['html_url'] as String?,
+          );
+          break;
+        }
+      }
+
+      if (latestStable == null) throw Exception('No stable releases found');
+
+      // Fetch the dedicated "nightly" release by its fixed tag.
+      final latestNightly = await _fetchNightlyRelease(client);
+
+      final hasUpdate = isVersionGreater(latestStable.version, currentVersion);
+
+      // Nightly must be newer than CURRENT and newer than latest STABLE to be relevant.
+      var hasNightlyUpdate = false;
+      if (latestNightly != null) {
+        hasNightlyUpdate =
+            isVersionGreater(latestNightly.version, currentVersion) &&
+                isVersionGreater(latestNightly.version, latestStable.version);
+      }
+
+      return UpdateService(
+        hasUpdate: hasUpdate,
+        latestVersion: latestStable.version,
+        currentVersion: currentVersion,
+        releaseNotes: latestStable.releaseNotes,
+        downloadUrl: latestStable.downloadUrl,
+        hasNightlyUpdate: hasNightlyUpdate,
+        nightlyInfo: latestNightly,
+        stableInfo: latestStable,
+      );
     } on TimeoutException catch (_) {
       // Request exceeded the timeout — silently fail.
     } on SocketException catch (_) {
@@ -171,6 +143,34 @@ class UpdateService {
       latestVersion: currentVersion,
       currentVersion: currentVersion,
     );
+  }
+
+  /// Fetches the fixed "nightly" release and parses the version from its body.
+  /// The workflow writes: "Latest nightly: v`<version>`" in the release body.
+  static Future<ReleaseInfo?> _fetchNightlyRelease(HttpClient client) async {
+    try {
+      final request = await client.getUrl(Uri.parse('$_releasesUrl/tags/nightly'));
+      final response = await request.close();
+      if (response.statusCode != 200) return null;
+
+      final content = await response
+          .transform(utf8.decoder)
+          .join()
+          .timeout(_requestTimeout);
+      final data = jsonDecode(content) as Map<String, dynamic>;
+
+      final body = data['body'] as String? ?? '';
+      final match = RegExp(r'Latest nightly: v([^\s]+)').firstMatch(body);
+      if (match == null) return null;
+
+      return ReleaseInfo(
+        version: match.group(1)!,
+        releaseNotes: body,
+        downloadUrl: data['html_url'] as String?,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Launches a release page in the browser. Defaults to the main releases page if no URL is provided.
