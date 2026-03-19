@@ -12,6 +12,7 @@ import '../services/device_manager_service.dart';
 import '../services/icon_fetch_strategy.dart';
 import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
+import '../services/windows_shortcut_service.dart';
 import '../theme/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -162,6 +163,58 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
     if (!mounted) return;
     await TerminalService.executeCommand(context, buffer.toString());
+  }
+
+  Future<void> _createDesktopShortcut(
+    String packageName,
+    AppIconController controller,
+  ) async {
+    final label = (controller.labels[packageName]?.isNotEmpty == true)
+        ? controller.labels[packageName]!
+        : packageName;
+
+    // Build the same command as _launchApp, but without --serial
+    // (the shortcut should work for any connected device at launch time,
+    // or the user can edit it — we omit --serial so it is not device-locked).
+    var template = controller.appDrawerSettings.appLaunchCommand.trim();
+    if (template.isEmpty) {
+      template = 'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
+    }
+    final buffer = StringBuffer(template);
+    buffer.write(' --start-app=$packageName');
+    if (!template.contains('--window-title')) {
+      buffer.write(' "--window-title=$label"');
+    }
+
+    final iconFile = controller.icons[packageName]?.path.isNotEmpty == true
+        ? controller.icons[packageName]
+        : _scriptCachedIcons[packageName];
+
+    final error = await WindowsShortcutService.createAppShortcut(
+      packageName: packageName,
+      label: label,
+      scrcpyCommand: buffer.toString(),
+      iconPngFile: iconFile,
+    );
+
+    if (!mounted) return;
+    if (error == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Shortcut "$label" created on Desktop'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   List<String> _filteredPackages(AppIconController controller) {
@@ -383,6 +436,29 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 const SizedBox(width: 8),
                 Text(
                   'Remove from Group',
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        if (Platform.isWindows)
+          PopupMenuItem(
+            onTap: () {
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (!mounted) return;
+                _createDesktopShortcut(pkg, controller);
+              });
+            },
+            child: Row(
+              children: [
+                Icon(
+                  Icons.desktop_windows_outlined,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Create Desktop Shortcut',
                   style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
                 ),
               ],
