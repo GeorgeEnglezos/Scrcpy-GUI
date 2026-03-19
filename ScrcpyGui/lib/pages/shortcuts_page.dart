@@ -314,7 +314,7 @@ class ShortcutsPage extends StatelessWidget {
               children: [
                 Expanded(child: label),
                 const SizedBox(width: 16),
-                _buildCombos(shortcut.combos),
+                Flexible(child: _buildCombos(shortcut.combos)),
               ],
             );
           }
@@ -456,12 +456,15 @@ class ShortcutsPage extends StatelessWidget {
         children: [
           const Icon(Icons.mouse, size: 12, color: Color(0xFF7DBFDF)),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF7DBFDF),
-              fontStyle: FontStyle.italic,
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF7DBFDF),
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
         ],

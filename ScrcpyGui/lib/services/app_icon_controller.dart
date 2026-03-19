@@ -122,6 +122,7 @@ class AppIconController extends ChangeNotifier {
   Future<void> fetchMissing({
     bool forceUpdate = true,
     bool helperApkAutoInstall = false,
+    void Function(String message)? onError,
   }) async {
     if (currentDeviceId == null || labels.isEmpty) return;
     _cancelled = false;
@@ -130,6 +131,7 @@ class AppIconController extends ChangeNotifier {
       packages,
       forceUpdate: forceUpdate,
       helperApkAutoInstall: helperApkAutoInstall,
+      onError: onError,
     );
   }
 

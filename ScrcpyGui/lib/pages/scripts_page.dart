@@ -614,30 +614,15 @@ class _ScriptsPageState extends State<ScriptsPage> {
             ),
             child: Row(
               children: [
-                Expanded(
-                  flex: 4,
-                  child: Row(
-                    children: [
-                      Icon(
-                        group.isRoot ? Icons.folder_special : Icons.folder,
-                        color: AppColors.primary,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        group.groupName,
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+                Icon(
+                  group.isRoot ? Icons.folder_special : Icons.folder,
+                  color: AppColors.primary,
+                  size: 18,
                 ),
+                const SizedBox(width: 8),
                 Expanded(
-                  flex: 2,
                   child: Text(
-                    'Actions',
+                    group.groupName,
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -653,6 +638,170 @@ class _ScriptsPageState extends State<ScriptsPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _openEditDialog(FileSystemEntity file) async {
+    if (file is! File) return;
+
+    String content;
+    try {
+      content = await file.readAsString();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to read file: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+      return;
+    }
+
+    final fileName = path.basename(file.path);
+    final nameController = TextEditingController(text: path.basenameWithoutExtension(file.path));
+    final contentController = TextEditingController(text: content);
+    final ext = path.extension(file.path);
+
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text(
+          'Edit Script: $fileName',
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
+        content: SizedBox(
+          width: 640,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'File Name',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  suffixText: ext,
+                  suffixStyle: TextStyle(color: AppColors.textSecondary),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Content',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: 6),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 400),
+                child: TextField(
+                  controller: contentController,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                  ),
+                  maxLines: null,
+                  expands: true,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide: BorderSide(color: AppColors.primary),
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () async {
+              final newName = nameController.text.trim();
+              final newContent = contentController.text;
+
+              if (newName.isEmpty) return;
+
+              try {
+                // Rename if needed
+                final newFileName = '$newName$ext';
+                File targetFile = file;
+                if (newFileName != fileName) {
+                  final newPath = path.join(path.dirname(file.path), newFileName);
+                  targetFile = await file.rename(newPath);
+                  _scriptPackageByPath.remove(file.path);
+                }
+
+                // Write content
+                await targetFile.writeAsString(newContent);
+
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                await _loadBatFiles();
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Script saved successfully'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to save: $e'),
+                      backgroundColor: Colors.red.shade700,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    nameController.dispose();
+    contentController.dispose();
   }
 
   Widget _buildFileRow(FileSystemEntity file) {
@@ -673,60 +822,53 @@ class _ScriptsPageState extends State<ScriptsPage> {
       ),
       child: Row(
         children: [
+          _buildScriptIcon(iconFile),
+          const SizedBox(width: 12),
           Expanded(
-            flex: 4,
-            child: Row(
-              children: [
-                _buildScriptIcon(iconFile),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    fileName,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+            child: Text(
+              fileName,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => TerminalService.executeScriptFile(context, file.path),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  icon: const Icon(
-                    Icons.play_arrow,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    'Run',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: 'Run script',
+            child: ElevatedButton(
+              onPressed: () => TerminalService.executeScriptFile(context, file.path),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                minimumSize: const Size(32, 32),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () => _openFileLocation(file.path),
-                  icon: const Icon(Icons.folder_open, size: 18),
-                  color: AppColors.textSecondary,
-                  tooltip: 'Open location',
-                ),
-              ],
+              ),
+              child: const Icon(
+                Icons.play_arrow,
+                size: 16,
+                color: Colors.white,
+              ),
             ),
+          ),
+          IconButton(
+            onPressed: () => _openEditDialog(file),
+            icon: const Icon(Icons.edit, size: 18),
+            color: AppColors.textSecondary,
+            tooltip: 'View / Edit script',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+          IconButton(
+            onPressed: () => _openFileLocation(file.path),
+            icon: const Icon(Icons.folder_open, size: 18),
+            color: AppColors.textSecondary,
+            tooltip: 'Open location',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
         ],
       ),

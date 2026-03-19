@@ -102,6 +102,16 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     await controller.fetchMissing(
       forceUpdate: true,
       helperApkAutoInstall: _helperApkAutoInstall,
+      onError: (message) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      },
     );
   }
 
