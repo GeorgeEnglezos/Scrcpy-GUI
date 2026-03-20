@@ -12,6 +12,8 @@ import '../services/device_manager_service.dart';
 import '../services/icon_fetch_strategy.dart';
 import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
+import '../services/linux_shortcut_service.dart';
+import '../services/macos_shortcut_service.dart';
 import '../services/windows_shortcut_service.dart';
 import '../theme/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -190,12 +192,29 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         ? controller.icons[packageName]
         : _scriptCachedIcons[packageName];
 
-    final error = await WindowsShortcutService.createAppShortcut(
-      packageName: packageName,
-      label: label,
-      scrcpyCommand: buffer.toString(),
-      iconPngFile: iconFile,
-    );
+    final String? error;
+    if (Platform.isLinux) {
+      error = await LinuxShortcutService.createAppShortcut(
+        packageName: packageName,
+        label: label,
+        scrcpyCommand: buffer.toString(),
+        iconPngFile: iconFile,
+      );
+    } else if (Platform.isMacOS) {
+      error = await MacosShortcutService.createAppShortcut(
+        packageName: packageName,
+        label: label,
+        scrcpyCommand: buffer.toString(),
+        iconPngFile: iconFile,
+      );
+    } else {
+      error = await WindowsShortcutService.createAppShortcut(
+        packageName: packageName,
+        label: label,
+        scrcpyCommand: buffer.toString(),
+        iconPngFile: iconFile,
+      );
+    }
 
     if (!mounted) return;
     if (error == null) {
@@ -441,7 +460,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               ],
             ),
           ),
-        if (Platform.isWindows)
+        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
           PopupMenuItem(
             onTap: () {
               Future.delayed(const Duration(milliseconds: 100), () {
