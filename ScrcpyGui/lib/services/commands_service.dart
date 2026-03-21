@@ -38,20 +38,8 @@ class CommandsService {
   /// - Bare "scrcpy" (PATH-based)
   /// - Unquoted full paths: C:\path\scrcpy.exe --flags
   /// - Quoted full paths:  "C:\path with spaces\scrcpy.exe" --flags
-  static String _normalizeExecutable(String cmd) {
-    final exe = TerminalService.scrcpyExecutable;
-    // Quoted path: "...scrcpy[.exe]"  followed by end-of-string or a space
-    final normalized = cmd.replaceFirst(
-      RegExp(r'^"[^"]*[/\\]scrcpy(?:\.exe)?"(?=\s|$)', caseSensitive: false),
-      exe,
-    );
-    if (normalized != cmd) return normalized;
-    // Unquoted path or bare name: optional prefix + scrcpy[.exe] then end-of-string or a space
-    return cmd.replaceFirst(
-      RegExp(r'^(?:"[^"]*"|[^\s"]+[/\\])?scrcpy(?:\.exe)?(?=\s|$)', caseSensitive: false),
-      exe,
-    );
-  }
+  static String _normalizeExecutable(String cmd) =>
+      TerminalService.normalizeScrcpyExecutable(cmd);
 
   /// Migrates all stored commands in [data] to use the current scrcpy executable.
   /// Returns true if any command was changed (caller should re-persist).

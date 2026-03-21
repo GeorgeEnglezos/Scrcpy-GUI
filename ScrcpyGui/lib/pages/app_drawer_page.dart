@@ -124,7 +124,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
   Future<void> _saveCommand() async {
     final controller = Provider.of<AppIconController>(context, listen: false);
-    controller.appDrawerSettings.appLaunchCommand = _cmdController.text.trim();
+    final normalized = TerminalService.normalizeScrcpyExecutable(
+      _cmdController.text.trim(),
+    );
+    controller.appDrawerSettings.appLaunchCommand = normalized;
+    _cmdController.text = normalized;
     await controller.saveSettings();
     setState(() => _cmdDirty = false);
   }
@@ -150,7 +154,9 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
     var template = controller.appDrawerSettings.appLaunchCommand.trim();
     if (template.isEmpty) {
-      template = 'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
+      template = '${TerminalService.scrcpyExecutable} --pause-on-exit=if-error --new-display=1920x1080';
+    } else {
+      template = TerminalService.normalizeScrcpyExecutable(template);
     }
 
     final buffer = StringBuffer(template);
@@ -180,7 +186,9 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     // or the user can edit it — we omit --serial so it is not device-locked).
     var template = controller.appDrawerSettings.appLaunchCommand.trim();
     if (template.isEmpty) {
-      template = 'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
+      template = '${TerminalService.scrcpyExecutable} --pause-on-exit=if-error --new-display=1920x1080';
+    } else {
+      template = TerminalService.normalizeScrcpyExecutable(template);
     }
     final buffer = StringBuffer(template);
     buffer.write(' --start-app=$packageName');

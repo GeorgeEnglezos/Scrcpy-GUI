@@ -25,6 +25,10 @@ import 'commands_service.dart';
 /// All methods are static as this service maintains no instance state beyond
 /// process tracking.
 class TerminalService {
+  static void _log(String message) {
+    debugPrint('[TerminalService] $message');
+  }
+
   /// Returns the adb executable path.
   ///
   /// Uses the configured scrcpy directory from settings if set,
@@ -45,6 +49,24 @@ class TerminalService {
     return p.join(dir, Platform.isWindows ? 'scrcpy.exe' : 'scrcpy');
   }
 
+  /// Rewrites the scrcpy executable prefix in a command to match the
+  /// current configured [scrcpyExecutable]. Handles bare names and full paths.
+  static String normalizeScrcpyExecutable(String cmd) {
+    final exe = scrcpyExecutable;
+    final normalized = cmd.replaceFirst(
+      RegExp(r'^"[^"]*[/\\]scrcpy(?:\.exe)?"(?=\s|$)', caseSensitive: false),
+      exe,
+    );
+    if (normalized != cmd) return normalized;
+    return cmd.replaceFirst(
+      RegExp(
+        r'^(?:"[^"]*"|[^\s"]+[/\\])?scrcpy(?:\.exe)?(?=\s|$)',
+        caseSensitive: false,
+      ),
+      exe,
+    );
+  }
+
   /// Replaces the full scrcpy executable path in a command string with just "scrcpy".
   /// Used for display — the full path is preserved for execution and clipboard.
   static String toDisplayCommand(String cmd) {
@@ -58,7 +80,9 @@ class TerminalService {
 
     bool matches;
     if (Platform.isWindows) {
-      matches = normalizedCmd.toLowerCase().startsWith(normalizedExe.toLowerCase());
+      matches = normalizedCmd.toLowerCase().startsWith(
+        normalizedExe.toLowerCase(),
+      );
     } else {
       matches = normalizedCmd.startsWith(normalizedExe);
     }
@@ -72,7 +96,9 @@ class TerminalService {
     final normalizedQuoted = p.normalize(quoted);
     bool quotedMatches;
     if (Platform.isWindows) {
-      quotedMatches = normalizedCmd.toLowerCase().startsWith(normalizedQuoted.toLowerCase());
+      quotedMatches = normalizedCmd.toLowerCase().startsWith(
+        normalizedQuoted.toLowerCase(),
+      );
     } else {
       quotedMatches = normalizedCmd.startsWith(normalizedQuoted);
     }
@@ -100,18 +126,9 @@ class TerminalService {
       '',
     );
     // -s value  (with optional quotes)
-    cmd = cmd.replaceAll(
-      RegExp(r'\s+-s[ \t]+"[^"]*"'),
-      '',
-    );
-    cmd = cmd.replaceAll(
-      RegExp(r"\s+-s[ \t]+'[^']*'"),
-      '',
-    );
-    cmd = cmd.replaceAll(
-      RegExp(r'\s+-s[ \t]+\S+'),
-      '',
-    );
+    cmd = cmd.replaceAll(RegExp(r'\s+-s[ \t]+"[^"]*"'), '');
+    cmd = cmd.replaceAll(RegExp(r"\s+-s[ \t]+'[^']*'"), '');
+    cmd = cmd.replaceAll(RegExp(r'\s+-s[ \t]+\S+'), '');
     return cmd.trim();
   }
 
@@ -143,7 +160,9 @@ class TerminalService {
       nameParts.add('recording');
     }
 
-    final packageRegex = RegExp(r'--start-app[=\s]+(?:\\?"([^"]+)\\?"|([^\s]+))');
+    final packageRegex = RegExp(
+      r'--start-app[=\s]+(?:\\?"([^"]+)\\?"|([^\s]+))',
+    );
     final match = packageRegex.firstMatch(command);
     if (match != null) {
       final packageName = (match.group(1) ?? match.group(2) ?? '')
@@ -210,9 +229,7 @@ class TerminalService {
       // Find a free filename: try base first, then base (1), base (2), ...
       String filename = baseFilename;
       int counter = 1;
-      while (
-        await File('$downloadsDir/$filename$fileExtension').exists()
-      ) {
+      while (await File('$downloadsDir/$filename$fileExtension').exists()) {
         filename = '$baseFilename ($counter)';
         counter++;
       }
@@ -348,6 +365,10 @@ class TerminalService {
     BuildContext context,
     String filePath,
   ) async {
+    _log(
+      'executeScriptFile path="$filePath" platform='
+      '${Platform.operatingSystem}',
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -361,10 +382,7 @@ class TerminalService {
       if (Platform.isWindows) {
         // Use backslashes so cmd.exe resolves the path correctly.
         final winPath = filePath.replaceAll('/', '\\');
-        await Process.start(
-          'cmd',
-          ['/c', 'start', 'cmd', '/k', winPath],
-        );
+        await Process.start('cmd', ['/c', 'start', 'cmd', '/k', winPath]);
       } else if (Platform.isMacOS) {
         await Process.run('chmod', ['+x', filePath]);
 
@@ -378,30 +396,20 @@ class TerminalService {
           await Process.start('osascript', [
             '-e',
             'tell application "Terminal" to do script '
-            '"export PATH=\\"/opt/homebrew/bin:/usr/local/bin:\\\$PATH\\" '
-            '&& $escapedPath"',
+                '"export PATH=\\"/opt/homebrew/bin:/usr/local/bin:\\\$PATH\\" '
+                '&& $escapedPath"',
           ]);
         }
       } else if (Platform.isLinux) {
+        _log('Linux script launch requested for "$filePath"');
         await Process.run('chmod', ['+x', filePath]);
+        _log('chmod +x completed for "$filePath"');
 
-        final terminals = [
-          'gnome-terminal',
-          'x-terminal-emulator',
-          'konsole',
-          'xfce4-terminal',
-          'lxterminal',
-        ];
-
-        String? terminalCmd;
-        for (final t in terminals) {
-          if (await _isCommandAvailable(t)) {
-            terminalCmd = t;
-            break;
-          }
-        }
-
-        if (terminalCmd == null) {
+        final quotedPath = _shellQuote(filePath);
+        _log('Quoted script path: $quotedPath');
+        final launched = await _startLinuxTerminal('$quotedPath; exec bash');
+        if (launched == null) {
+          _log('No Linux terminal emulator available for script launch');
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -414,15 +422,10 @@ class TerminalService {
           );
           return;
         }
-
-        await Process.start(terminalCmd, [
-          '--',
-          'bash',
-          '-c',
-          '$filePath; exec bash',
-        ]);
+        _log('Linux script launched via terminal pid=${launched.pid}');
       }
     } catch (e) {
+      _log('executeScriptFile failed for "$filePath": $e');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -455,7 +458,8 @@ class TerminalService {
       final environment = Platform.isWindows
           ? null
           : {
-              'PATH': '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
+              'PATH':
+                  '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
             };
 
       final result = await Process.run(
@@ -475,7 +479,8 @@ class TerminalService {
     final environment = Platform.isWindows
         ? null
         : {
-            'PATH': '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
+            'PATH':
+                '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
           };
 
     final result = await Process.run(
@@ -520,35 +525,17 @@ class TerminalService {
           command,
         ]);
       } else if (Platform.isLinux) {
-        final terminals = [
-          'gnome-terminal',
-          'x-terminal-emulator',
-          'konsole',
-          'xfce4-terminal',
-          'lxterminal',
-        ];
-        String? terminalCmd;
-        for (var t in terminals) {
-          if (await _isCommandAvailable(t)) {
-            terminalCmd = t;
-            break;
-          }
-        }
-        if (terminalCmd != null) {
-          process = await Process.start(terminalCmd, [
-            '--',
-            'bash',
-            '-c',
-            '$command; exec bash',
-          ]);
-        } else {
+        final launched = await _startLinuxTerminal('$command; exec bash');
+        if (launched == null) {
           stderr.writeln('No terminal emulator found to run the command.');
           return;
         }
+        process = launched;
       } else if (Platform.isMacOS) {
         // On macOS, we need to ensure PATH is set when opening a new Terminal window
         // This wraps the command with PATH export to include Homebrew and common locations
-        final wrappedCommand = 'export PATH="/opt/homebrew/bin:/usr/local/bin:\$PATH" && $command';
+        final wrappedCommand =
+            'export PATH="/opt/homebrew/bin:/usr/local/bin:\$PATH" && $command';
         process = await Process.start('osascript', [
           '-e',
           'tell application "Terminal" to do script "$wrappedCommand"',
@@ -647,11 +634,7 @@ class TerminalService {
               // Get detailed info for this process
               final details = await _getProcessDetails(pid);
 
-              processes.add({
-                'pid': pid,
-                'name': name,
-                ...details,
-              });
+              processes.add({'pid': pid, 'name': name, ...details});
             }
           }
         }
@@ -664,11 +647,7 @@ class TerminalService {
             final pid = parts[1];
             final details = await _getProcessDetails(pid);
 
-            processes.add({
-              'pid': pid,
-              'name': 'scrcpy',
-              ...details,
-            });
+            processes.add({'pid': pid, 'name': 'scrcpy', ...details});
           }
         }
       }
@@ -694,11 +673,12 @@ class TerminalService {
       if (Platform.isWindows) {
         // Get full command line using WMIC
         final cmdResult = await runCommand(
-          'wmic process where processid=$pid get commandline /format:list'
+          'wmic process where processid=$pid get commandline /format:list',
         );
 
         if (cmdResult.isNotEmpty) {
-          final cmdLine = cmdResult.split('\n')
+          final cmdLine = cmdResult
+              .split('\n')
               .firstWhere(
                 (line) => line.startsWith('CommandLine='),
                 orElse: () => '',
@@ -710,16 +690,20 @@ class TerminalService {
             details['fullCommand'] = cmdLine;
 
             // Parse device ID from command (supports both -s and --serial)
-            final deviceMatch = RegExp(r'(?:-s\s+|--serial[=\s]+)([^\s]+)').firstMatch(cmdLine);
+            final deviceMatch = RegExp(
+              r'(?:-s\s+|--serial[=\s]+)([^\s]+)',
+            ).firstMatch(cmdLine);
             if (deviceMatch != null) {
               details['deviceId'] = deviceMatch.group(1)!;
             }
 
             // Parse window title (supports both quoted and unquoted values)
-            final titleMatch = RegExp(r'--window-title[=\s]+(?:"([^"]+)"|([^\s]+))')
-                .firstMatch(cmdLine);
+            final titleMatch = RegExp(
+              r'--window-title[=\s]+(?:"([^"]+)"|([^\s]+))',
+            ).firstMatch(cmdLine);
             if (titleMatch != null) {
-              details['windowTitle'] = titleMatch.group(1) ?? titleMatch.group(2) ?? '';
+              details['windowTitle'] =
+                  titleMatch.group(1) ?? titleMatch.group(2) ?? '';
             }
 
             // Determine connection type (IP address pattern = wireless)
@@ -733,11 +717,12 @@ class TerminalService {
 
         // Get process start time using WMIC
         final timeResult = await runCommand(
-          'wmic process where processid=$pid get creationdate /format:list'
+          'wmic process where processid=$pid get creationdate /format:list',
         );
 
         if (timeResult.isNotEmpty) {
-          final creationDate = timeResult.split('\n')
+          final creationDate = timeResult
+              .split('\n')
               .firstWhere(
                 (line) => line.startsWith('CreationDate='),
                 orElse: () => '',
@@ -753,11 +738,12 @@ class TerminalService {
 
         // Get CPU and memory usage
         final perfResult = await runCommand(
-          'wmic process where processid=$pid get workingsetsize /format:list'
+          'wmic process where processid=$pid get workingsetsize /format:list',
         );
 
         if (perfResult.isNotEmpty) {
-          final memBytes = perfResult.split('\n')
+          final memBytes = perfResult
+              .split('\n')
               .firstWhere(
                 (line) => line.startsWith('WorkingSetSize='),
                 orElse: () => '',
@@ -772,7 +758,9 @@ class TerminalService {
         }
       } else {
         // Linux/macOS: use ps to get command line and details
-        final psResult = await runCommand('ps -p $pid -o command=,lstart=,rss=');
+        final psResult = await runCommand(
+          'ps -p $pid -o command=,lstart=,rss=',
+        );
 
         if (psResult.isNotEmpty) {
           final lines = psResult.split('\n');
@@ -781,15 +769,19 @@ class TerminalService {
             details['fullCommand'] = fullCmd;
 
             // Parse similar patterns as Windows (supports both -s and --serial)
-            final deviceMatch = RegExp(r'(?:-s\s+|--serial[=\s]+)([^\s]+)').firstMatch(fullCmd);
+            final deviceMatch = RegExp(
+              r'(?:-s\s+|--serial[=\s]+)([^\s]+)',
+            ).firstMatch(fullCmd);
             if (deviceMatch != null) {
               details['deviceId'] = deviceMatch.group(1)!;
             }
 
-            final titleMatch = RegExp(r'--window-title[=\s]+(?:"([^"]+)"|([^\s]+))')
-                .firstMatch(fullCmd);
+            final titleMatch = RegExp(
+              r'--window-title[=\s]+(?:"([^"]+)"|([^\s]+))',
+            ).firstMatch(fullCmd);
             if (titleMatch != null) {
-              details['windowTitle'] = titleMatch.group(1) ?? titleMatch.group(2) ?? '';
+              details['windowTitle'] =
+                  titleMatch.group(1) ?? titleMatch.group(2) ?? '';
             }
 
             if (details['deviceId']?.contains(':') ?? false) {
@@ -806,7 +798,6 @@ class TerminalService {
 
     return details;
   }
-
 
   /// Kill a process by PID
   ///
@@ -848,6 +839,85 @@ class TerminalService {
   /// Note: This only tracks processes started through this app
   static bool isRunning(int pid) => _runningProcesses.containsKey(pid);
 
+  static const List<String> _linuxTerminalCandidates = [
+    'ptyxis',
+    'gnome-terminal',
+    'x-terminal-emulator',
+    'konsole',
+    'xfce4-terminal',
+    'lxterminal',
+  ];
+
+  static bool get _canSpawnHostProcesses =>
+      Platform.isLinux && File('/run/host/usr/bin/flatpak-spawn').existsSync();
+
+  static String _shellQuote(String value) =>
+      "'${value.replaceAll("'", "'\"'\"'")}'";
+
+  static Future<String?> _findLinuxTerminalCommand() async {
+    for (final terminal in _linuxTerminalCandidates) {
+      if (await _isCommandAvailable(terminal)) {
+        return terminal;
+      }
+    }
+    return null;
+  }
+
+  static Future<Process?> _startLinuxTerminal(String shellCommand) async {
+    _log(
+      'Starting Linux terminal. hostSpawn=$_canSpawnHostProcesses '
+      'command="$shellCommand"',
+    );
+    final terminalCmd = await _findLinuxTerminalCommand();
+    if (terminalCmd == null) {
+      _log('No terminal command found for Linux launch');
+      return null;
+    }
+
+    final args = _linuxTerminalArgs(terminalCmd, shellCommand);
+    _log('Using terminal "$terminalCmd" with args=$args');
+    if (_canSpawnHostProcesses) {
+      final process = await Process.start('flatpak-spawn', [
+        '--host',
+        terminalCmd,
+        ...args,
+      ]);
+      _log('Spawned host terminal via flatpak-spawn pid=${process.pid}');
+      return process;
+    }
+    final process = await Process.start(terminalCmd, args);
+    _log('Spawned local terminal pid=${process.pid}');
+    return process;
+  }
+
+  static List<String> _linuxTerminalArgs(
+    String terminalCmd,
+    String shellCommand,
+  ) {
+    switch (terminalCmd) {
+      case 'ptyxis':
+        return [
+          '--standalone',
+          '--new-window',
+          '--',
+          'bash',
+          '-lc',
+          shellCommand,
+        ];
+      case 'gnome-terminal':
+        return ['--', 'bash', '-lc', shellCommand];
+      case 'konsole':
+        return ['-e', 'bash', '-lc', shellCommand];
+      case 'xfce4-terminal':
+        return ['-x', 'bash', '-lc', shellCommand];
+      case 'lxterminal':
+      case 'x-terminal-emulator':
+        return ['-e', 'bash', '-lc', shellCommand];
+      default:
+        return ['--', 'bash', '-lc', shellCommand];
+    }
+  }
+
   /// Checks if a command exists on Linux
   ///
   /// [cmd] Command name to check (e.g., 'gnome-terminal')
@@ -855,9 +925,17 @@ class TerminalService {
   /// Returns true if the command is available in PATH
   static Future<bool> _isCommandAvailable(String cmd) async {
     try {
-      final result = await Process.run('which', [cmd]);
+      final result = _canSpawnHostProcesses
+          ? await Process.run('flatpak-spawn', ['--host', 'which', cmd])
+          : await Process.run('which', [cmd]);
+      _log(
+        'Command lookup "$cmd" exit=${result.exitCode} '
+        'stdout="${result.stdout.toString().trim()}" '
+        'stderr="${result.stderr.toString().trim()}"',
+      );
       return result.exitCode == 0;
-    } catch (_) {
+    } catch (e) {
+      _log('Command lookup threw for "$cmd": $e');
       return false;
     }
   }
@@ -1037,14 +1115,18 @@ class TerminalService {
     final ipRegex = RegExp(r'inet\s+(\d+\.\d+\.\d+\.\d+)');
 
     // Strategy 1: Preferred method with -f inet flag for IPv4 only
-    var result = await runCommand('$adbExecutable -s $deviceId shell ip -f inet addr show wlan0');
+    var result = await runCommand(
+      '$adbExecutable -s $deviceId shell ip -f inet addr show wlan0',
+    );
     var ipMatch = ipRegex.firstMatch(result);
     if (ipMatch != null) {
       return ipMatch.group(1);
     }
 
     // Strategy 2: Fallback to original method without -f flag
-    result = await runCommand('$adbExecutable -s $deviceId shell ip addr show wlan0');
+    result = await runCommand(
+      '$adbExecutable -s $deviceId shell ip addr show wlan0',
+    );
     ipMatch = ipRegex.firstMatch(result);
     if (ipMatch != null) {
       return ipMatch.group(1);
@@ -1053,13 +1135,17 @@ class TerminalService {
     // Strategy 3: Try other common wireless interface names
     final interfaces = ['wlan1', 'wlan2', 'wlan3'];
     for (var iface in interfaces) {
-      result = await runCommand('$adbExecutable -s $deviceId shell ip -f inet addr show $iface');
+      result = await runCommand(
+        '$adbExecutable -s $deviceId shell ip -f inet addr show $iface',
+      );
       ipMatch = ipRegex.firstMatch(result);
       if (ipMatch != null) {
         return ipMatch.group(1);
       }
 
-      result = await runCommand('$adbExecutable -s $deviceId shell ip addr show $iface');
+      result = await runCommand(
+        '$adbExecutable -s $deviceId shell ip addr show $iface',
+      );
       ipMatch = ipRegex.firstMatch(result);
       if (ipMatch != null) {
         return ipMatch.group(1);
@@ -1067,7 +1153,9 @@ class TerminalService {
     }
 
     // Strategy 4: Try using ifconfig instead of ip command
-    result = await runCommand('$adbExecutable -s $deviceId shell ifconfig wlan0');
+    result = await runCommand(
+      '$adbExecutable -s $deviceId shell ifconfig wlan0',
+    );
     final ifconfigRegex = RegExp(r'inet addr:(\d+\.\d+\.\d+\.\d+)');
     ipMatch = ifconfigRegex.firstMatch(result);
     if (ipMatch != null) {
@@ -1092,7 +1180,9 @@ class TerminalService {
     }
 
     // Strategy 6: Try getprop command
-    result = await runCommand('adb -s $deviceId shell getprop dhcp.wlan0.ipaddress');
+    result = await runCommand(
+      'adb -s $deviceId shell getprop dhcp.wlan0.ipaddress',
+    );
     ipMatch = ipRegex.firstMatch(result);
     if (ipMatch != null) {
       return ipMatch.group(1);
@@ -1161,16 +1251,10 @@ class TerminalService {
           'message': 'Successfully disconnected from $deviceId',
         };
       } else {
-        return {
-          'success': true,
-          'message': disconnectResult,
-        };
+        return {'success': true, 'message': disconnectResult};
       }
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error disconnecting: $e',
-      };
+      return {'success': false, 'message': 'Error disconnecting: $e'};
     }
   }
 
@@ -1239,10 +1323,7 @@ class TerminalService {
         'ipAddress': ipAddress,
       };
     } else {
-      return {
-        'success': false,
-        'message': 'Connection failed: $connectResult',
-      };
+      return {'success': false, 'message': 'Connection failed: $connectResult'};
     }
   }
 
@@ -1309,10 +1390,7 @@ class TerminalService {
         'ipAddress': ipAddress,
       };
     } else {
-      return {
-        'success': false,
-        'message': 'Connection failed: $connectResult',
-      };
+      return {'success': false, 'message': 'Connection failed: $connectResult'};
     }
   }
 }
