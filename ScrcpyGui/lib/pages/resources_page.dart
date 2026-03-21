@@ -256,6 +256,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
                       const SizedBox(height: 8),
                       Text(
                         link['description']!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.white70,

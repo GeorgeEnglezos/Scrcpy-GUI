@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '../models/commands_model.dart';
+import 'settings_service.dart';
 import 'terminal_service.dart';
 
 class CommandsService {
@@ -11,26 +12,8 @@ class CommandsService {
   static CommandsData? get currentCommands => _cachedCommands;
 
   Future<String> get _commandsPath async {
-    final settingsDir = await _getSettingsDirectory();
+    final settingsDir = await SettingsService().getSettingsDirectory();
     return p.join(settingsDir, _commandsFileName);
-  }
-
-  /// Returns the app settings directory (same as SettingsService)
-  Future<String> _getSettingsDirectory() async {
-    String dir;
-    if (Platform.isWindows) {
-      dir = Platform.environment['APPDATA'] ?? '.';
-    } else if (Platform.isMacOS) {
-      dir = '${Platform.environment['HOME']}/Library/Application Support';
-    } else {
-      dir = Platform.environment['HOME'] ?? '.';
-    }
-    final fullDir = p.join(dir, 'ScrcpyGui');
-    final directory = Directory(fullDir);
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-    }
-    return fullDir;
   }
 
   /// Rewrites the scrcpy executable prefix in a single command to match the
