@@ -102,6 +102,7 @@ class Sidebar extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               item.label,
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: selected
                                     ? AppColors.primary
