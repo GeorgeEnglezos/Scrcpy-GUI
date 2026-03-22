@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'log_service.dart';
 
 class ReleaseInfo {
   final String version;
@@ -111,6 +111,13 @@ class UpdateService {
                 isVersionGreater(latestNightly.version, latestStable.version);
       }
 
+      LogService.info(
+        'UpdateService/checkForUpdate',
+        hasUpdate
+            ? 'Update available: v${latestStable.version} (current: v$currentVersion)'
+            : 'App is up to date (v$currentVersion)',
+      );
+
       return UpdateService(
         hasUpdate: hasUpdate,
         latestVersion: latestStable.version,
@@ -128,11 +135,11 @@ class UpdateService {
     } on HttpException catch (_) {
       // Non-200 or redirect — expected, silently fail.
     } on FormatException catch (e) {
-      // Malformed JSON — unexpected, log in debug builds.
-      debugPrint('[UpdateService] Malformed JSON response: $e');
+      // Malformed JSON — unexpected, log it.
+      LogService.warning('UpdateService/checkForUpdate', 'Malformed JSON response: $e');
     } catch (e) {
-      // Truly unexpected error — log in debug builds.
-      debugPrint('[UpdateService] Unexpected error during update check: $e');
+      // Truly unexpected error — log it.
+      LogService.error('UpdateService/checkForUpdate', 'Unexpected error during update check', err: e);
     } finally {
       client?.close();
     }

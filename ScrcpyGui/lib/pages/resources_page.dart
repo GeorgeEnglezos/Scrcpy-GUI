@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/command_panel.dart';
 import '../widgets/surrounding_panel.dart';
+import '../services/log_service.dart';
 import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -222,6 +223,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
                   if (await canLaunchUrl(url)) {
                     await launchUrl(url, mode: LaunchMode.externalApplication);
                   } else {
+                    LogService.warning('ResourcesPage/openLink', 'Cannot open ${link['url']}');
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -276,6 +278,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
                                 mode: LaunchMode.externalApplication,
                               );
                             } else {
+                              LogService.warning('ResourcesPage/openLink', 'Cannot open ${link['url']}');
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(

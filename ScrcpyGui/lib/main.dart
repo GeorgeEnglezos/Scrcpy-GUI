@@ -15,7 +15,9 @@ import 'package:window_manager/window_manager.dart';
 
 import 'models/settings_model.dart';
 import 'pages/home_page.dart';
+import 'pages/logs_page.dart';
 import 'services/app_icon_controller.dart';
+import 'services/log_service.dart';
 import 'services/command_builder_service.dart';
 import 'services/device_manager_service.dart';
 import 'services/settings_service.dart';
@@ -43,6 +45,14 @@ Future<void> main() async {
     await windowManager.focus();
   });
 
+  // Load settings
+  final settingsService = SettingsService();
+  final settings = await settingsService.loadSettings();
+  final appDrawerSettings = await settingsService.loadAppDrawerSettings();
+
+  // Initialize logging (must be after loadSettings — depends on currentSettings being populated)
+  await LogService.init();
+
   // Initialize the DeviceManagerService before the app starts
   final deviceManager = DeviceManagerService();
   await deviceManager.initialize();
@@ -50,11 +60,6 @@ Future<void> main() async {
   // Initialize CommandBuilderService with reference to DeviceManagerService
   final commandBuilder = CommandBuilderService();
   commandBuilder.deviceManagerService = deviceManager;
-
-  // Load settings
-  final settingsService = SettingsService();
-  final settings = await settingsService.loadSettings();
-  final appDrawerSettings = await settingsService.loadAppDrawerSettings();
 
   final iconController = AppIconController(
     appDrawerSettings: appDrawerSettings,
@@ -70,6 +75,7 @@ Future<void> main() async {
           value: commandBuilder,
         ),
         ChangeNotifierProvider<AppIconController>.value(value: iconController),
+        ChangeNotifierProvider<LogService>.value(value: LogService.instance),
       ],
       child: ScrcpyGuiApp(settings: settings),
     ),
@@ -149,6 +155,7 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
       if (settings.showBatFilesTab) 'Scripts',
       'Resources',
       'Shortcuts',
+      if (settings.loggingEnabled) 'Logs',
       'Settings',
     ];
   }
@@ -160,7 +167,8 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
         final newSettings = await _settingsService.loadSettings();
         final tabsVisibilityChanged =
             newSettings.showBatFilesTab != _currentSettings.showBatFilesTab ||
-            newSettings.showAppDrawerTab != _currentSettings.showAppDrawerTab;
+            newSettings.showAppDrawerTab != _currentSettings.showAppDrawerTab ||
+            newSettings.loggingEnabled != _currentSettings.loggingEnabled;
 
         if (tabsVisibilityChanged) {
           final currentTabs = _visibleTabLabelsFor(_currentSettings);
@@ -207,6 +215,7 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
     if (_currentSettings.showBatFilesTab) const ScriptsPage(),
     const ResourcesPage(),
     const ShortcutsPage(),
+    if (_currentSettings.loggingEnabled) const LogsPage(),
     const SettingsPage(),
   ];
 
@@ -224,6 +233,7 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
               selectedIndex: selectedIndex,
               showBatFilesTab: _currentSettings.showBatFilesTab,
               showAppDrawerTab: _currentSettings.showAppDrawerTab,
+              showLogsTab: _currentSettings.loggingEnabled,
               onItemSelected: (index) {
                 // Clear command builder when leaving Home page (index 0)
                 if (selectedIndex == 0 && index != 0) {

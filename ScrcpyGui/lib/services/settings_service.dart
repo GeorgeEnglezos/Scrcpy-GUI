@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import '../models/app_drawer_settings_model.dart';
 import '../models/settings_model.dart';
+import 'log_service.dart';
 
 class SettingsService {
   static AppSettings? _cachedSettings; // Cache settings in memory
@@ -70,7 +71,7 @@ class SettingsService {
       _cachedSettings = settings; // Update cache
       return true;
     } catch (e) {
-      stderr.writeln('Failed to save settings: $e');
+      LogService.error('SettingsService/saveSettings', 'Failed to save settings', err: e);
       return false;
     }
   }
@@ -152,7 +153,7 @@ class SettingsService {
       _cachedAppDrawerSettings = settings;
       return true;
     } catch (e) {
-      stderr.writeln('Failed to save app drawer settings: $e');
+      LogService.error('SettingsService/saveAppDrawerSettings', 'Failed to save app drawer settings', err: e);
       return false;
     }
   }

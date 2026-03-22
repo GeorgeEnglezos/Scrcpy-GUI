@@ -15,6 +15,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/phone_info_model.dart';
 import '../services/app_icon_cache.dart';
+import '../services/log_service.dart';
 import '../services/terminal_service.dart';
 
 /// Service for managing Android device connections and information
@@ -62,6 +63,7 @@ class DeviceManagerService extends ChangeNotifier {
     if (_selectedDevice != value) {
       _selectedDevice = value;
       selectedDeviceNotifier.value = value; // Broadcast the change
+      LogService.info('DeviceManagerService/selectedDevice', 'Selected: ${LogService.sanitizeDevice(value)}');
       notifyListeners();
     }
   }
@@ -132,6 +134,7 @@ class DeviceManagerService extends ChangeNotifier {
     // Detect new devices
     final newDevices = devices.where((d) => !_lastConnectedDevices.contains(d));
     for (var deviceId in newDevices) {
+      LogService.info('DeviceManagerService/refresh', 'Device connected: ${LogService.sanitizeDevice(deviceId)}');
       await _loadDeviceData(deviceId);
 
       // Set as selectedDevice if none was selected
@@ -143,6 +146,7 @@ class DeviceManagerService extends ChangeNotifier {
       (d) => !devices.contains(d),
     );
     for (var deviceId in removedDevices) {
+      LogService.info('DeviceManagerService/refresh', 'Device disconnected: ${LogService.sanitizeDevice(deviceId)}');
       devicesInfo.remove(deviceId);
 
       // If the removed device was selected, clear or pick first available

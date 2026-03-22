@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
 import '../models/settings_model.dart';
+import '../services/log_service.dart';
 import '../services/settings_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/surrounding_panel.dart';
@@ -134,6 +135,7 @@ class _SettingsPageState extends State<SettingsPage> {
         await Process.run('xdg-open', [directory.path]);
       }
     } catch (e) {
+      LogService.error('SettingsPage/openFolder', 'Failed to open folder', err: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -431,6 +433,18 @@ class _SettingsPageState extends State<SettingsPage> {
               setState(() {
                 _settings.checkForUpdatesOnStartup = value;
               });
+              _saveSettings();
+            },
+          ),
+          const SizedBox(height: 16),
+          CustomCheckbox(
+            label: 'Enable logging',
+            value: _settings.loggingEnabled,
+            onChanged: (value) async {
+              setState(() {
+                _settings.loggingEnabled = value;
+              });
+              await LogService.setLoggingEnabled(value);
               _saveSettings();
             },
           ),

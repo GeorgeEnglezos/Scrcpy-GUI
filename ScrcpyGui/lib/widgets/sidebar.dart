@@ -34,6 +34,9 @@ class Sidebar extends StatelessWidget {
   /// Whether to show the App Drawer tab (configurable in settings)
   final bool showAppDrawerTab;
 
+  /// Whether to show the Logs tab (only when logging is enabled in settings)
+  final bool showLogsTab;
+
   /// Creates a navigation sidebar.
   const Sidebar({
     super.key,
@@ -41,6 +44,7 @@ class Sidebar extends StatelessWidget {
     required this.onItemSelected,
     this.showBatFilesTab = true,
     this.showAppDrawerTab = true,
+    this.showLogsTab = false,
   });
 
   @override
@@ -54,6 +58,8 @@ class Sidebar extends StatelessWidget {
         const _SidebarItem(icon: Icons.terminal, label: 'Scripts'),
       const _SidebarItem(icon: Icons.folder, label: 'Resources'),
       const _SidebarItem(icon: Icons.keyboard, label: 'Shortcuts'),
+      if (showLogsTab)
+        const _SidebarItem(icon: Icons.receipt_long, label: 'Logs'),
       const _SidebarItem(icon: Icons.settings, label: 'Settings'),
     ];
 

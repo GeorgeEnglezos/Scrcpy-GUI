@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:archive/archive_io.dart';
 import '../app_icon_cache.dart';
 import '../icon_fetch_strategy.dart';
+import '../log_service.dart';
 import '../terminal_service.dart';
 import 'arsc_parser.dart';
 
@@ -30,6 +31,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
   }) async {
     // Build pending set, skipping already-cached icons when not forcing.
     final pendingIcon = <String>{};
+    LogService.info('AdbScrapeStrategy', 'Starting fetch for device=${LogService.sanitizeDevice(deviceId)} packages=${packages.length} forceUpdate=$forceUpdate');
     for (final pkg in packages) {
       if (forceUpdate) {
         pendingIcon.add(pkg);
@@ -78,6 +80,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
     }
     if (sentinels.isNotEmpty) onBatchDone(sentinels);
 
+    LogService.info('AdbScrapeStrategy', 'Fetch complete for device=${LogService.sanitizeDevice(deviceId)} — ${packages.length - pendingIcon.length}/${packages.length} icons resolved');
     onProgress?.call(total, total, 'Done');
   }
 

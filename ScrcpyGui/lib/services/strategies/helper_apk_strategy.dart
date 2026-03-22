@@ -14,9 +14,10 @@ library;
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
-import '../icon_fetch_strategy.dart';
-import '../terminal_service.dart';
 import '../app_icon_cache.dart';
+import '../icon_fetch_strategy.dart';
+import '../log_service.dart';
+import '../terminal_service.dart';
 
 class HelperApkStrategy implements IconFetchStrategy {
   final bool autoInstall;
@@ -49,33 +50,45 @@ class HelperApkStrategy implements IconFetchStrategy {
     void Function(int current, int total, String status)? onProgress,
   }) async {
     try {
+      LogService.info('HelperApkStrategy', 'Starting fetch for device=${LogService.sanitizeDevice(deviceId)} packages=${packages.length}');
+
       // Step 1: Check APK is installed; auto-install if requested
       final isInstalled = await _isApkInstalled(deviceId);
       if (!isInstalled) {
         if (autoInstall) {
+          LogService.info('HelperApkStrategy', 'APK not installed — installing via ADB on device=${LogService.sanitizeDevice(deviceId)}');
           await _installApk(deviceId);
+          LogService.info('HelperApkStrategy', 'APK installed successfully on device=${LogService.sanitizeDevice(deviceId)}');
         } else {
+          LogService.warning('HelperApkStrategy', 'APK not installed on device=${LogService.sanitizeDevice(deviceId)} and auto-install is off');
           throw Exception(
             'Helper APK is not installed on device $deviceId. Enable "Auto-install via ADB" to install it automatically.',
           );
         }
+      } else {
+        LogService.debug('HelperApkStrategy', 'APK already installed on device=${LogService.sanitizeDevice(deviceId)}');
       }
 
       // Step 2: Trigger export on device
+      LogService.info('HelperApkStrategy', 'Triggering export on device=${LogService.sanitizeDevice(deviceId)}');
       await _triggerExport(deviceId);
 
       // Step 3: Wait for export to complete (poll for labels.json)
       final success = await _pollForExportCompletion(deviceId);
       if (!success) {
+        LogService.error('HelperApkStrategy', 'Export timed out after ${_pollTimeout.inSeconds}s on device=${LogService.sanitizeDevice(deviceId)}');
         throw Exception('Export timed out after ${_pollTimeout.inSeconds}s');
       }
+      LogService.info('HelperApkStrategy', 'Export completed on device=${LogService.sanitizeDevice(deviceId)}');
 
       // Step 4: Pull files from device
+      LogService.info('HelperApkStrategy', 'Pulling export files from device=${LogService.sanitizeDevice(deviceId)}');
       final tempDir = await _createTempDirectory();
       await _pullExportFiles(deviceId, tempDir);
 
       // Step 5: Parse labels.json
       final labelsJson = await _parseLabelsJson(tempDir);
+      LogService.info('HelperApkStrategy', 'Parsed ${labelsJson.length} labels from device=${LogService.sanitizeDevice(deviceId)}');
       for (final entry in labelsJson.entries) {
         final pkg = entry.key;
         final label = entry.value;
@@ -104,6 +117,7 @@ class HelperApkStrategy implements IconFetchStrategy {
       final iconDir = Directory('${tempDir.path}/iconhelper/icons');
       if (await iconDir.exists()) {
         final iconFiles = await iconDir.list().toList();
+        LogService.info('HelperApkStrategy', 'Loading ${iconFiles.length} icons from device=${LogService.sanitizeDevice(deviceId)}');
 
         for (var i = 0; i < iconFiles.length; i += batchSize) {
           if (isCancelled()) {
@@ -133,6 +147,7 @@ class HelperApkStrategy implements IconFetchStrategy {
       // Step 7: Clean up device and temp directory
       await _cleanupExportDirectory(deviceId);
       await tempDir.delete(recursive: true);
+      LogService.info('HelperApkStrategy', 'Fetch complete for device=${LogService.sanitizeDevice(deviceId)}');
     } catch (_) {
       rethrow;
     }

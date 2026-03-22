@@ -85,6 +85,8 @@ class AppSettings {
   String settingsDirectory;
   List<String> shortcutMod;
   bool checkForUpdatesOnStartup;
+  bool loggingEnabled;
+  bool fileLoggingEnabled;
 
   AppSettings({
     required this.panelOrder,
@@ -100,6 +102,8 @@ class AppSettings {
     this.settingsDirectory = '',
     this.shortcutMod = const [],
     this.checkForUpdatesOnStartup = true,
+    this.loggingEnabled = false,
+    this.fileLoggingEnabled = false,
   });
 
   factory AppSettings.defaultSettings() {
@@ -117,6 +121,8 @@ class AppSettings {
       settingsDirectory: '',
       shortcutMod: const [],
       checkForUpdatesOnStartup: true,
+      loggingEnabled: false,
+      fileLoggingEnabled: false,
     );
   }
 
@@ -140,6 +146,8 @@ class AppSettings {
       shortcutMod:
           (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
       checkForUpdatesOnStartup: json['checkForUpdatesOnStartup'] as bool? ?? true,
+      loggingEnabled: json['loggingEnabled'] as bool? ?? false,
+      fileLoggingEnabled: json['fileLoggingEnabled'] as bool? ?? false,
     );
   }
 
@@ -158,6 +166,8 @@ class AppSettings {
       'settingsDirectory': settingsDirectory,
       'shortcutMod': shortcutMod,
       'checkForUpdatesOnStartup': checkForUpdatesOnStartup,
+      'loggingEnabled': loggingEnabled,
+      'fileLoggingEnabled': fileLoggingEnabled,
     };
   }
 

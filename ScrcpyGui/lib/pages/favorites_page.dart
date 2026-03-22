@@ -4,6 +4,7 @@ import 'package:scrcpy_gui_prod/widgets/command_panel.dart';
 import 'package:scrcpy_gui_prod/widgets/surrounding_panel.dart';
 import '../services/app_icon_cache.dart';
 import '../services/commands_service.dart';
+import '../services/log_service.dart';
 import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
 
@@ -54,6 +55,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       };
       await _hydrateCommandIcons(allCommands);
     } catch (e) {
+      LogService.error('FavoritesPage/loadData', 'Failed to load', err: e);
       setState(() => isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -198,7 +200,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       leading: _buildCommandLeadingIcons(lastCommand),
                       showDelete: false,
                       onTap: () async {
-                        await TerminalService.executeCommand(context, lastCommand);
+                        await TerminalService.executeCommand(context, lastCommand, source: 'Favorites/LastCommand');
                         await _loadData();
                       },
                       onDownload: () => TerminalService.generateScript(context, lastCommand),
@@ -225,7 +227,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           displayCommand: _display(favorites[index]),
                           leading: _buildCommandLeadingIcons(favorites[index]),
                           onTap: () async {
-                            await TerminalService.executeCommand(context, favorites[index]);
+                            await TerminalService.executeCommand(context, favorites[index], source: 'Favorites/Favorites');
                             await _loadData();
                           },
                           onDownload: () => TerminalService.generateScript(context, favorites[index]),
@@ -256,7 +258,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           leading: _buildCommandLeadingIcons(mostUsed[index]),
                           showDelete: false,
                           onTap: () async {
-                            await TerminalService.executeCommand(context, mostUsed[index]);
+                            await TerminalService.executeCommand(context, mostUsed[index], source: 'Favorites/MostUsed');
                             await _loadData();
                           },
                           onDownload: () => TerminalService.generateScript(context, mostUsed[index]),

@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../services/app_icon_cache.dart';
 import '../services/app_icon_controller.dart';
 import '../services/device_manager_service.dart';
+import '../services/log_service.dart';
 import '../services/icon_fetch_strategy.dart';
 import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
@@ -89,6 +90,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     final info = DeviceManagerService.devicesInfo[deviceId];
     if (info == null) return;
 
+    LogService.info('AppDrawer/loadPackages', 'Loading ${info.packages.length} packages for device=${LogService.sanitizeDevice(deviceId)}');
+
     final sorted = List<String>.from(info.packages)
       ..sort((a, b) {
         final la = info.packageLabels[a] ?? a;
@@ -101,11 +104,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   }
 
   Future<void> _fetchMissingInfo() async {
+    LogService.info('AppDrawer/fetchMissingInfo', 'Starting fetch (helperApkAutoInstall=$_helperApkAutoInstall)');
     final controller = Provider.of<AppIconController>(context, listen: false);
     await controller.fetchMissing(
       forceUpdate: true,
       helperApkAutoInstall: _helperApkAutoInstall,
       onError: (message) {
+        LogService.error('AppDrawer/fetchMissingInfo', message);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -139,6 +144,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         Provider.of<DeviceManagerService>(context, listen: false);
     final deviceId = dm.selectedDevice;
     if (deviceId == null) {
+      LogService.warning('AppDrawer/launchApp', 'No device connected, cannot launch $packageName');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -170,7 +176,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }
 
     if (!mounted) return;
-    await TerminalService.executeCommand(context, buffer.toString());
+    await TerminalService.executeCommand(context, buffer.toString(), source: 'AppDrawer/LaunchApp');
   }
 
   Future<void> _createDesktopShortcut(
@@ -226,6 +232,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
     if (!mounted) return;
     if (error == null) {
+      LogService.info('AppDrawer/createDesktopShortcut', 'Created shortcut "$label" for $packageName');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Shortcut "$label" created on Desktop'),
@@ -234,6 +241,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         ),
       );
     } else {
+      LogService.error('AppDrawer/createDesktopShortcut', 'Failed to create shortcut "$label": $error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error),
@@ -293,7 +301,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
   Future<void> _launchScript(File script) async {
     if (!mounted) return;
-    await TerminalService.executeScriptFile(context, script.path);
+    await TerminalService.executeScriptFile(context, script.path, source: 'AppDrawer/LaunchScript');
   }
 
   String? _extractStartAppPackage(String scriptText) {
@@ -1654,6 +1662,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                         controller.fetchMissingOnly(
                           helperApkAutoInstall: autoInstall,
                           onError: (message) {
+                            LogService.error('AppDrawer/fetchMissingOnly', message);
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(

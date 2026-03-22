@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:desktop_drop/desktop_drop.dart';
 import '../services/app_icon_cache.dart';
+import '../services/log_service.dart';
 import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
@@ -96,6 +97,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
         await sourceFile.copy(targetPath);
         copiedCount++;
       } catch (e) {
+        LogService.error('ScriptsPage/dropFiles', 'Error copying ${path.basename(filePath)}', err: e);
         errors.add('Error copying ${path.basename(filePath)}: $e');
       }
     }
@@ -219,6 +221,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
       });
       await _hydrateScriptIcons(groups);
     } catch (e) {
+      LogService.error('ScriptsPage/loadScripts', 'Failed to load script files', err: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -247,6 +250,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
         await Process.run('xdg-open', [directory]);
       }
     } catch (e) {
+      LogService.error('ScriptsPage/openFileLocation', 'Failed to open location', err: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -647,6 +651,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
     try {
       content = await file.readAsString();
     } catch (e) {
+      LogService.error('ScriptsPage/editScript', 'Failed to read file', err: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -784,6 +789,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   );
                 }
               } catch (e) {
+                LogService.error('ScriptsPage/editScript', 'Failed to save script', err: e);
                 if (ctx.mounted) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
                     SnackBar(
@@ -838,7 +844,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
           Tooltip(
             message: 'Run script',
             child: ElevatedButton(
-              onPressed: () => TerminalService.executeScriptFile(context, file.path),
+              onPressed: () => TerminalService.executeScriptFile(context, file.path, source: 'Scripts/RunScript'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),

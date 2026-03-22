@@ -6,6 +6,7 @@ import '../../services/command_builder_service.dart';
 import '../../services/device_manager_service.dart';
 import '../../services/terminal_service.dart';
 import '../../services/commands_service.dart';
+import '../../services/log_service.dart';
 import '../../services/settings_service.dart';
 import '../../utils/clear_notifier.dart';
 import '../../theme/app_colors.dart';
@@ -132,7 +133,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                             ),
                           ),
                           IconButton(
-                            onPressed: () => TerminalService.executeCommand(context, command),
+                            onPressed: () => TerminalService.executeCommand(context, command, source: 'CommandPanel/Run'),
                             icon: const Icon(Icons.play_arrow, size: 22),
                             style: IconButton.styleFrom(
                               backgroundColor: AppColors.runGreen,
@@ -341,6 +342,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
   }
 
   Future<void> _favoriteCommand(BuildContext context, String command) async {
+    LogService.info('CommandPanel/Favorite', 'cmd=$command');
     final commandsService = CommandsService();
 
     // Add to favorites
@@ -360,6 +362,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
     final showIp = SettingsService.currentSettings?.showManualIpInput ?? false;
     final ip = showIp ? _ipController.text.trim() : '';
     final port = _portController.text.trim();
+    LogService.info('CommandPanel/ConnectWireless', 'device=${LogService.sanitizeDevice(deviceId)} ip=${ip.isEmpty ? '(auto)' : '[redacted]'} port=[redacted]');
 
     // Validate port number
     final portNum = int.tryParse(port);
@@ -381,6 +384,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
     // Block the auto-detect flow when the selected device is already wireless —
     // there's no USB to run enableTcpip on, and no manual IP was given.
     if (ip.isEmpty && deviceId.contains(':')) {
+      LogService.warning('CommandPanel/ConnectWireless', 'Device is already wireless');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -478,6 +482,12 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
       final success = result['success'] == true;
       final message = result['message']?.toString() ?? 'Unknown error';
 
+      if (success) {
+        LogService.info('CommandPanel/ConnectWireless', 'Connected: ${LogService.sanitizeMessage(message)}');
+      } else {
+        LogService.warning('CommandPanel/ConnectWireless', 'Failed: ${LogService.sanitizeMessage(message)}');
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
@@ -505,6 +515,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
         });
       }
     } catch (e) {
+      LogService.error('CommandPanel/ConnectWireless', 'Unexpected error', err: e);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -519,6 +530,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
   }
 
   Future<void> _stopConnection(BuildContext context, String deviceId) async {
+    LogService.info('CommandPanel/StopConnection', 'device=${LogService.sanitizeDevice(deviceId)}');
     // Check if this is a wireless connection (contains ':')
     if (!deviceId.contains(':')) {
       if (!context.mounted) return;
@@ -546,6 +558,12 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
 
     final success = result['success'] == true;
     final message = result['message']?.toString() ?? 'Unknown error';
+
+    if (success) {
+      LogService.info('CommandPanel/StopConnection', 'Disconnected: ${LogService.sanitizeMessage(message)}');
+    } else {
+      LogService.warning('CommandPanel/StopConnection', 'Failed: ${LogService.sanitizeMessage(message)}');
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

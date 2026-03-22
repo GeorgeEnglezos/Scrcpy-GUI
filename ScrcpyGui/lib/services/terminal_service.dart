@@ -14,8 +14,9 @@ library;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'settings_service.dart';
 import 'commands_service.dart';
+import 'log_service.dart';
+import 'settings_service.dart';
 
 /// Service for executing terminal commands and managing system processes
 ///
@@ -25,10 +26,6 @@ import 'commands_service.dart';
 /// All methods are static as this service maintains no instance state beyond
 /// process tracking.
 class TerminalService {
-  static void _log(String message) {
-    debugPrint('[TerminalService] $message');
-  }
-
   /// Returns the adb executable path.
   ///
   /// Uses the configured scrcpy directory from settings if set,
@@ -249,6 +246,7 @@ class TerminalService {
         ),
       );
     } catch (e) {
+      LogService.error('TerminalService/generateScript', 'Failed to save script', err: e);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -269,8 +267,10 @@ class TerminalService {
   /// All snackbar/dialog feedback is handled here — callers show nothing.
   static Future<void> executeCommand(
     BuildContext context,
-    String command,
-  ) async {
+    String command, {
+    String source = 'unknown',
+  }) async {
+    LogService.info('TerminalService/executeCommand', 'source=$source cmd=${LogService.sanitizeMessage(command)}');
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -363,11 +363,12 @@ class TerminalService {
   /// Shows an error snackbar on failure.
   static Future<void> executeScriptFile(
     BuildContext context,
-    String filePath,
-  ) async {
-    _log(
-      'executeScriptFile path="$filePath" platform='
-      '${Platform.operatingSystem}',
+    String filePath, {
+    String source = 'unknown',
+  }) async {
+    LogService.info(
+      'TerminalService/executeScriptFile',
+      'source=$source path="$filePath"',
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -401,15 +402,14 @@ class TerminalService {
           ]);
         }
       } else if (Platform.isLinux) {
-        _log('Linux script launch requested for "$filePath"');
         await Process.run('chmod', ['+x', filePath]);
-        _log('chmod +x completed for "$filePath"');
-
         final quotedPath = _shellQuote(filePath);
-        _log('Quoted script path: $quotedPath');
         final launched = await _startLinuxTerminal('$quotedPath; exec bash');
         if (launched == null) {
-          _log('No Linux terminal emulator available for script launch');
+          LogService.warning(
+            'TerminalService/executeScriptFile',
+            'No Linux terminal emulator available for script launch',
+          );
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -422,10 +422,16 @@ class TerminalService {
           );
           return;
         }
-        _log('Linux script launched via terminal pid=${launched.pid}');
+        LogService.info(
+          'TerminalService/executeScriptFile',
+          'Linux script launched via terminal pid=${launched.pid}',
+        );
       }
     } catch (e) {
-      _log('executeScriptFile failed for "$filePath": $e');
+      LogService.error(
+        'TerminalService/executeScriptFile',
+        'executeScriptFile failed for "$filePath": $e',
+      );
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -469,7 +475,7 @@ class TerminalService {
       );
       return result.stdout.toString().trim();
     } catch (e) {
-      stderr.writeln('Error running command: $e');
+      LogService.error('TerminalService/runCommand', 'Error running command: $e');
       return '';
     }
   }
@@ -527,7 +533,10 @@ class TerminalService {
       } else if (Platform.isLinux) {
         final launched = await _startLinuxTerminal('$command; exec bash');
         if (launched == null) {
-          stderr.writeln('No terminal emulator found to run the command.');
+          LogService.warning(
+            'TerminalService/runCommandInNewTerminal',
+            'No terminal emulator found to run the command.',
+          );
           return;
         }
         process = launched;
@@ -541,7 +550,10 @@ class TerminalService {
           'tell application "Terminal" to do script "$wrappedCommand"',
         ]);
       } else {
-        stderr.writeln('Unsupported platform');
+        LogService.warning(
+          'TerminalService/runCommandInNewTerminal',
+          'Unsupported platform: ${Platform.operatingSystem}',
+        );
         return;
       }
 
@@ -558,7 +570,10 @@ class TerminalService {
         _runningProcesses.remove(process.pid);
       });
     } catch (e) {
-      stderr.writeln('Error opening new terminal: $e');
+      LogService.error(
+        'TerminalService/runCommandInNewTerminal',
+        'Error opening new terminal: $e',
+      );
     }
   }
 
@@ -827,7 +842,10 @@ class TerminalService {
         await runCommand('kill $pid');
       }
     } catch (e) {
-      stderr.writeln('Error killing process $pid: $e');
+      LogService.error(
+        'TerminalService/killProcess',
+        'Error killing process $pid: $e',
+      );
     }
   }
 
@@ -864,29 +882,42 @@ class TerminalService {
   }
 
   static Future<Process?> _startLinuxTerminal(String shellCommand) async {
-    _log(
+    LogService.debug(
+      'TerminalService/_startLinuxTerminal',
       'Starting Linux terminal. hostSpawn=$_canSpawnHostProcesses '
       'command="$shellCommand"',
     );
     final terminalCmd = await _findLinuxTerminalCommand();
     if (terminalCmd == null) {
-      _log('No terminal command found for Linux launch');
+      LogService.debug(
+        'TerminalService/_startLinuxTerminal',
+        'No terminal command found for Linux launch',
+      );
       return null;
     }
 
     final args = _linuxTerminalArgs(terminalCmd, shellCommand);
-    _log('Using terminal "$terminalCmd" with args=$args');
+    LogService.debug(
+      'TerminalService/_startLinuxTerminal',
+      'Using terminal "$terminalCmd" with args=$args',
+    );
     if (_canSpawnHostProcesses) {
       final process = await Process.start('flatpak-spawn', [
         '--host',
         terminalCmd,
         ...args,
       ]);
-      _log('Spawned host terminal via flatpak-spawn pid=${process.pid}');
+      LogService.debug(
+        'TerminalService/_startLinuxTerminal',
+        'Spawned host terminal via flatpak-spawn pid=${process.pid}',
+      );
       return process;
     }
     final process = await Process.start(terminalCmd, args);
-    _log('Spawned local terminal pid=${process.pid}');
+    LogService.debug(
+      'TerminalService/_startLinuxTerminal',
+      'Spawned local terminal pid=${process.pid}',
+    );
     return process;
   }
 
@@ -928,14 +959,18 @@ class TerminalService {
       final result = _canSpawnHostProcesses
           ? await Process.run('flatpak-spawn', ['--host', 'which', cmd])
           : await Process.run('which', [cmd]);
-      _log(
+      LogService.debug(
+        'TerminalService/_isCommandAvailable',
         'Command lookup "$cmd" exit=${result.exitCode} '
         'stdout="${result.stdout.toString().trim()}" '
         'stderr="${result.stderr.toString().trim()}"',
       );
       return result.exitCode == 0;
     } catch (e) {
-      _log('Command lookup threw for "$cmd": $e');
+      LogService.debug(
+        'TerminalService/_isCommandAvailable',
+        'Command lookup threw for "$cmd": $e',
+      );
       return false;
     }
   }
