@@ -646,7 +646,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   flex: 2,
                   child: Center(
                     child: Text(
-                      'Hide',
+                      'Show',
                       style: TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -737,10 +737,10 @@ class _SettingsPageState extends State<SettingsPage> {
             flex: 2,
             child: Center(
               child: Checkbox(
-                value: !panel.visible,
+                value: panel.visible,
                 onChanged: (value) {
                   setState(() {
-                    panel.visible = !(value ?? false);
+                    panel.visible = value ?? false;
                   });
                   _saveSettings();
                 },
