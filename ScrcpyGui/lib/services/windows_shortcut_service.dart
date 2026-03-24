@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 /// Creates Windows desktop shortcuts (.lnk) for scrcpy app launches.
@@ -23,14 +23,8 @@ class WindowsShortcutService {
     }
 
     try {
-      final desktopPath = _getDesktopPath();
-      if (desktopPath == null) {
-        return 'Could not locate Desktop folder.';
-      }
-
       // Sanitize label for use as filename
       final safeName = label.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_').trim();
-      final lnkPath = p.join(desktopPath, '$safeName.lnk');
 
       // Write ICO file next to shortcut (in %APPDATA%\ScrcpyGui\shortcuts\)
       String? icoPath;
@@ -38,26 +32,18 @@ class WindowsShortcutService {
         icoPath = await _writeIcoFromPng(iconPngFile, packageName);
       }
 
-      // Build PowerShell script to create the .lnk
-      final escapedLnk = lnkPath.replaceAll("'", "''");
-      final escapedIco = icoPath?.replaceAll("'", "''");
-
       // Split the command into target executable and arguments.
       // scrcpyCommand may be just "scrcpy ..." or a full path.
       final parts = _splitCommand(scrcpyCommand);
       final target = parts.$1;
       final args = parts.$2;
 
-      final ps = StringBuffer();
-      ps.writeln(r'$ws = New-Object -ComObject WScript.Shell');
-      ps.writeln("\$lnk = \$ws.CreateShortcut('$escapedLnk')");
-      ps.writeln("\$lnk.TargetPath = '$target'");
-      ps.writeln("\$lnk.Arguments = '${args.replaceAll("'", "''")}'");
-      ps.writeln("\$lnk.WorkingDirectory = ''");
-      if (escapedIco != null) {
-        ps.writeln("\$lnk.IconLocation = '$escapedIco,0'");
-      }
-      ps.writeln(r'$lnk.Save()');
+      final ps = buildShortcutScript(
+        safeName: safeName,
+        target: target,
+        args: args,
+        icoPath: icoPath,
+      );
 
       final result = await Process.run(
         'powershell',
@@ -73,6 +59,34 @@ class WindowsShortcutService {
     } catch (e) {
       return 'Failed to create shortcut: $e';
     }
+  }
+
+  /// Builds the PowerShell script that creates the .lnk file.
+  ///
+  /// Exposed for testing — does not touch the filesystem or spawn processes.
+  @visibleForTesting
+  static String buildShortcutScript({
+    required String safeName,
+    required String target,
+    required String args,
+    String? icoPath,
+  }) {
+    final escapedName = safeName.replaceAll("'", "''");
+    final escapedIco = icoPath?.replaceAll("'", "''");
+
+    final ps = StringBuffer();
+    ps.writeln(r'$desktop = [Environment]::GetFolderPath("Desktop")');
+    ps.writeln("\$lnkPath = Join-Path \$desktop '$escapedName.lnk'");
+    ps.writeln(r'$ws = New-Object -ComObject WScript.Shell');
+    ps.writeln(r'$lnk = $ws.CreateShortcut($lnkPath)');
+    ps.writeln("\$lnk.TargetPath = '$target'");
+    ps.writeln("\$lnk.Arguments = '${args.replaceAll("'", "''")}'");
+    ps.writeln("\$lnk.WorkingDirectory = ''");
+    if (escapedIco != null) {
+      ps.writeln("\$lnk.IconLocation = '$escapedIco,0'");
+    }
+    ps.writeln(r'$lnk.Save()');
+    return ps.toString();
   }
 
   /// Writes a PNG-in-ICO file to %APPDATA%\ScrcpyGui\shortcuts\<package>.ico.
@@ -143,12 +157,5 @@ class WindowsShortcutService {
     final spaceIdx = command.indexOf(' ');
     if (spaceIdx < 0) return (command, '');
     return (command.substring(0, spaceIdx), command.substring(spaceIdx + 1).trim());
-  }
-
-  /// Returns the current user's Desktop path on Windows.
-  static String? _getDesktopPath() {
-    final userProfile = Platform.environment['USERPROFILE'];
-    if (userProfile == null) return null;
-    return p.join(userProfile, 'Desktop');
   }
 }
