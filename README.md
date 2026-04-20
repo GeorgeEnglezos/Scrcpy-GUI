@@ -180,7 +180,7 @@ Contributions are welcome! Here's how you can help:
 
 This project began as a .NET MAUI experiment to make scrcpy more user-friendly on Windows. With version 1.6, it has been completely ported in Flutter to provide true cross-platform support for Windows, macOS, and Linux.
 
-The original .NET MAUI version (v1.5.1) is archived in the repository for reference but is no longer maintained.
+The original .NET MAUI version (v1.5.1) has been moved to its own repository: [maui-scrcpy-gui](https://github.com/GeorgeEnglezos/maui-scrcpy-gui). It is no longer maintained.
 
 ---
 
