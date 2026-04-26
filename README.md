@@ -69,7 +69,7 @@ That's it! Your Android screen should now be mirroring on your computer.
 
 Configure all scrcpy options through an intuitive interface organized into themed panels:
 
-- **General Commands** - Window settings, display options, video encoding
+- **Common Commands** - Bitrate, resolution, FPS, orientation, window options
 - **Audio Commands** - Audio quality, codec selection, source configuration
 - **Recording Commands** - Screen recording with format and quality controls
 - **Camera Commands** - Mirror device cameras instead of screen
@@ -99,7 +99,8 @@ No manual ADB commands required!
 ### ⭐ Favorites System
 
 - Save unlimited command configurations
-- Track execution frequency
+- Track execution frequency with a Most Used list
+- Last Command recalled instantly
 - Quick access from dedicated page
 - Export as executable scripts
 
