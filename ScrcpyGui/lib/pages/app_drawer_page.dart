@@ -262,7 +262,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }).toList();
   }
 
-  List<File> _loadScriptFiles() {
+  List<_ScriptGroup> _loadScriptGroups() {
     final settings = SettingsService.currentSettings;
     if (settings == null) return [];
     final dir = Directory(settings.batDirectory);
@@ -274,29 +274,56 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         ? ['.sh', '.command']
         : ['.sh'];
 
-    final files =
-        dir
-            .listSync()
-            .whereType<File>()
-            .where(
-              (f) =>
-                  extensions.any((ext) => f.path.toLowerCase().endsWith(ext)),
-            )
-            .toList()
-          ..sort(
-            (a, b) => p
-                .basename(a.path)
-                .toLowerCase()
-                .compareTo(p.basename(b.path).toLowerCase()),
-          );
+    final q = _searchQuery.isEmpty ? null : _searchQuery.toLowerCase();
+    bool isScript(File f) =>
+        extensions.any((ext) => f.path.toLowerCase().endsWith(ext));
+    bool matchesQuery(File f) =>
+        q == null || p.basename(f.path).toLowerCase().contains(q);
 
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      return files
-          .where((f) => p.basename(f.path).toLowerCase().contains(q))
-          .toList();
+    final entities = dir.listSync();
+
+    final rootFiles = entities
+        .whereType<File>()
+        .where((f) => isScript(f) && matchesQuery(f))
+        .toList()
+      ..sort((a, b) => p
+          .basename(a.path)
+          .toLowerCase()
+          .compareTo(p.basename(b.path).toLowerCase()));
+
+    final subDirs = entities.whereType<Directory>().toList()
+      ..sort((a, b) => p
+          .basename(a.path)
+          .toLowerCase()
+          .compareTo(p.basename(b.path).toLowerCase()));
+
+    final groups = <_ScriptGroup>[];
+
+    if (rootFiles.isNotEmpty) {
+      groups.add(_ScriptGroup(name: 'Root', isRoot: true, files: rootFiles));
     }
-    return files;
+
+    for (final subDir in subDirs) {
+      final subFiles = subDir
+          .listSync()
+          .whereType<File>()
+          .where((f) => isScript(f) && matchesQuery(f))
+          .toList()
+        ..sort((a, b) => p
+            .basename(a.path)
+            .toLowerCase()
+            .compareTo(p.basename(b.path).toLowerCase()));
+
+      if (subFiles.isNotEmpty) {
+        groups.add(_ScriptGroup(
+          name: p.basename(subDir.path),
+          isRoot: false,
+          files: subFiles,
+        ));
+      }
+    }
+
+    return groups;
   }
 
   Future<void> _launchScript(File script) async {
@@ -1124,15 +1151,19 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             ],
             if (controller.appDrawerSettings.showScripts) ...[
               () {
-                final scripts = _loadScriptFiles();
-                if (scripts.isEmpty) return const SizedBox.shrink();
+                final scriptGroups = _loadScriptGroups();
+                if (scriptGroups.isEmpty) return const SizedBox.shrink();
+                final totalScripts = scriptGroups.fold<int>(
+                  0,
+                  (sum, g) => sum + g.files.length,
+                );
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildPanelSection(
                       icon: Icons.description_outlined,
                       title: 'Scripts',
-                      count: scripts.length,
+                      count: totalScripts,
                       accentColor: AppColors.primary,
                       collapsed: controller.appDrawerSettings.scriptsCollapsed,
                       onToggle: () {
@@ -1140,9 +1171,9 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                             !controller.appDrawerSettings.scriptsCollapsed;
                         controller.saveSettings();
                       },
-                      child: _buildScriptGrid(
+                      child: _buildScriptGroupedGrid(
                         controller,
-                        scripts,
+                        scriptGroups,
                         crossAxisCount,
                         spacing,
                         tileWidth,
@@ -1265,6 +1296,58 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     );
   }
 
+  Widget _buildScriptGroupedGrid(
+    AppIconController controller,
+    List<_ScriptGroup> groups,
+    int crossAxisCount,
+    double spacing,
+    double tileWidth,
+  ) {
+    final allFiles = groups.expand((g) => g.files).toList();
+    _scheduleScriptIconRefresh(allFiles, controller);
+    final showHeaders =
+        groups.length > 1 || (groups.isNotEmpty && !groups.first.isRoot);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (int i = 0; i < groups.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          if (showHeaders)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    groups[i].isRoot
+                        ? Icons.folder_special_outlined
+                        : Icons.folder_outlined,
+                    size: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    groups[i].name,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          _buildScriptGrid(
+            controller,
+            groups[i].files,
+            crossAxisCount,
+            spacing,
+            tileWidth,
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildScriptGrid(
     AppIconController controller,
     List<File> scripts,
@@ -1272,7 +1355,6 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     double spacing,
     double tileWidth,
   ) {
-    _scheduleScriptIconRefresh(scripts, controller);
     final tileHeight = tileWidth / 1.0;
     return Wrap(
       spacing: spacing,
@@ -2628,4 +2710,12 @@ class _ScriptTileState extends State<_ScriptTile> {
       ),
     );
   }
+}
+
+class _ScriptGroup {
+  final String name;
+  final bool isRoot;
+  final List<File> files;
+
+  _ScriptGroup({required this.name, required this.isRoot, required this.files});
 }
