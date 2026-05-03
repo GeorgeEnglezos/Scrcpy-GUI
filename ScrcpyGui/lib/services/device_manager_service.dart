@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 import '../models/phone_info_model.dart';
 import '../services/app_icon_cache.dart';
 import '../services/log_service.dart';
+import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
 
 /// Service for managing Android device connections and information
@@ -51,6 +52,11 @@ class DeviceManagerService extends ChangeNotifier {
   /// rebuilding the entire widget tree. Used in conjunction with
   /// ChangeNotifier for flexible state management.
   final ValueNotifier<String?> selectedDeviceNotifier = ValueNotifier(null);
+
+  /// Increments whenever a device's package list is refetched. Listeners
+  /// (e.g. the App Drawer) can subscribe to know when the cached
+  /// [devicesInfo] entry for the selected device has new packages.
+  final ValueNotifier<int> packagesReloadedTick = ValueNotifier(0);
 
   /// Gets the currently selected device ID
   String? get selectedDevice => _selectedDevice;
@@ -131,25 +137,20 @@ class DeviceManagerService extends ChangeNotifier {
   Future<void> _checkDeviceChanges() async {
     final devices = await TerminalService.adbDevices();
 
-    // Detect new devices
-    final newDevices = devices.where((d) => !_lastConnectedDevices.contains(d));
-    for (var deviceId in newDevices) {
+    final newDevices = devices.where((d) => !_lastConnectedDevices.contains(d)).toList();
+    final removedDevices = _lastConnectedDevices.where((d) => !devices.contains(d)).toList();
+
+    if (newDevices.isEmpty && removedDevices.isEmpty) return;
+
+    for (final deviceId in newDevices) {
       LogService.info('DeviceManagerService/refresh', 'Device connected: ${LogService.sanitizeDevice(deviceId)}');
       await _loadDeviceData(deviceId);
-
-      // Set as selectedDevice if none was selected
       selectedDevice ??= deviceId;
     }
 
-    // Detect removed devices
-    final removedDevices = _lastConnectedDevices.where(
-      (d) => !devices.contains(d),
-    );
-    for (var deviceId in removedDevices) {
+    for (final deviceId in removedDevices) {
       LogService.info('DeviceManagerService/refresh', 'Device disconnected: ${LogService.sanitizeDevice(deviceId)}');
       devicesInfo.remove(deviceId);
-
-      // If the removed device was selected, clear or pick first available
       if (selectedDevice == deviceId) {
         selectedDevice = devices.isNotEmpty ? devices.first : null;
       }
@@ -172,7 +173,12 @@ class DeviceManagerService extends ChangeNotifier {
   /// Stores the result in [devicesInfo] and calls [notifyListeners].
   /// Logs completion timestamp in debug mode.
   Future<void> _loadDeviceData(String deviceId) async {
-    final packages = await TerminalService.listPackages(deviceId: deviceId);
+    final includeSystemApps =
+        SettingsService.currentAppDrawerSettings?.includeSystemApps ?? false;
+    final packages = await TerminalService.listPackages(
+      deviceId: deviceId,
+      includeSystemApps: includeSystemApps,
+    );
 
     // Fetch the cache so we can immediately hydrate labels that are already known.
     final cachedLabels = await AppIconCache.loadCachedLabels();
@@ -197,7 +203,20 @@ class DeviceManagerService extends ChangeNotifier {
       videoCodecs: videoCodecsEncoders,
     );
 
+    packagesReloadedTick.value++;
     notifyListeners();
+  }
+
+  /// Refetch package + codec data for every currently connected device.
+  ///
+  /// Use after changing a setting that affects which packages are returned
+  /// (e.g. `includeSystemApps`). Reloading every device — not just the
+  /// selected one — keeps the per-device cache in [devicesInfo] consistent
+  /// so switching to another device doesn't surface a stale package list.
+  Future<void> reloadAllDevices() async {
+    for (final deviceId in _lastConnectedDevices) {
+      await _loadDeviceData(deviceId);
+    }
   }
 
   /// Get cached device information
@@ -223,6 +242,7 @@ class DeviceManagerService extends ChangeNotifier {
   void dispose() {
     _pollingTimer?.cancel();
     selectedDeviceNotifier.dispose();
+    packagesReloadedTick.dispose();
     super.dispose();
   }
 }
