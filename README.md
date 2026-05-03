@@ -116,18 +116,18 @@ No manual ADB commands required!
 ## 🖼️ Screenshots
 
 <div align="center">
-   <img width="48%" alt="Home - Command Builder" src="https://github.com/user-attachments/assets/a48c313d-3698-44c9-8e82-eb8ddb9e65bd" />
-   <img width="48%" alt="Home - Command Builder" src="https://github.com/user-attachments/assets/25998933-f750-43c0-aa96-5fbc6a125683" />
+   <img width="48%" alt="Home - Command Builder"src="https://github.com/user-attachments/assets/54e126c8-c5ae-462a-a68b-807580078040" />
+   <img width="48%" alt="Favorites" src="https://github.com/user-attachments/assets/c975c5c8-4692-4061-9172-0da268d85b4a" />
 </div>
 
 <div align="center">
-   <img width="48%" alt="Favorites" src="https://github.com/user-attachments/assets/e583ca97-e79c-471c-a7db-3d35b27c02b7" />
-   <img width="48%" alt="New Scripts Tab" src="https://github.com/user-attachments/assets/2ba6a651-674b-4654-8f4e-f218e80c7841" />
-</div>
-
-<div align="center">
+   <img width="48%" alt="New Scripts Tab" src="https://github.com/user-attachments/assets/54a528dd-a6c9-4b1c-8660-ed15159d482b" />
    <img width="48%" alt="Resources - Help" src="https://github.com/user-attachments/assets/80e9ea8a-af7b-4581-ae13-4b0919cddb52" />
-   <img width="48%" alt="Settings - Configuration" src="https://github.com/user-attachments/assets/eba260da-066c-4f3d-83be-624886ed4951" />
+</div>
+
+<div align="center">
+   <img width="48%" alt="App drawer" src="https://github.com/user-attachments/assets/8e0ccf93-1a33-42d6-9d46-d8aac8d810a4" />
+   <img width="48%" alt="Settings - Configuration" src="https://github.com/user-attachments/assets/c74b1be6-98f8-474b-81fa-e8bb353db064" />
 </div>
 <img width="2559" height="1405" alt="6 - Running instances" src="https://github.com/user-attachments/assets/6bd0145a-63c6-4812-b565-16c90664d3c6" />
 
