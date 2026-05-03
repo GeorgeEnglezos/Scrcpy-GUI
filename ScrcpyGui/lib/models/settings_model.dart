@@ -1,19 +1,36 @@
 import 'dart:convert';
 
-class PanelSettings {
-  String id;
-  bool visible;
-  bool isFullWidth;
-  bool lockedExpanded;
-  String displayName;
+import 'scrcpy_command.dart';
 
-  PanelSettings({
+class PanelSettings {
+  final String id;
+  final bool visible;
+  final bool isFullWidth;
+  final bool lockedExpanded;
+  final String displayName;
+
+  const PanelSettings({
     required this.id,
     this.visible = true,
     this.isFullWidth = false,
     this.lockedExpanded = false,
     required this.displayName,
   });
+
+  PanelSettings copyWith({
+    bool? visible,
+    bool? isFullWidth,
+    bool? lockedExpanded,
+    String? displayName,
+  }) {
+    return PanelSettings(
+      id: id,
+      visible: visible ?? this.visible,
+      isFullWidth: isFullWidth ?? this.isFullWidth,
+      lockedExpanded: lockedExpanded ?? this.lockedExpanded,
+      displayName: displayName ?? this.displayName,
+    );
+  }
 
   factory PanelSettings.fromJson(Map<String, dynamic> json) {
     return PanelSettings(
@@ -36,60 +53,74 @@ class PanelSettings {
   }
 }
 
-/// Default panel order
-List<PanelSettings> defaultPanels = [
-  PanelSettings(
-    id: 'actions',
-    displayName: 'Command Actions',
-    isFullWidth: true,
-    lockedExpanded: true,
-  ),
-  PanelSettings(id: 'package', displayName: 'Package Commands'),
-  PanelSettings(id: 'audio', displayName: 'Audio Commands'),
-  PanelSettings(id: 'common', displayName: 'Common Commands'),
-  PanelSettings(id: 'camera', displayName: 'Camera Commands', visible: false),
-  PanelSettings(id: 'input', displayName: 'Input Control', visible: false),
-  PanelSettings(id: 'display', displayName: 'Display/Window', visible: false),
-  PanelSettings(
-    id: 'network',
-    displayName: 'Network/Connection',
-    visible: false,
-  ),
-  PanelSettings(id: 'virtual', displayName: 'Virtual Display Commands'),
-  PanelSettings(id: 'recording', displayName: 'Recording Commands'),
-  PanelSettings(
-    id: 'advanced',
-    displayName: 'Advanced/Developer',
-    visible: false,
-  ),
-  PanelSettings(id: 'otg', displayName: 'OTG Mode', visible: false),
-  PanelSettings(
-    id: 'running',
-    displayName: 'Running Instances',
-    visible: false,
-  ),
-];
+/// Default panel order. Builds a fresh list on every call so callers can
+/// safely mutate the result without affecting future calls.
+List<PanelSettings> buildDefaultPanels() => [
+      const PanelSettings(
+        id: 'actions',
+        displayName: 'Command Actions',
+        isFullWidth: true,
+        lockedExpanded: true,
+      ),
+      const PanelSettings(id: 'package', displayName: 'Package Commands'),
+      const PanelSettings(id: 'audio', displayName: 'Audio Commands'),
+      const PanelSettings(id: 'common', displayName: 'Common Commands'),
+      const PanelSettings(
+        id: 'camera',
+        displayName: 'Camera Commands',
+        visible: false,
+      ),
+      const PanelSettings(
+        id: 'input',
+        displayName: 'Input Control',
+        visible: false,
+      ),
+      const PanelSettings(
+        id: 'display',
+        displayName: 'Display/Window',
+        visible: false,
+      ),
+      const PanelSettings(
+        id: 'network',
+        displayName: 'Network/Connection',
+        visible: false,
+      ),
+      const PanelSettings(id: 'virtual', displayName: 'Virtual Display Commands'),
+      const PanelSettings(id: 'recording', displayName: 'Recording Commands'),
+      const PanelSettings(
+        id: 'advanced',
+        displayName: 'Advanced/Developer',
+        visible: false,
+      ),
+      const PanelSettings(id: 'otg', displayName: 'OTG Mode', visible: false),
+      const PanelSettings(
+        id: 'running',
+        displayName: 'Running Instances',
+        visible: false,
+      ),
+    ];
 
-/// App-wide settings
+/// App-wide settings. Immutable — use [copyWith] to derive a new instance.
 class AppSettings {
-  List<PanelSettings> panelOrder;
-  String scrcpyDirectory;
-  String recordingsDirectory;
-  String downloadsDirectory;
-  String batDirectory; // NOTE: Also stores .sh/.command files on macOS/Linux
-  bool openCmdWindows;
-  bool showBatFilesTab; // NOTE: Shows script files on all platforms
-  bool showAppDrawerTab;
-  bool showManualIpInput;
-  String bootTab;
-  String settingsDirectory;
-  List<String> shortcutMod;
-  bool checkForUpdatesOnStartup;
-  bool loggingEnabled;
-  bool fileLoggingEnabled;
+  final List<PanelSettings> panelOrder;
+  final String scrcpyDirectory;
+  final String recordingsDirectory;
+  final String downloadsDirectory;
+  final String batDirectory; // NOTE: Also stores .sh/.command files on macOS/Linux
+  final bool openCmdWindows;
+  final bool showBatFilesTab; // NOTE: Shows script files on all platforms
+  final bool showAppDrawerTab;
+  final bool showManualIpInput;
+  final String bootTab;
+  final String settingsDirectory;
+  final List<String> shortcutMod;
+  final bool checkForUpdatesOnStartup;
+  final bool loggingEnabled;
+  final bool fileLoggingEnabled;
+  final ScrcpyCommand? defaultPreset;
 
   AppSettings({
-    required this.panelOrder,
+    required List<PanelSettings> panelOrder,
     required this.scrcpyDirectory,
     required this.recordingsDirectory,
     required this.downloadsDirectory,
@@ -100,15 +131,60 @@ class AppSettings {
     this.showManualIpInput = false,
     this.bootTab = 'Home',
     this.settingsDirectory = '',
-    this.shortcutMod = const [],
+    List<String> shortcutMod = const [],
     this.checkForUpdatesOnStartup = true,
     this.loggingEnabled = false,
     this.fileLoggingEnabled = false,
-  });
+    this.defaultPreset,
+  })  : panelOrder = List.unmodifiable(panelOrder),
+        shortcutMod = List.unmodifiable(shortcutMod);
+
+  /// Returns a new instance with the given fields replaced. To set
+  /// [defaultPreset] back to null explicitly, pass [clearDefaultPreset] = true.
+  AppSettings copyWith({
+    List<PanelSettings>? panelOrder,
+    String? scrcpyDirectory,
+    String? recordingsDirectory,
+    String? downloadsDirectory,
+    String? batDirectory,
+    bool? openCmdWindows,
+    bool? showBatFilesTab,
+    bool? showAppDrawerTab,
+    bool? showManualIpInput,
+    String? bootTab,
+    String? settingsDirectory,
+    List<String>? shortcutMod,
+    bool? checkForUpdatesOnStartup,
+    bool? loggingEnabled,
+    bool? fileLoggingEnabled,
+    ScrcpyCommand? defaultPreset,
+    bool clearDefaultPreset = false,
+  }) {
+    return AppSettings(
+      panelOrder: panelOrder ?? this.panelOrder,
+      scrcpyDirectory: scrcpyDirectory ?? this.scrcpyDirectory,
+      recordingsDirectory: recordingsDirectory ?? this.recordingsDirectory,
+      downloadsDirectory: downloadsDirectory ?? this.downloadsDirectory,
+      batDirectory: batDirectory ?? this.batDirectory,
+      openCmdWindows: openCmdWindows ?? this.openCmdWindows,
+      showBatFilesTab: showBatFilesTab ?? this.showBatFilesTab,
+      showAppDrawerTab: showAppDrawerTab ?? this.showAppDrawerTab,
+      showManualIpInput: showManualIpInput ?? this.showManualIpInput,
+      bootTab: bootTab ?? this.bootTab,
+      settingsDirectory: settingsDirectory ?? this.settingsDirectory,
+      shortcutMod: shortcutMod ?? this.shortcutMod,
+      checkForUpdatesOnStartup:
+          checkForUpdatesOnStartup ?? this.checkForUpdatesOnStartup,
+      loggingEnabled: loggingEnabled ?? this.loggingEnabled,
+      fileLoggingEnabled: fileLoggingEnabled ?? this.fileLoggingEnabled,
+      defaultPreset:
+          clearDefaultPreset ? null : (defaultPreset ?? this.defaultPreset),
+    );
+  }
 
   factory AppSettings.defaultSettings() {
     return AppSettings(
-      panelOrder: defaultPanels,
+      panelOrder: buildDefaultPanels(),
       scrcpyDirectory: '',
       recordingsDirectory: '',
       downloadsDirectory: '',
@@ -132,7 +208,7 @@ class AppSettings {
           (json['panelOrder'] as List<dynamic>?)
               ?.map((e) => PanelSettings.fromJson(e))
               .toList() ??
-          defaultPanels,
+          buildDefaultPanels(),
       scrcpyDirectory: json['scrcpyDirectory'] as String? ?? '',
       recordingsDirectory: json['recordingsDirectory'] as String? ?? '',
       downloadsDirectory: json['downloadsDirectory'] as String? ?? '',
@@ -142,12 +218,15 @@ class AppSettings {
       showAppDrawerTab: json['showAppDrawerTab'] as bool? ?? true,
       showManualIpInput: json['showManualIpInput'] as bool? ?? false,
       bootTab: json['bootTab'] as String? ?? 'Home',
-      settingsDirectory: json['settingsDirectory'] as String? ?? '',
       shortcutMod:
           (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
       checkForUpdatesOnStartup: json['checkForUpdatesOnStartup'] as bool? ?? true,
       loggingEnabled: json['loggingEnabled'] as bool? ?? false,
       fileLoggingEnabled: json['fileLoggingEnabled'] as bool? ?? false,
+      defaultPreset: json['defaultPreset'] != null
+          ? ScrcpyCommand.fromJson(
+              json['defaultPreset'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -163,11 +242,11 @@ class AppSettings {
       'showAppDrawerTab': showAppDrawerTab,
       'showManualIpInput': showManualIpInput,
       'bootTab': bootTab,
-      'settingsDirectory': settingsDirectory,
       'shortcutMod': shortcutMod,
       'checkForUpdatesOnStartup': checkForUpdatesOnStartup,
       'loggingEnabled': loggingEnabled,
       'fileLoggingEnabled': fileLoggingEnabled,
+      if (defaultPreset != null) 'defaultPreset': defaultPreset!.toJson(),
     };
   }
 
