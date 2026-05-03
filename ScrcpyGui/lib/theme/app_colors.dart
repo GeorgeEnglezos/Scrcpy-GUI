@@ -86,4 +86,18 @@ class AppColors {
 
   /// Secondary color for package selector panel
   static const packageSecondary = Color(0xFFD97706);
+
+  // Display/Window theme (Cyan)
+  /// Primary color for display/window panel
+  static const displayWindowPrimary = Color(0xFF06B6D4);
+
+  /// Secondary color for display/window panel
+  static const displayWindowSecondary = Color(0xFF0891B2);
+
+  // Network/Connection theme (Pink)
+  /// Primary color for network/connection panel
+  static const networkConnectionPrimary = Color(0xFFEC4899);
+
+  /// Secondary color for network/connection panel
+  static const networkConnectionSecondary = Color(0xFFDB2777);
 }

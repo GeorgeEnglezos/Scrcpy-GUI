@@ -60,6 +60,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         listen: false,
       );
       _deviceManager!.selectedDeviceNotifier.addListener(_onDeviceChanged);
+      _deviceManager!.packagesReloadedTick.addListener(_onPackagesReloaded);
       _loadPackages();
     });
   }
@@ -67,6 +68,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   @override
   void dispose() {
     _deviceManager?.selectedDeviceNotifier.removeListener(_onDeviceChanged);
+    _deviceManager?.packagesReloadedTick.removeListener(_onPackagesReloaded);
     _cmdController.dispose();
     super.dispose();
   }
@@ -75,12 +77,14 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     _loadPackages();
   }
 
+  void _onPackagesReloaded() {
+    _loadPackages();
+  }
+
   Future<void> _loadPackages() async {
-    final dm =
-        _deviceManager ??
-        Provider.of<DeviceManagerService>(context, listen: false);
+    final dm = _deviceManager ?? context.read<DeviceManagerService>();
     final deviceId = dm.selectedDevice;
-    final controller = Provider.of<AppIconController>(context, listen: false);
+    final controller = context.read<AppIconController>();
 
     if (deviceId == null) {
       controller.resetState();
@@ -105,7 +109,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
   Future<void> _fetchMissingInfo() async {
     LogService.info('AppDrawer/fetchMissingInfo', 'Starting fetch (helperApkAutoInstall=$_helperApkAutoInstall)');
-    final controller = Provider.of<AppIconController>(context, listen: false);
+    final controller = context.read<AppIconController>();
     await controller.fetchMissing(
       forceUpdate: true,
       helperApkAutoInstall: _helperApkAutoInstall,
@@ -128,20 +132,17 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   }
 
   Future<void> _saveCommand() async {
-    final controller = Provider.of<AppIconController>(context, listen: false);
+    final controller = context.read<AppIconController>();
     final normalized = TerminalService.normalizeScrcpyExecutable(
       _cmdController.text.trim(),
     );
-    controller.appDrawerSettings.appLaunchCommand = normalized;
+    controller.setAppLaunchCommand(normalized);
     _cmdController.text = normalized;
-    await controller.saveSettings();
     setState(() => _cmdDirty = false);
   }
 
   Future<void> _launchApp(String packageName) async {
-    final dm =
-        _deviceManager ??
-        Provider.of<DeviceManagerService>(context, listen: false);
+    final dm = _deviceManager ?? context.read<DeviceManagerService>();
     final deviceId = dm.selectedDevice;
     if (deviceId == null) {
       LogService.warning('AppDrawer/launchApp', 'No device connected, cannot launch $packageName');
@@ -156,7 +157,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       return;
     }
 
-    final controller = Provider.of<AppIconController>(context, listen: false);
+    final controller = context.read<AppIconController>();
 
     var template = controller.appDrawerSettings.appLaunchCommand.trim();
     if (template.isEmpty) {
@@ -617,12 +618,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       items: [
         for (var i = 0; i < groups.length; i++)
           PopupMenuItem(
-            onTap: () {
-              if (!groups[i].items.contains(script.path)) {
-                groups[i].items.add(script.path);
-                controller.saveSettings();
-              }
-            },
+            onTap: () => controller.moveToGroup(script.path, i),
             child: Row(
               children: [
                 Icon(Icons.folder_outlined, size: 18, color: AppColors.primary),
@@ -1166,11 +1162,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                       count: totalScripts,
                       accentColor: AppColors.primary,
                       collapsed: controller.appDrawerSettings.scriptsCollapsed,
-                      onToggle: () {
-                        controller.appDrawerSettings.scriptsCollapsed =
-                            !controller.appDrawerSettings.scriptsCollapsed;
-                        controller.saveSettings();
-                      },
+                      onToggle: controller.toggleScriptsCollapsed,
                       child: _buildScriptGroupedGrid(
                         controller,
                         scriptGroups,
@@ -1200,8 +1192,9 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                       accentColor: AppColors.primary,
                       collapsed: group.collapsed,
                       onToggle: () {
-                        group.collapsed = !group.collapsed;
-                        controller.saveSettings();
+                        final idx =
+                            controller.appDrawerSettings.groups.indexOf(group);
+                        if (idx >= 0) controller.toggleGroupCollapsed(idx);
                       },
                       onRename: () {
                         final idx = controller.appDrawerSettings.groups.indexOf(
@@ -1260,11 +1253,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 count: ungrouped.length,
                 accentColor: AppColors.primary,
                 collapsed: controller.appDrawerSettings.otherCollapsed,
-                onToggle: () {
-                  controller.appDrawerSettings.otherCollapsed =
-                      !controller.appDrawerSettings.otherCollapsed;
-                  controller.saveSettings();
-                },
+                onToggle: controller.toggleOtherCollapsed,
                 child: _buildWrappedGrid(
                   controller,
                   ungrouped,
@@ -1307,44 +1296,97 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     _scheduleScriptIconRefresh(allFiles, controller);
     final showHeaders =
         groups.length > 1 || (groups.isNotEmpty && !groups.first.isRoot);
+
+    final visibleGroups = groups.where((g) => g.files.isNotEmpty).toList();
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (int i = 0; i < groups.length; i++) ...[
+        for (var i = 0; i < visibleGroups.length; i++) ...[
           if (i > 0) const SizedBox(height: 12),
+          _buildScriptSubGroupColumn(
+            controller,
+            visibleGroups[i],
+            crossAxisCount,
+            spacing,
+            tileWidth,
+            showHeaders,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildScriptSubGroupColumn(
+    AppIconController controller,
+    _ScriptGroup group,
+    int cols,
+    double spacing,
+    double tileWidth,
+    bool showHeaders,
+  ) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.textSecondary.withValues(alpha: 0.18),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           if (showHeaders)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 10, left: 10, right: 10),
               child: Row(
                 children: [
                   Icon(
-                    groups[i].isRoot
+                    group.isRoot
                         ? Icons.folder_special_outlined
                         : Icons.folder_outlined,
-                    size: 13,
-                    color: AppColors.textSecondary,
+                    size: 15,
+                    color: AppColors.textPrimary,
                   ),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      group.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Text(
-                    groups[i].name,
+                    '${group.files.length}',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
+                      color: AppColors.textSecondary.withValues(alpha: 0.75),
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
             ),
-          _buildScriptGrid(
-            controller,
-            groups[i].files,
-            crossAxisCount,
-            spacing,
-            tileWidth,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: _buildScriptGrid(
+              controller,
+              group.files,
+              cols.clamp(1, 12),
+              spacing,
+              tileWidth,
+            ),
           ),
         ],
-      ],
+      ),
     );
   }
 
@@ -1610,7 +1652,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   }
 
   Future<void> _showFetchMissingDialog() async {
-    final controller = Provider.of<AppIconController>(context, listen: false);
+    final controller = context.read<AppIconController>();
 
     final missingCount = controller.labels.keys.where((pkg) {
       final hasIcon =
@@ -1690,10 +1732,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                         onChanged: (value) {
                           if (value != null) {
                             setDialogState(() {
-                              controller.appDrawerSettings.iconFetchMethod =
-                                  iconFetchMethodFromString(value);
+                              controller.setIconFetchMethod(
+                                iconFetchMethodFromString(value),
+                              );
                             });
-                            controller.saveSettings();
                           }
                         },
                       ),
@@ -2078,10 +2120,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   }) {
     final isSelected = controller.appDrawerSettings.iconFetchMethod == method;
     return GestureDetector(
-      onTap: () {
-        controller.appDrawerSettings.iconFetchMethod = method;
-        controller.saveSettings();
-      },
+      onTap: () => controller.setIconFetchMethod(method),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.all(14),

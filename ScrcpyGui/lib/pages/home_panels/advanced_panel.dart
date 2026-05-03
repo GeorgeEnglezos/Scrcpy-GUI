@@ -1,47 +1,23 @@
 /// Advanced/Developer settings panel for scrcpy command configuration.
-///
-/// This panel provides access to advanced scrcpy options including verbosity levels,
-/// cleanup settings, error handling, and Linux-specific V4L2 options for virtual camera.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/command_builder_service.dart';
-import '../../utils/clear_notifier.dart';
+import '../../services/command_notifier.dart';
 import '../../widgets/custom_checkbox.dart';
 import '../../widgets/custom_searchbar.dart';
 import '../../widgets/custom_textinput.dart';
 import '../../widgets/surrounding_panel.dart';
 
-/// Panel for configuring advanced scrcpy options and developer settings.
-///
-/// The [AdvancedPanel] allows users to configure:
-/// - Verbosity level for logging (verbose, debug, info, warn, error)
-/// - Cleanup behavior on exit
-/// - Error handling (auto-downsize on MediaCodec errors)
-/// - V4L2 virtual camera options (Linux only)
-///
-/// All settings are synchronized with [CommandBuilderService] to update
-/// the generated scrcpy command in real-time.
 class AdvancedPanel extends StatefulWidget {
-  /// Optional controller for clearing all fields in this panel
-  final ClearController? clearController;
-
-  /// Creates an advanced settings panel.
-  const AdvancedPanel({super.key, this.clearController});
+  const AdvancedPanel({super.key});
 
   @override
   State<AdvancedPanel> createState() => _AdvancedPanelState();
 }
 
 class _AdvancedPanelState extends State<AdvancedPanel> {
-  String? verbosity;
-  bool noCleanup = false;
-  bool noDownsizeOnError = false;
-  String v4l2Sink = '';
-  String v4l2Buffer = '';
-
   final List<String> verbosityOptions = [
     'verbose',
     'debug',
@@ -50,43 +26,24 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
     'error',
   ];
 
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-
-    final options = cmdService.advancedOptions.copyWith(
-      verbosity: verbosity ?? '',
-      noCleanup: noCleanup,
-      noDownsizeOnError: noDownsizeOnError,
-      v4l2Sink: v4l2Sink,
-      v4l2Buffer: v4l2Buffer,
-    );
-
-    cmdService.updateAdvancedOptions(options);
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      verbosity = null;
-      noCleanup = false;
-      noDownsizeOnError = false;
-      v4l2Sink = '';
-      v4l2Buffer = '';
-    });
-    _updateService(context);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final notifier = Provider.of<CommandNotifier>(context);
+    final cmd = notifier.current;
+
     return SurroundingPanel(
       icon: Icons.settings_applications,
       title: 'Advanced/Developer',
       showButton: true,
-      panelType: "Advanced",
-      onClearPressed: _clearAllFields,
-      clearController: widget.clearController,
+      panelType: 'Advanced',
+      onSaveDefaultPressed: () => notifier.saveDefault(),
+      onClearPressed: () => notifier.update(cmd.copyWith(
+        verbosity: '',
+        noCleanup: false,
+        noDownsizeOnError: false,
+        v4l2Sink: '',
+        v4l2Buffer: '',
+      )),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -96,16 +53,12 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Verbosity Level',
-                  value: verbosity,
+                  value: cmd.verbosity.isEmpty ? null : cmd.verbosity,
                   suggestions: verbosityOptions,
-                  onChanged: (val) {
-                    setState(() => verbosity = val);
-                    _updateService(context);
-                  },
-                  onClear: () {
-                    setState(() => verbosity = null);
-                    _updateService(context);
-                  },
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(verbosity: val)),
+                  onClear: () =>
+                      notifier.update(cmd.copyWith(verbosity: '')),
                   tooltip: 'Set the log level (verbose, debug, info, warn or error). Default is info.',
                 ),
               ),
@@ -113,11 +66,9 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'No Cleanup',
-                  value: noCleanup,
-                  onChanged: (val) {
-                    setState(() => noCleanup = val);
-                    _updateService(context);
-                  },
+                  value: cmd.noCleanup,
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(noCleanup: val)),
                   tooltip: 'By default, scrcpy removes the server binary from the device and restores the device state on exit. This option disables this cleanup.',
                 ),
               ),
@@ -125,11 +76,9 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'No Downsize on Error',
-                  value: noDownsizeOnError,
-                  onChanged: (val) {
-                    setState(() => noDownsizeOnError = val);
-                    _updateService(context);
-                  },
+                  value: cmd.noDownsizeOnError,
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(noDownsizeOnError: val)),
                   tooltip: 'By default, on MediaCodec error, scrcpy automatically tries again with a lower definition. This option disables this behavior.',
                 ),
               ),
@@ -141,11 +90,9 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'V4L2 Sink (Linux)',
-                  value: v4l2Sink,
-                  onChanged: (val) {
-                    setState(() => v4l2Sink = val);
-                    _updateService(context);
-                  },
+                  value: cmd.v4l2Sink,
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(v4l2Sink: val)),
                   tooltip: 'Output to v4l2loopback device (e.g., /dev/videoN). This feature is only available on Linux.',
                 ),
               ),
@@ -153,11 +100,9 @@ class _AdvancedPanelState extends State<AdvancedPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'V4L2 Buffer (ms)',
-                  value: v4l2Buffer,
-                  onChanged: (val) {
-                    setState(() => v4l2Buffer = val);
-                    _updateService(context);
-                  },
+                  value: cmd.v4l2Buffer,
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(v4l2Buffer: val)),
                   tooltip: 'Add a buffering delay (in milliseconds) before pushing frames. This increases latency to compensate for jitter. Default is 0 (no buffering). Linux only.',
                 ),
               ),

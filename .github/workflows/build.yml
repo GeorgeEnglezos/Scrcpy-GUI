@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  pull_request:
-    branches: [ main ]
   schedule:
     # 21:00 UTC = 23:00 Europe/Athens — runs on days 1, 5, 9, 13, 17, 21, 25, 29 (every ~4 days)
     - cron: '0 21 1,5,9,13,17,21,25,29 * *'

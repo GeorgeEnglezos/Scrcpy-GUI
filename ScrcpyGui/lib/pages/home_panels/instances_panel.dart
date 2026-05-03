@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import '../../models/scrcpy_instance_model.dart';
 import '../../services/settings_service.dart';
 import '../../services/terminal_service.dart';
-import '../../utils/clear_notifier.dart';
 import '../../widgets/surrounding_panel.dart';
 
 class InstancesPanel extends StatefulWidget {
-  final ClearController? clearController;
-  const InstancesPanel({super.key, this.clearController});
+  const InstancesPanel({super.key});
 
   @override
   State<InstancesPanel> createState() => _InstancesPanelState();
@@ -165,10 +163,9 @@ class _InstancesPanelState extends State<InstancesPanel> {
     return SurroundingPanel(
       icon: Icons.phone_android,
       title: 'Running Instances',
-      panelType: "Running Instances",
+      panelType: 'Running Instances',
       showButton: true,
       onClearPressed: _clearAllFields,
-      clearController: widget.clearController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

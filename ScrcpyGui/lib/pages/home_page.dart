@@ -6,7 +6,6 @@ import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
 import '../models/settings_model.dart';
-import '../utils/clear_notifier.dart';
 
 // Import panels
 import 'home_panels/audio_commands_panel.dart';
@@ -33,10 +32,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final ClearController _clearController = ClearController();
   late List<PanelSettings> panelOrder = [];
-  bool _isLoading = true;
   String? _scrcpyWarning;
+  String? _lastScrcpyDir;
 
   late final Map<String, Widget> allPanels;
 
@@ -45,23 +43,43 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     allPanels = {
-      'actions': CommandActionsPanel(clearController: _clearController),
-      'package': PackageSelectorPanel(clearController: _clearController),
-      'common': CommonCommandsPanel(clearController: _clearController),
-      'audio': AudioCommandsPanel(clearController: _clearController),
-      'camera': CameraCommandsPanel(clearController: _clearController),
-      'input': InputControlPanel(clearController: _clearController),
-      'display': DisplayWindowPanel(clearController: _clearController),
-      'network': NetworkConnectionPanel(clearController: _clearController),
-      'virtual': VirtualDisplayCommandsPanel(clearController: _clearController),
-      'recording': RecordingCommandsPanel(clearController: _clearController),
-      'advanced': AdvancedPanel(clearController: _clearController),
-      'otg': OtgModePanel(clearController: _clearController),
-      'running': InstancesPanel(clearController: _clearController),
+      'actions': const CommandActionsPanel(),
+      'package': const PackageSelectorPanel(),
+      'common': const CommonCommandsPanel(),
+      'audio': const AudioCommandsPanel(),
+      'camera': const CameraCommandsPanel(),
+      'input': const InputControlPanel(),
+      'display': const DisplayWindowPanel(),
+      'network': const NetworkConnectionPanel(),
+      'virtual': const VirtualDisplayCommandsPanel(),
+      'recording': const RecordingCommandsPanel(),
+      'advanced': const AdvancedPanel(),
+      'otg': const OtgModePanel(),
+      'running': const InstancesPanel(),
     };
 
-    _loadSettings();
+    _loadPanelOrder();
+    _lastScrcpyDir = SettingsService.currentSettings?.scrcpyDirectory;
     _checkScrcpy();
+    SettingsService().appSettingsNotifier.addListener(_onSettingsChanged);
+  }
+
+  @override
+  void dispose() {
+    SettingsService().appSettingsNotifier.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  void _onSettingsChanged() {
+    if (!mounted) return;
+    final settings = SettingsService.currentSettings;
+    if (settings == null) return;
+
+    if (settings.scrcpyDirectory != _lastScrcpyDir) {
+      _lastScrcpyDir = settings.scrcpyDirectory;
+      _checkScrcpy();
+    }
+    setState(_loadPanelOrder);
   }
 
   Future<void> _checkScrcpy() async {
@@ -91,27 +109,32 @@ class _HomePageState extends State<HomePage> {
           'or ensure scrcpy is installed and available on your system PATH.');
   }
 
-  void _loadSettings() {
-    panelOrder = widget.panelOrder != null
-        ? widget.panelOrder!
-              .map(
-                (e) => e is PanelSettings
-                    ? e
-                    : PanelSettings.fromJson(Map<String, dynamic>.from(e)),
-              )
-              .toList()
-        : allPanels.keys
-              .map(
-                (id) => PanelSettings(
-                  id: id,
-                  displayName: _getPanelDisplayName(id),
-                  visible: true,
-                  isFullWidth: false,
-                ),
-              )
-              .toList();
+  /// Re-derives [panelOrder] from the latest settings. Pure — does not call
+  /// setState. Callers wrap in setState if a rebuild is needed.
+  void _loadPanelOrder() {
+    final fromService = SettingsService.currentSettings?.panelOrder;
+    final source = fromService ?? widget.panelOrder;
 
-    setState(() => _isLoading = false);
+    if (source != null) {
+      panelOrder = source
+          .map(
+            (e) => e is PanelSettings
+                ? e
+                : PanelSettings.fromJson(Map<String, dynamic>.from(e)),
+          )
+          .toList();
+    } else {
+      panelOrder = allPanels.keys
+          .map(
+            (id) => PanelSettings(
+              id: id,
+              displayName: _getPanelDisplayName(id),
+              visible: true,
+              isFullWidth: false,
+            ),
+          )
+          .toList();
+    }
   }
 
   String _getPanelDisplayName(String id) {
@@ -149,13 +172,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isSingleColumn = constraints.maxWidth < 1000;

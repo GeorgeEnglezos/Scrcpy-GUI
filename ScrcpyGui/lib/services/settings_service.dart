@@ -1,15 +1,40 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import '../models/app_drawer_settings_model.dart';
 import '../models/settings_model.dart';
 import 'log_service.dart';
 
+/// Internal notifier — exposed externally only as [Listenable] so callers
+/// must use addListener/removeListener and cannot call [notifyListeners]
+/// directly.
+class _ScopedNotifier extends ChangeNotifier {
+  void notify() => notifyListeners();
+}
+
 class SettingsService {
-  static AppSettings? _cachedSettings; // Cache settings in memory
+  static final SettingsService _instance = SettingsService._();
+  factory SettingsService() => _instance;
+  SettingsService._();
+
+  static AppSettings? _cachedSettings;
   static AppDrawerSettings? _cachedAppDrawerSettings;
 
   static AppSettings? get currentSettings => _cachedSettings;
   static AppDrawerSettings? get currentAppDrawerSettings => _cachedAppDrawerSettings;
+
+  /// Fires when [AppSettings] is persisted. Subscribe to be notified of
+  /// changes that affect the app shell (boot tab, panel order, scrcpy
+  /// directory, shortcut mod, etc.). App-drawer-only changes do NOT fire
+  /// this notifier.
+  final _ScopedNotifier _appSettingsNotifier = _ScopedNotifier();
+  Listenable get appSettingsNotifier => _appSettingsNotifier;
+
+  /// Fires when [AppDrawerSettings] is persisted. Subscribe for app-drawer
+  /// state (favorites, groups, icon fetch method, etc.). [AppSettings]
+  /// changes do NOT fire this notifier.
+  final _ScopedNotifier _appDrawerNotifier = _ScopedNotifier();
+  Listenable get appDrawerNotifier => _appDrawerNotifier;
 
   final String _settingsFileName = 'scrcpy_gui_settings.json';
   final String _appDrawerSettingsFileName = 'app_drawer_settings.json';
@@ -23,42 +48,62 @@ class SettingsService {
 
     if (await settingsFile.exists()) {
       final jsonString = await settingsFile.readAsString();
-      _cachedSettings = AppSettings.fromJsonString(jsonString); // Cache it
+      final loaded = AppSettings.fromJsonString(jsonString);
 
-      // Migration: Add any missing panels from defaultPanels
-      _migratePanels(_cachedSettings!);
+      // Migration: drop deprecated panels and add any newly-introduced ones.
+      final migrated = _migratePanels(loaded);
+      _cachedSettings = migrated;
 
-      // Save migrated settings
-      await saveSettings(_cachedSettings!);
+      // Persist only if migration actually produced a different list, to
+      // avoid a useless write (and listener fire) on every cold start.
+      if (!_panelOrderEquals(loaded.panelOrder, migrated.panelOrder)) {
+        await saveSettings(migrated);
+      }
     } else {
-      _cachedSettings =
-          AppSettings.defaultSettings(); // <-- use default factory
+      _cachedSettings = AppSettings.defaultSettings();
       await saveSettings(_cachedSettings!);
     }
 
     return _cachedSettings!;
   }
 
-  /// Migrate settings by adding any new panels that don't exist in saved settings
-  void _migratePanels(AppSettings settings) {
-    // Remove deprecated panels (e.g., shortcuts panel)
-    final deprecatedPanelIds = {'shortcuts'};
-    settings.panelOrder.removeWhere((panel) => deprecatedPanelIds.contains(panel.id));
+  /// Returns a copy of [settings] with deprecated panels removed and any
+  /// newly-introduced default panels appended. Pure: never mutates input.
+  AppSettings _migratePanels(AppSettings settings) {
+    const deprecatedPanelIds = {'shortcuts'};
+    final defaults = buildDefaultPanels();
 
-    // Find panels in defaultPanels that aren't in the saved settings
-    final currentIds = settings.panelOrder.map((p) => p.id).toSet();
-    final missingPanels = defaultPanels
-        .where((panel) => !currentIds.contains(panel.id))
+    final retained = settings.panelOrder
+        .where((panel) => !deprecatedPanelIds.contains(panel.id))
         .toList();
 
-    if (missingPanels.isNotEmpty) {
-      // Add missing panels to the end of the panel order
-      settings.panelOrder.addAll(missingPanels);
+    final currentIds = retained.map((p) => p.id).toSet();
+    final missing =
+        defaults.where((panel) => !currentIds.contains(panel.id)).toList();
+
+    if (missing.isEmpty) {
+      // Length unchanged AND no deprecated entries removed → no change at all.
+      if (retained.length == settings.panelOrder.length) return settings;
     }
+
+    return settings.copyWith(panelOrder: [...retained, ...missing]);
   }
 
-  /// Save settings to disk
+  bool _panelOrderEquals(List<PanelSettings> a, List<PanelSettings> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
+  }
+
+  /// Save settings to disk.
+  ///
+  /// The in-memory cache is updated synchronously (before the first await) so
+  /// that any code that reads [currentSettings] right after kicking off this
+  /// save sees the new value, even if persistence is still in flight.
   Future<bool> saveSettings(AppSettings settings) async {
+    _cachedSettings = settings;
     try {
       final settingsDir = await getSettingsDirectory();
       final settingsFile = File(p.join(settingsDir, _settingsFileName));
@@ -68,7 +113,7 @@ class SettingsService {
       }
 
       await settingsFile.writeAsString(settings.toJsonString());
-      _cachedSettings = settings; // Update cache
+      _appSettingsNotifier.notify();
       return true;
     } catch (e) {
       LogService.error('SettingsService/saveSettings', 'Failed to save settings', err: e);
@@ -97,9 +142,9 @@ class SettingsService {
   /// Reset only User Interface settings (panel order and properties)
   Future<void> resetUserInterface() async {
     if (_cachedSettings != null) {
-      // Reset panel order to defaults while preserving other settings
-      _cachedSettings!.panelOrder = List.from(defaultPanels);
-      await saveSettings(_cachedSettings!);
+      await saveSettings(
+        _cachedSettings!.copyWith(panelOrder: buildDefaultPanels()),
+      );
     }
   }
 
@@ -113,7 +158,6 @@ class SettingsService {
       await settingsFile.delete();
     }
 
-    // Reset cache to default settings
     _cachedSettings = AppSettings.defaultSettings();
     await saveSettings(_cachedSettings!);
     await resetAppDrawerSettings();
@@ -139,8 +183,15 @@ class SettingsService {
     return _cachedAppDrawerSettings!;
   }
 
-  /// Save app drawer settings to disk
+  /// Save app drawer settings to disk.
+  ///
+  /// The in-memory cache is updated synchronously (before the first await) so
+  /// that any code that reads [currentAppDrawerSettings] right after kicking
+  /// off this save sees the new value, even if persistence is still in flight.
+  /// Without this, a fire-and-forget save followed by an immediate consumer
+  /// read would observe the stale persisted value.
   Future<bool> saveAppDrawerSettings(AppDrawerSettings settings) async {
+    _cachedAppDrawerSettings = settings;
     try {
       final settingsDir = await getSettingsDirectory();
       final file = File(p.join(settingsDir, _appDrawerSettingsFileName));
@@ -150,7 +201,7 @@ class SettingsService {
       }
 
       await file.writeAsString(settings.toJsonString());
-      _cachedAppDrawerSettings = settings;
+      _appDrawerNotifier.notify();
       return true;
     } catch (e) {
       LogService.error('SettingsService/saveAppDrawerSettings', 'Failed to save app drawer settings', err: e);

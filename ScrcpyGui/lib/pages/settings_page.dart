@@ -15,6 +15,7 @@ import '../widgets/custom_multi_dropdown.dart';
 import 'package:provider/provider.dart';
 import '../services/app_icon_controller.dart';
 import '../services/app_icon_cache.dart';
+import '../services/device_manager_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -48,32 +49,40 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadSettings() async {
-    final settings = await _settingsService.loadSettings();
+    var settings = await _settingsService.loadSettings();
     final settingsDir = await _settingsService.getSettingsDirectory();
     final appIconCacheDir = await AppIconCache.cacheDir();
 
-    if (settings.recordingsDirectory.isEmpty) {
-      settings.recordingsDirectory = '$settingsDir/Recordings';
-    }
-    if (settings.downloadsDirectory.isEmpty) {
-      settings.downloadsDirectory = '$settingsDir/Downloads';
-    }
-    if (settings.batDirectory.isEmpty) {
-      // Default scripts directory to the downloads directory
-      if (settings.downloadsDirectory.isNotEmpty) {
-        settings.batDirectory = settings.downloadsDirectory;
-      } else {
-        settings.batDirectory = '$settingsDir/Downloads';
-      }
+    final recordingsDir = settings.recordingsDirectory.isEmpty
+        ? '$settingsDir/Recordings'
+        : settings.recordingsDirectory;
+    final downloadsDir = settings.downloadsDirectory.isEmpty
+        ? '$settingsDir/Downloads'
+        : settings.downloadsDirectory;
+    final batDir = settings.batDirectory.isEmpty
+        ? (downloadsDir.isNotEmpty ? downloadsDir : '$settingsDir/Downloads')
+        : settings.batDirectory;
+
+    final defaultsApplied = recordingsDir != settings.recordingsDirectory ||
+        downloadsDir != settings.downloadsDirectory ||
+        batDir != settings.batDirectory;
+
+    if (defaultsApplied) {
+      settings = settings.copyWith(
+        recordingsDirectory: recordingsDir,
+        downloadsDirectory: downloadsDir,
+        batDirectory: batDir,
+      );
+      // Persist the populated defaults so other consumers see them too.
+      await _settingsService.saveSettings(settings);
     }
 
-    await _createDirectoryIfNeeded(settings.recordingsDirectory);
-    await _createDirectoryIfNeeded(settings.downloadsDirectory);
-    await _createDirectoryIfNeeded(settings.batDirectory);
+    await _createDirectoryIfNeeded(recordingsDir);
+    await _createDirectoryIfNeeded(downloadsDir);
+    await _createDirectoryIfNeeded(batDir);
 
     setState(() {
-      _settings = settings;
-      _settings.settingsDirectory = settingsDir;
+      _settings = settings.copyWith(settingsDirectory: settingsDir);
       _appIconCacheDirectory = appIconCacheDir.path;
       _isLoading = false;
     });
@@ -109,9 +118,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // ---------------------------------------------------------
-  // ✔ UNIVERSAL OPEN FOLDER FUNCTION — Windows / macOS / Linux
-  // ---------------------------------------------------------
+  /// Cross-platform open-folder helper for Windows, macOS, and Linux.
   Future<void> _openFolder(String path) async {
     if (path.isEmpty) return;
 
@@ -149,9 +156,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _movePanelUp(int index) {
     if (index > 0) {
+      final reordered = [..._settings.panelOrder];
+      final item = reordered.removeAt(index);
+      reordered.insert(index - 1, item);
       setState(() {
-        final item = _settings.panelOrder.removeAt(index);
-        _settings.panelOrder.insert(index - 1, item);
+        _settings = _settings.copyWith(panelOrder: reordered);
       });
       _saveSettings();
     }
@@ -159,12 +168,24 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _movePanelDown(int index) {
     if (index < _settings.panelOrder.length - 1) {
+      final reordered = [..._settings.panelOrder];
+      final item = reordered.removeAt(index);
+      reordered.insert(index + 1, item);
       setState(() {
-        final item = _settings.panelOrder.removeAt(index);
-        _settings.panelOrder.insert(index + 1, item);
+        _settings = _settings.copyWith(panelOrder: reordered);
       });
       _saveSettings();
     }
+  }
+
+  /// Replace one panel in the current order via [PanelSettings.copyWith].
+  void _updatePanelAt(int index, PanelSettings Function(PanelSettings) update) {
+    final updatedList = [..._settings.panelOrder];
+    updatedList[index] = update(updatedList[index]);
+    setState(() {
+      _settings = _settings.copyWith(panelOrder: updatedList);
+    });
+    _saveSettings();
   }
 
   Future<void> _showResetUserInterfaceConfirmation() async {
@@ -379,7 +400,7 @@ class _SettingsPageState extends State<SettingsPage> {
             value: _settings.openCmdWindows,
             onChanged: (value) {
               setState(() {
-                _settings.openCmdWindows = value;
+                _settings = _settings.copyWith(openCmdWindows: value);
               });
               _saveSettings();
             },
@@ -389,13 +410,14 @@ class _SettingsPageState extends State<SettingsPage> {
             label: 'Show Scripts tab',
             value: _settings.showBatFilesTab,
             onChanged: (value) {
+              final resetBootTab = !value &&
+                  (_settings.bootTab == 'Scripts' ||
+                      _settings.bootTab == 'Bat Files');
               setState(() {
-                _settings.showBatFilesTab = value;
-                if (!value &&
-                    (_settings.bootTab == 'Scripts' ||
-                        _settings.bootTab == 'Bat Files')) {
-                  _settings.bootTab = 'Home';
-                }
+                _settings = _settings.copyWith(
+                  showBatFilesTab: value,
+                  bootTab: resetBootTab ? 'Home' : null,
+                );
               });
               _saveSettings();
             },
@@ -405,11 +427,12 @@ class _SettingsPageState extends State<SettingsPage> {
             label: 'Show App Drawer tab',
             value: _settings.showAppDrawerTab,
             onChanged: (value) {
+              final resetBootTab = !value && _settings.bootTab == 'App Drawer';
               setState(() {
-                _settings.showAppDrawerTab = value;
-                if (!value && _settings.bootTab == 'App Drawer') {
-                  _settings.bootTab = 'Home';
-                }
+                _settings = _settings.copyWith(
+                  showAppDrawerTab: value,
+                  bootTab: resetBootTab ? 'Home' : null,
+                );
               });
               _saveSettings();
             },
@@ -420,7 +443,7 @@ class _SettingsPageState extends State<SettingsPage> {
             value: _settings.showManualIpInput,
             onChanged: (value) {
               setState(() {
-                _settings.showManualIpInput = value;
+                _settings = _settings.copyWith(showManualIpInput: value);
               });
               _saveSettings();
             },
@@ -431,7 +454,8 @@ class _SettingsPageState extends State<SettingsPage> {
             value: _settings.checkForUpdatesOnStartup,
             onChanged: (value) {
               setState(() {
-                _settings.checkForUpdatesOnStartup = value;
+                _settings =
+                    _settings.copyWith(checkForUpdatesOnStartup: value);
               });
               _saveSettings();
             },
@@ -442,7 +466,7 @@ class _SettingsPageState extends State<SettingsPage> {
             value: _settings.loggingEnabled,
             onChanged: (value) async {
               setState(() {
-                _settings.loggingEnabled = value;
+                _settings = _settings.copyWith(loggingEnabled: value);
               });
               await LogService.setLoggingEnabled(value);
               _saveSettings();
@@ -456,7 +480,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: (value) {
               if (value != null) {
                 setState(() {
-                  _settings.bootTab = value;
+                  _settings = _settings.copyWith(bootTab: value);
                 });
                 _saveSettings();
               }
@@ -469,7 +493,7 @@ class _SettingsPageState extends State<SettingsPage> {
             controller: _shortcutModController,
             onSelectionChange: (selected) {
               setState(() {
-                _settings.shortcutMod = selected;
+                _settings = _settings.copyWith(shortcutMod: selected);
               });
               _saveSettings();
             },
@@ -508,9 +532,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 .appDrawerSettings
                 .autoGroupByCategory,
             onChanged: (value) {
-              final controller = context.read<AppIconController>();
-              controller.appDrawerSettings.autoGroupByCategory = value;
-              controller.saveSettings();
+              context.read<AppIconController>().setAutoGroupByCategory(value);
               setState(() {});
             },
           ),
@@ -522,10 +544,21 @@ class _SettingsPageState extends State<SettingsPage> {
                 .appDrawerSettings
                 .showScripts,
             onChanged: (value) {
-              final controller = context.read<AppIconController>();
-              controller.appDrawerSettings.showScripts = value;
-              controller.saveSettings();
+              context.read<AppIconController>().setShowScripts(value);
               setState(() {});
+            },
+          ),
+          const SizedBox(height: 16),
+          CustomCheckbox(
+            label: 'Include system apps',
+            value: context
+                .read<AppIconController>()
+                .appDrawerSettings
+                .includeSystemApps,
+            onChanged: (value) async {
+              context.read<AppIconController>().setIncludeSystemApps(value);
+              setState(() {});
+              await context.read<DeviceManagerService>().reloadAllDevices();
             },
           ),
           const SizedBox(height: 24),
@@ -739,10 +772,10 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Checkbox(
                 value: panel.visible,
                 onChanged: (value) {
-                  setState(() {
-                    panel.visible = value ?? false;
-                  });
-                  _saveSettings();
+                  _updatePanelAt(
+                    index,
+                    (p) => p.copyWith(visible: value ?? false),
+                  );
                 },
                 activeColor: AppColors.primary,
               ),
@@ -754,10 +787,10 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Checkbox(
                 value: panel.isFullWidth,
                 onChanged: (value) {
-                  setState(() {
-                    panel.isFullWidth = value ?? false;
-                  });
-                  _saveSettings();
+                  _updatePanelAt(
+                    index,
+                    (p) => p.copyWith(isFullWidth: value ?? false),
+                  );
                 },
                 activeColor: AppColors.primary,
               ),
@@ -769,10 +802,10 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Checkbox(
                 value: panel.lockedExpanded,
                 onChanged: (value) {
-                  setState(() {
-                    panel.lockedExpanded = value ?? false;
-                  });
-                  _saveSettings();
+                  _updatePanelAt(
+                    index,
+                    (p) => p.copyWith(lockedExpanded: value ?? false),
+                  );
                 },
                 activeColor: AppColors.primary,
               ),
@@ -798,12 +831,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 ? '(using system PATH)'
                 : _settings.scrcpyDirectory,
             onBrowse: () => _pickDirectory((path) {
-              _settings.scrcpyDirectory = path;
+              _settings = _settings.copyWith(scrcpyDirectory: path);
               _saveSettings();
             }),
             onClear: _settings.scrcpyDirectory.isNotEmpty
                 ? () {
-                    setState(() => _settings.scrcpyDirectory = '');
+                    setState(() {
+                      _settings = _settings.copyWith(scrcpyDirectory: '');
+                    });
                     _saveSettings();
                   }
                 : null,
@@ -813,7 +848,7 @@ class _SettingsPageState extends State<SettingsPage> {
             'Recordings Directory',
             _settings.recordingsDirectory,
             onBrowse: () => _pickDirectory((path) {
-              _settings.recordingsDirectory = path;
+              _settings = _settings.copyWith(recordingsDirectory: path);
               _saveSettings();
             }),
           ),
@@ -822,7 +857,7 @@ class _SettingsPageState extends State<SettingsPage> {
             'Downloads Directory',
             _settings.downloadsDirectory,
             onBrowse: () => _pickDirectory((path) {
-              _settings.downloadsDirectory = path;
+              _settings = _settings.copyWith(downloadsDirectory: path);
               _saveSettings();
             }),
           ),
@@ -833,7 +868,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 : 'Scripts Directory (.sh${Platform.isMacOS ? ', .command' : ''})',
             _settings.batDirectory,
             onBrowse: () => _pickDirectory((path) {
-              _settings.batDirectory = path;
+              _settings = _settings.copyWith(batDirectory: path);
               _saveSettings();
             }),
           ),

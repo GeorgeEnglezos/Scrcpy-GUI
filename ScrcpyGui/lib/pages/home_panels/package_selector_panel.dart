@@ -3,25 +3,20 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_icon_cache.dart';
+import '../../services/command_notifier.dart';
 import '../../services/device_manager_service.dart';
-import '../../services/command_builder_service.dart';
 import '../../theme/app_colors.dart';
-import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_searchbar.dart';
 import '../../widgets/surrounding_panel.dart';
 
 class PackageSelectorPanel extends StatefulWidget {
-  final ClearController? clearController;
-
-  const PackageSelectorPanel({super.key, this.clearController});
+  const PackageSelectorPanel({super.key});
 
   @override
   State<PackageSelectorPanel> createState() => _PackageSelectorPanelState();
 }
 
 class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
-  String selectedPackage = '';
-  String selectedAppName = '';
   List<String> packages = [];
   Map<String, String> packageLabels = {}; // package -> label
   Map<String, String> reverseLabels = {}; // label -> package
@@ -38,12 +33,13 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
         listen: false,
       );
       _deviceManager?.selectedDeviceNotifier.addListener(_onDeviceChanged);
+      _deviceManager?.packagesReloadedTick.addListener(_onPackagesReloaded);
     });
   }
 
-  void _onDeviceChanged() {
-    _loadPackages();
-  }
+  void _onDeviceChanged() => _loadPackages();
+
+  void _onPackagesReloaded() => _loadPackages();
 
   Future<void> _loadPackages() async {
     final deviceManager = Provider.of<DeviceManagerService>(
@@ -58,6 +54,8 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
         reverseLabels = {};
         _packageIconByName.clear();
       });
+      // Don't clear selectedPackage here — there's simply no device to
+      // validate against. A real device switch will hit the path below.
       return;
     }
 
@@ -72,11 +70,11 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
       return;
     }
 
-    // Merge cached labels so entries still equal to their package name get resolved.
     final cachedLabels = await AppIconCache.loadCachedLabels();
     final mergedLabels = {
       for (var entry in info.packageLabels.entries)
-        entry.key: (entry.value == entry.key && cachedLabels[entry.key]?.isNotEmpty == true)
+        entry.key: (entry.value == entry.key &&
+                cachedLabels[entry.key]?.isNotEmpty == true)
             ? cachedLabels[entry.key]!
             : entry.value,
     };
@@ -88,6 +86,16 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
         for (var entry in mergedLabels.entries) entry.value: entry.key,
       };
     });
+
+    // If a preset/previous device left a selectedPackage that doesn't exist
+    // on this device, clear it so the command preview stays in sync.
+    if (mounted) {
+      final notifier = context.read<CommandNotifier>();
+      final current = notifier.current.selectedPackage;
+      if (current.isNotEmpty && !info.packages.contains(current)) {
+        notifier.update(notifier.current.copyWith(selectedPackage: ''));
+      }
+    }
 
     await _hydratePackageIcons(info.packages);
   }
@@ -123,79 +131,59 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
         ),
       );
     }
-
     return Icon(Icons.android, size: 18, color: AppColors.textSecondary);
-  }
-
-  void _updateCommandBuilder() {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-    cmdService.updateGeneralCastOptions(
-      cmdService.generalCastOptions.copyWith(selectedPackage: selectedPackage),
-    );
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      selectedPackage = '';
-      selectedAppName = '';
-    });
-    _updateCommandBuilder();
   }
 
   @override
   void dispose() {
     _deviceManager?.selectedDeviceNotifier.removeListener(_onDeviceChanged);
+    _deviceManager?.packagesReloadedTick.removeListener(_onPackagesReloaded);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final notifier = Provider.of<CommandNotifier>(context);
+    final cmd = notifier.current;
     final suggestions = packageLabels.values.toList()..sort();
+    // Derive the displayed value from the canonical command state so a
+    // preset load or device-switch reset is reflected immediately.
+    final displayLabel = cmd.selectedPackage.isEmpty
+        ? ''
+        : (packageLabels[cmd.selectedPackage] ?? cmd.selectedPackage);
 
     return SurroundingPanel(
       title: 'Applications',
       icon: Icons.apps,
       panelType: 'Package Selector',
       showButton: false,
-      clearController: widget.clearController,
-      onClearPressed: _clearAllFields,
+      onClearPressed: () =>
+          notifier.update(cmd.copyWith(selectedPackage: '')),
       child: Column(
         children: [
           const SizedBox(height: 20),
           CustomSearchBar(
             hintText: 'Search App...',
-            value: selectedAppName,
+            value: displayLabel,
             suggestions: suggestions,
             suggestionMatcher: (label, query) {
               final q = query.toLowerCase();
               final pkg = reverseLabels[label] ?? '';
-              return label.toLowerCase().contains(q) || pkg.toLowerCase().contains(q);
+              return label.toLowerCase().contains(q) ||
+                  pkg.toLowerCase().contains(q);
             },
             suggestionLeadingBuilder: (appName) {
               final packageName = reverseLabels[appName];
-              final iconFile = packageName != null
-                  ? _packageIconByName[packageName]
-                  : null;
+              final iconFile =
+                  packageName != null ? _packageIconByName[packageName] : null;
               return _buildPackageIcon(iconFile);
             },
             onChanged: (value) {
-              setState(() {
-                selectedAppName = value;
-                // Convert app name to package name for the command builder
-                selectedPackage = reverseLabels[value] ?? value;
-              });
-              _updateCommandBuilder();
+              final packageName = reverseLabels[value] ?? value;
+              notifier.update(cmd.copyWith(selectedPackage: packageName));
             },
-            onClear: () {
-              setState(() {
-                selectedPackage = '';
-                selectedAppName = '';
-              });
-              _updateCommandBuilder();
-            },
+            onClear: () =>
+                notifier.update(cmd.copyWith(selectedPackage: '')),
             onReload: _loadPackages,
           ),
         ],

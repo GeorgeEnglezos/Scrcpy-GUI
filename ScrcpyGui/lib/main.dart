@@ -18,7 +18,7 @@ import 'pages/home_page.dart';
 import 'pages/logs_page.dart';
 import 'services/app_icon_controller.dart';
 import 'services/log_service.dart';
-import 'services/command_builder_service.dart';
+import 'services/command_notifier.dart';
 import 'services/device_manager_service.dart';
 import 'services/settings_service.dart';
 import 'theme/app_colors.dart';
@@ -57,9 +57,10 @@ Future<void> main() async {
   final deviceManager = DeviceManagerService();
   await deviceManager.initialize();
 
-  // Initialize CommandBuilderService with reference to DeviceManagerService
-  final commandBuilder = CommandBuilderService();
-  commandBuilder.deviceManagerService = deviceManager;
+  // Initialize CommandNotifier — unified state for the new architecture
+  final commandNotifier = CommandNotifier();
+  commandNotifier.setDeviceManager(deviceManager);
+  commandNotifier.loadDefault();
 
   final iconController = AppIconController(
     appDrawerSettings: appDrawerSettings,
@@ -71,9 +72,7 @@ Future<void> main() async {
         ChangeNotifierProvider<DeviceManagerService>.value(
           value: deviceManager,
         ),
-        ChangeNotifierProvider<CommandBuilderService>.value(
-          value: commandBuilder,
-        ),
+        ChangeNotifierProvider<CommandNotifier>.value(value: commandNotifier),
         ChangeNotifierProvider<AppIconController>.value(value: iconController),
         ChangeNotifierProvider<LogService>.value(value: LogService.instance),
       ],
@@ -105,7 +104,6 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
   /// Currently selected page index (0: Home, 1: Favorites, 2: Resources, 3: Settings)
   late int selectedIndex;
   late AppSettings _currentSettings;
-  final SettingsService _settingsService = SettingsService();
   UpdateService? _updateResult;
   bool _hideBanner = false;
 
@@ -113,10 +111,41 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
   void initState() {
     super.initState();
     _currentSettings = widget.settings;
-    // Set initial tab based on bootTab setting
     selectedIndex = _getInitialTabIndex();
-    _startSettingsPolling();
+    SettingsService().appSettingsNotifier.addListener(_onSettingsChanged);
     _checkUpdateOnStartup();
+  }
+
+  @override
+  void dispose() {
+    SettingsService().appSettingsNotifier.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  void _onSettingsChanged() {
+    final newSettings = SettingsService.currentSettings;
+    if (newSettings == null || !mounted) return;
+
+    final tabsVisibilityChanged =
+        newSettings.showBatFilesTab != _currentSettings.showBatFilesTab ||
+        newSettings.showAppDrawerTab != _currentSettings.showAppDrawerTab ||
+        newSettings.loggingEnabled != _currentSettings.loggingEnabled;
+
+    int newIndex = selectedIndex;
+    if (tabsVisibilityChanged) {
+      final currentTabs = _visibleTabLabelsFor(_currentSettings);
+      final label = selectedIndex < currentTabs.length
+          ? currentTabs[selectedIndex]
+          : 'Home';
+      final newTabs = _visibleTabLabelsFor(newSettings);
+      final idx = newTabs.indexOf(label);
+      newIndex = idx >= 0 ? idx : 0;
+    }
+
+    setState(() {
+      _currentSettings = newSettings;
+      selectedIndex = newIndex;
+    });
   }
 
   Future<void> _checkUpdateOnStartup() async {
@@ -160,36 +189,6 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
     ];
   }
 
-  void _startSettingsPolling() {
-    // Poll for settings changes every 500ms
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      if (mounted) {
-        final newSettings = await _settingsService.loadSettings();
-        final tabsVisibilityChanged =
-            newSettings.showBatFilesTab != _currentSettings.showBatFilesTab ||
-            newSettings.showAppDrawerTab != _currentSettings.showAppDrawerTab ||
-            newSettings.loggingEnabled != _currentSettings.loggingEnabled;
-
-        if (tabsVisibilityChanged) {
-          final currentTabs = _visibleTabLabelsFor(_currentSettings);
-          final currentTabLabel =
-              selectedIndex >= 0 && selectedIndex < currentTabs.length
-              ? currentTabs[selectedIndex]
-              : 'Home';
-
-          final newTabs = _visibleTabLabelsFor(newSettings);
-          final newIndex = newTabs.indexOf(currentTabLabel);
-
-          setState(() {
-            _currentSettings = newSettings;
-            selectedIndex = newIndex >= 0 ? newIndex : 0;
-          });
-        }
-        _startSettingsPolling();
-      }
-    });
-  }
-
   /// List of available pages in the application
   ///
   /// Index mapping (when Scripts tab is shown):
@@ -207,8 +206,11 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
   List<Widget> get pages => [
     HomePage(
       panelOrder: _currentSettings.panelOrder,
-      onNavigateToSettings: () =>
-          setState(() => selectedIndex = pages.length - 1),
+      onNavigateToSettings: () {
+        final tabs = _visibleTabLabelsFor(_currentSettings);
+        final idx = tabs.indexOf('Settings');
+        if (idx >= 0) setState(() => selectedIndex = idx);
+      },
     ),
     const FavoritesPage(),
     if (_currentSettings.showAppDrawerTab) const AppDrawerPage(),
@@ -235,13 +237,14 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
               showAppDrawerTab: _currentSettings.showAppDrawerTab,
               showLogsTab: _currentSettings.loggingEnabled,
               onItemSelected: (index) {
-                // Clear command builder when leaving Home page (index 0)
+                final notifier = Provider.of<CommandNotifier>(
+                  context,
+                  listen: false,
+                );
                 if (selectedIndex == 0 && index != 0) {
-                  final commandService = Provider.of<CommandBuilderService>(
-                    context,
-                    listen: false,
-                  );
-                  commandService.resetToDefaults();
+                  notifier.reset();
+                } else if (index == 0 && selectedIndex != 0) {
+                  notifier.loadDefault();
                 }
                 setState(() => selectedIndex = index);
               },

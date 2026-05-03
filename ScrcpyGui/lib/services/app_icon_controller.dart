@@ -11,6 +11,7 @@ import '../constants/package_names.dart';
 import '../models/app_drawer_settings_model.dart';
 import 'app_icon_cache.dart';
 import 'icon_fetch_strategy.dart';
+import 'log_service.dart';
 import 'settings_service.dart';
 import 'strategies/adb_scrape_strategy.dart';
 import 'strategies/helper_apk_strategy.dart';
@@ -194,88 +195,135 @@ class AppIconController extends ChangeNotifier {
     return commonPackageNames[packageName] ?? packageName;
   }
 
-  /// Persist the current app drawer settings to disk.
+  /// Persist the current app drawer settings to disk and notify listeners.
+  /// Most callers should use one of the higher-level mutators which wrap
+  /// this; only call directly when you've already updated [appDrawerSettings]
+  /// some other way.
   Future<void> saveSettings() async {
     await SettingsService().saveAppDrawerSettings(appDrawerSettings);
     notifyListeners();
   }
 
+  /// Replace [appDrawerSettings] with [next] and persist. Centralizes the
+  /// "mutate via copyWith → save → notify" pattern.
+  void _applySettings(AppDrawerSettings next) {
+    appDrawerSettings = next;
+    saveSettings();
+  }
+
+  // ── App-drawer-wide setters (replace direct page mutations) ──────────────
+
+  void setAppLaunchCommand(String command) =>
+      _applySettings(appDrawerSettings.copyWith(appLaunchCommand: command));
+
+  void setIconFetchMethod(IconFetchMethod method) =>
+      _applySettings(appDrawerSettings.copyWith(iconFetchMethod: method));
+
+  void setAutoGroupByCategory(bool value) =>
+      _applySettings(appDrawerSettings.copyWith(autoGroupByCategory: value));
+
+  void setShowScripts(bool value) =>
+      _applySettings(appDrawerSettings.copyWith(showScripts: value));
+
+  void setIncludeSystemApps(bool value) =>
+      _applySettings(appDrawerSettings.copyWith(includeSystemApps: value));
+
+  void toggleScriptsCollapsed() => _applySettings(
+        appDrawerSettings.copyWith(
+          scriptsCollapsed: !appDrawerSettings.scriptsCollapsed,
+        ),
+      );
+
+  void toggleOtherCollapsed() => _applySettings(
+        appDrawerSettings.copyWith(
+          otherCollapsed: !appDrawerSettings.otherCollapsed,
+        ),
+      );
+
+  /// Toggle the collapsed state of the group at [index].
+  void toggleGroupCollapsed(int index) {
+    if (index < 0 || index >= appDrawerSettings.groups.length) return;
+    final updated = [...appDrawerSettings.groups];
+    final group = updated[index];
+    updated[index] = group.copyWith(collapsed: !group.collapsed);
+    _applySettings(appDrawerSettings.copyWith(groups: updated));
+  }
+
+  // ── Favorites ────────────────────────────────────────────────────────────
+
   /// Toggle favorite status for a package.
   void toggleFavorite(String packageName) {
-    if (appDrawerSettings.favorites.contains(packageName)) {
-      appDrawerSettings.favorites.remove(packageName);
-    } else {
-      appDrawerSettings.favorites.add(packageName);
-    }
-    saveSettings();
+    final favorites = appDrawerSettings.favorites.contains(packageName)
+        ? appDrawerSettings.favorites.where((p) => p != packageName).toList()
+        : [...appDrawerSettings.favorites, packageName];
+    _applySettings(appDrawerSettings.copyWith(favorites: favorites));
   }
 
   /// Check if a package is favorited.
   bool isFavorite(String packageName) =>
       appDrawerSettings.favorites.contains(packageName);
 
-  /// Toggle script as favorite.
-  void toggleScriptFavorite(String scriptPath) {
-    if (appDrawerSettings.favorites.contains(scriptPath)) {
-      appDrawerSettings.favorites.remove(scriptPath);
-    } else {
-      appDrawerSettings.favorites.add(scriptPath);
-    }
-    saveSettings();
-  }
+  /// Toggle script as favorite. Same backing list as [toggleFavorite] —
+  /// kept separate for symmetry with [isScriptFavorite].
+  void toggleScriptFavorite(String scriptPath) => toggleFavorite(scriptPath);
 
   /// Check if a script is favorited.
   bool isScriptFavorite(String scriptPath) =>
       appDrawerSettings.favorites.contains(scriptPath);
 
-  // Group management
+  // ── Group management ─────────────────────────────────────────────────────
 
   /// Create a new empty group with [name].
   void createGroup(String name) {
-    appDrawerSettings.groups.add(AppGroup(name: name));
-    saveSettings();
+    final groups = [...appDrawerSettings.groups, AppGroup(name: name)];
+    _applySettings(appDrawerSettings.copyWith(groups: groups));
   }
 
   /// Rename group at [index] to [newName].
   void renameGroup(int index, String newName) {
     if (index < 0 || index >= appDrawerSettings.groups.length) return;
-    appDrawerSettings.groups[index].name = newName;
-    saveSettings();
+    final groups = [...appDrawerSettings.groups];
+    groups[index] = groups[index].copyWith(name: newName);
+    _applySettings(appDrawerSettings.copyWith(groups: groups));
   }
 
   /// Delete group at [index]. Apps in it become ungrouped.
   void deleteGroup(int index) {
     if (index < 0 || index >= appDrawerSettings.groups.length) return;
-    appDrawerSettings.groups.removeAt(index);
-    saveSettings();
+    final groups = [...appDrawerSettings.groups]..removeAt(index);
+    _applySettings(appDrawerSettings.copyWith(groups: groups));
   }
 
   /// Move group from [oldIndex] to [newIndex].
   void reorderGroup(int oldIndex, int newIndex) {
     if (oldIndex < 0 || oldIndex >= appDrawerSettings.groups.length) return;
     if (newIndex < 0 || newIndex >= appDrawerSettings.groups.length) return;
-    final group = appDrawerSettings.groups.removeAt(oldIndex);
-    appDrawerSettings.groups.insert(newIndex, group);
-    saveSettings();
+    final groups = [...appDrawerSettings.groups];
+    final group = groups.removeAt(oldIndex);
+    groups.insert(newIndex, group);
+    _applySettings(appDrawerSettings.copyWith(groups: groups));
   }
 
   /// Move [packageName] into the group at [groupIndex].
   /// Removes from any other group first.
   void moveToGroup(String packageName, int groupIndex) {
     if (groupIndex < 0 || groupIndex >= appDrawerSettings.groups.length) return;
-    for (final group in appDrawerSettings.groups) {
-      group.items.remove(packageName);
-    }
-    appDrawerSettings.groups[groupIndex].items.add(packageName);
-    saveSettings();
+    final groups = [
+      for (final g in appDrawerSettings.groups)
+        g.copyWith(items: g.items.where((p) => p != packageName).toList()),
+    ];
+    final target = groups[groupIndex];
+    groups[groupIndex] = target.copyWith(items: [...target.items, packageName]);
+    _applySettings(appDrawerSettings.copyWith(groups: groups));
   }
 
   /// Remove [packageName] from whichever group currently contains it.
   void removeFromGroup(String packageName) {
-    for (final group in appDrawerSettings.groups) {
-      group.items.remove(packageName);
-    }
-    saveSettings();
+    final groups = [
+      for (final g in appDrawerSettings.groups)
+        g.copyWith(items: g.items.where((p) => p != packageName).toList()),
+    ];
+    _applySettings(appDrawerSettings.copyWith(groups: groups));
   }
 
   /// Returns the index of the group containing [packageName], or -1.
@@ -294,15 +342,19 @@ class AppIconController extends ChangeNotifier {
       }
     }
 
-    appDrawerSettings.groups.removeWhere((g) => g.isAutoGenerated);
-
-    for (final entry in grouped.entries) {
-      appDrawerSettings.groups.add(
-        AppGroup(name: entry.key, items: entry.value, isAutoGenerated: true),
-      );
-    }
-
-    saveSettings();
+    final retained =
+        appDrawerSettings.groups.where((g) => !g.isAutoGenerated).toList();
+    final autoGenerated = [
+      for (final entry in grouped.entries)
+        AppGroup(
+          name: entry.key,
+          items: entry.value,
+          isAutoGenerated: true,
+        ),
+    ];
+    _applySettings(
+      appDrawerSettings.copyWith(groups: [...retained, ...autoGenerated]),
+    );
   }
 
   Future<void> _runStrategy(
@@ -352,10 +404,10 @@ class AppIconController extends ChangeNotifier {
         },
       );
     } on UnimplementedError catch (e) {
-      stderr.writeln('[Controller._runStrategy] Strategy not implemented: $e');
+      LogService.error('AppIconController/_runStrategy', 'Strategy not implemented', err: e);
       return;
     } catch (e, st) {
-      stderr.writeln('[Controller._runStrategy] Strategy error: $e\n$st');
+      LogService.error('AppIconController/_runStrategy', 'Strategy error', err: '$e\n$st');
       onError?.call(e.toString());
       return;
     } finally {
