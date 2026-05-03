@@ -263,14 +263,6 @@ class AppIconController extends ChangeNotifier {
   bool isFavorite(String packageName) =>
       appDrawerSettings.favorites.contains(packageName);
 
-  /// Toggle script as favorite. Same backing list as [toggleFavorite] —
-  /// kept separate for symmetry with [isScriptFavorite].
-  void toggleScriptFavorite(String scriptPath) => toggleFavorite(scriptPath);
-
-  /// Check if a script is favorited.
-  bool isScriptFavorite(String scriptPath) =>
-      appDrawerSettings.favorites.contains(scriptPath);
-
   // ── Group management ─────────────────────────────────────────────────────
 
   /// Create a new empty group with [name].

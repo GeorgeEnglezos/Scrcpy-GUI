@@ -531,131 +531,6 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     );
   }
 
-  void _showScriptContextMenu(
-    BuildContext context,
-    Offset position,
-    File script,
-    AppIconController controller,
-  ) {
-    final isFav = controller.isScriptFavorite(script.path);
-
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy,
-        position.dx,
-        position.dy,
-      ),
-      color: AppColors.surface,
-      items: [
-        PopupMenuItem(
-          onTap: () => controller.toggleScriptFavorite(script.path),
-          child: Row(
-            children: [
-              Icon(
-                isFav ? Icons.favorite : Icons.favorite_border,
-                size: 18,
-                color: isFav ? Colors.pinkAccent : AppColors.textSecondary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isFav ? 'Remove from Favorites' : 'Add to Favorites',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          onTap: () {
-            Future.delayed(const Duration(milliseconds: 100), () {
-              if (!mounted) return;
-              _showScriptMoveToGroupMenu(position, script, controller);
-            });
-          },
-          child: Row(
-            children: [
-              Icon(
-                Icons.drive_file_move_outline,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Move to Group',
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showScriptMoveToGroupMenu(
-    Offset position,
-    File script,
-    AppIconController controller,
-  ) {
-    final groups = controller.appDrawerSettings.groups;
-
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx + 10,
-        position.dy,
-        position.dx + 10,
-        position.dy,
-      ),
-      color: AppColors.surface,
-      items: [
-        for (var i = 0; i < groups.length; i++)
-          PopupMenuItem(
-            onTap: () => controller.moveToGroup(script.path, i),
-            child: Row(
-              children: [
-                Icon(Icons.folder_outlined, size: 18, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text(
-                  groups[i].name,
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-        PopupMenuItem(
-          onTap: () {
-            Future.delayed(const Duration(milliseconds: 100), () {
-              if (!mounted) return;
-              _showCreateGroupDialog(script.path, controller);
-            });
-          },
-          child: Row(
-            children: [
-              Icon(
-                Icons.create_new_folder_outlined,
-                size: 18,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'New Group...',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   void _showMoveToGroupMenu(
     Offset position,
     String pkg,
@@ -1415,10 +1290,6 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             tileWidth: tileWidth,
             iconFile: iconFile,
             onTap: () => _launchScript(script),
-            scriptPath: script.path,
-            isFavorite: controller.isScriptFavorite(script.path),
-            onSecondaryTap: (position) =>
-                _showScriptContextMenu(context, position, script, controller),
           ),
         );
       }).toList(),
@@ -2638,18 +2509,12 @@ class _ScriptTile extends StatefulWidget {
   final double tileWidth;
   final File? iconFile;
   final VoidCallback onTap;
-  final String scriptPath;
-  final bool isFavorite;
-  final void Function(Offset position) onSecondaryTap;
 
   const _ScriptTile({
     required this.name,
     required this.tileWidth,
     required this.iconFile,
     required this.onTap,
-    required this.scriptPath,
-    required this.isFavorite,
-    required this.onSecondaryTap,
   });
 
   @override
@@ -2668,8 +2533,6 @@ class _ScriptTileState extends State<_ScriptTile> {
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
-        onSecondaryTapUp: (details) =>
-            widget.onSecondaryTap(details.globalPosition),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
