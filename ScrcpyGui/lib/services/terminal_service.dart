@@ -179,7 +179,7 @@ class TerminalService {
   /// downloads directory.
   ///
   /// [command] must already contain the full executable path
-  /// (as produced by [CommandBuilderService.fullCommand]).
+  /// (as produced by [CommandNotifier.fullCommand]).
   /// It is written verbatim into the script file.
   static Future<void> generateScript(
     BuildContext context,
