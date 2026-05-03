@@ -1,98 +1,69 @@
 /// Camera settings panel for scrcpy command configuration.
-///
-/// This panel provides camera mirroring configuration including camera selection,
-/// resolution, frame rate, aspect ratio, and high-speed mode settings.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/command_builder_service.dart';
-import '../../utils/clear_notifier.dart';
+import '../../services/command_notifier.dart';
+import '../../services/device_manager_service.dart';
 import '../../widgets/custom_checkbox.dart';
 import '../../widgets/custom_searchbar.dart';
 import '../../widgets/custom_textinput.dart';
 import '../../widgets/surrounding_panel.dart';
 
-/// Panel for configuring camera mirroring options.
-///
-/// The [CameraCommandsPanel] allows users to configure:
-/// - Camera ID selection for specific camera access
-/// - Camera resolution (e.g., 1920x1080)
-/// - Camera facing direction (front, back, external)
-/// - Frame rate (FPS) settings
-/// - Aspect ratio preferences
-/// - High-speed capture mode
-///
-/// All settings are synchronized with [CommandBuilderService].
 class CameraCommandsPanel extends StatefulWidget {
-  /// Creates a camera commands panel.
-  const CameraCommandsPanel({super.key, this.clearController});
-
-  /// Optional controller for clearing all fields in this panel
-  final ClearController? clearController;
+  const CameraCommandsPanel({super.key});
 
   @override
   State<CameraCommandsPanel> createState() => _CameraCommandsPanelState();
 }
 
 class _CameraCommandsPanelState extends State<CameraCommandsPanel> {
-  String cameraId = '';
-  String cameraSize = '';
-  String? cameraFacing;
-  String cameraFps = '';
-  String cameraAr = '';
-  bool cameraHighSpeed = false;
-
   final List<String> cameraFacingOptions = ['front', 'back', 'external'];
   final List<String> cameraSizeOptions = [
-    '1920x1080',
-    '1280x720',
-    '640x480',
-    '320x240',
+    '1920x1080', '1280x720', '640x480', '320x240',
   ];
   final List<String> cameraFpsOptions = ['15', '30', '60'];
   final List<String> cameraArOptions = ['16:9', '4:3', '1:1'];
 
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
+  DeviceManagerService? _deviceManager;
 
-    final options = cmdService.cameraOptions.copyWith(
-      cameraId: cameraId,
-      cameraSize: cameraSize,
-      cameraFacing: cameraFacing ?? '',
-      cameraFps: cameraFps,
-      cameraAr: cameraAr,
-      cameraHighSpeed: cameraHighSpeed,
-    );
-
-    cmdService.updateCameraOptions(options);
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deviceManager = context.read<DeviceManagerService>();
+      _deviceManager?.selectedDeviceNotifier.addListener(_onDeviceChanged);
+    });
   }
 
-  void _clearAllFields() {
-    setState(() {
-      cameraId = '';
-      cameraSize = '';
-      cameraFacing = null;
-      cameraFps = '';
-      cameraAr = '';
-      cameraHighSpeed = false;
-    });
-    _updateService(context);
+  void _onDeviceChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    _deviceManager?.selectedDeviceNotifier.removeListener(_onDeviceChanged);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final notifier = Provider.of<CommandNotifier>(context);
+    final cmd = notifier.current;
+
     return SurroundingPanel(
       icon: Icons.camera_alt,
       title: 'Camera',
       showButton: true,
-      panelType: "Camera",
-      onClearPressed: _clearAllFields,
-      clearController: widget.clearController,
+      panelType: 'Camera',
+      onSaveDefaultPressed: () => notifier.saveDefault(),
+      onClearPressed: () => notifier.update(cmd.copyWith(
+        cameraId: '',
+        cameraSize: '',
+        cameraFacing: '',
+        cameraFps: '',
+        cameraAr: '',
+        cameraHighSpeed: false,
+      )),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -102,11 +73,9 @@ class _CameraCommandsPanelState extends State<CameraCommandsPanel> {
               Expanded(
                 child: CustomTextField(
                   label: 'Camera ID',
-                  value: cameraId,
-                  onChanged: (val) {
-                    setState(() => cameraId = val);
-                    _updateService(context);
-                  },
+                  value: cmd.cameraId,
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(cameraId: val)),
                   tooltip: 'Specify the device camera id to mirror. The available camera ids can be listed by: scrcpy --list-cameras',
                 ),
               ),
@@ -114,16 +83,12 @@ class _CameraCommandsPanelState extends State<CameraCommandsPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Camera Size',
-                  value: cameraSize.isNotEmpty ? cameraSize : null,
+                  value: cmd.cameraSize.isEmpty ? null : cmd.cameraSize,
                   suggestions: cameraSizeOptions,
-                  onChanged: (val) {
-                    setState(() => cameraSize = val);
-                    _updateService(context);
-                  },
-                  onClear: () {
-                    setState(() => cameraSize = '');
-                    _updateService(context);
-                  },
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(cameraSize: val)),
+                  onClear: () =>
+                      notifier.update(cmd.copyWith(cameraSize: '')),
                   tooltip: 'Specify an explicit camera capture size (e.g., 1920x1080).',
                 ),
               ),
@@ -131,16 +96,12 @@ class _CameraCommandsPanelState extends State<CameraCommandsPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Camera Facing',
-                  value: cameraFacing,
+                  value: cmd.cameraFacing.isEmpty ? null : cmd.cameraFacing,
                   suggestions: cameraFacingOptions,
-                  onChanged: (val) {
-                    setState(() => cameraFacing = val);
-                    _updateService(context);
-                  },
-                  onClear: () {
-                    setState(() => cameraFacing = null);
-                    _updateService(context);
-                  },
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(cameraFacing: val)),
+                  onClear: () =>
+                      notifier.update(cmd.copyWith(cameraFacing: '')),
                   tooltip: 'Select the device camera by its facing direction. Possible values are "front", "back" and "external".',
                 ),
               ),
@@ -152,33 +113,25 @@ class _CameraCommandsPanelState extends State<CameraCommandsPanel> {
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Camera FPS',
-                  value: cameraFps.isNotEmpty ? cameraFps : null,
+                  value: cmd.cameraFps.isEmpty ? null : cmd.cameraFps,
                   suggestions: cameraFpsOptions,
-                  onChanged: (val) {
-                    setState(() => cameraFps = val);
-                    _updateService(context);
-                  },
-                  onClear: () {
-                    setState(() => cameraFps = '');
-                    _updateService(context);
-                  },
-                  tooltip: 'Specify the camera capture frame rate. If not specified, Android\'s default frame rate (30 fps) is used.',
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(cameraFps: val)),
+                  onClear: () =>
+                      notifier.update(cmd.copyWith(cameraFps: '')),
+                  tooltip: "Specify the camera capture frame rate. If not specified, Android's default frame rate (30 fps) is used.",
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: CustomSearchBar(
                   hintText: 'Camera Aspect Ratio',
-                  value: cameraAr.isNotEmpty ? cameraAr : null,
+                  value: cmd.cameraAr.isEmpty ? null : cmd.cameraAr,
                   suggestions: cameraArOptions,
-                  onChanged: (val) {
-                    setState(() => cameraAr = val);
-                    _updateService(context);
-                  },
-                  onClear: () {
-                    setState(() => cameraAr = '');
-                    _updateService(context);
-                  },
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(cameraAr: val)),
+                  onClear: () =>
+                      notifier.update(cmd.copyWith(cameraAr: '')),
                   tooltip: 'Select the camera size by its aspect ratio (+/- 10%). Possible values are "sensor" (use the camera sensor aspect ratio), "<num>:<den>" (e.g. "4:3") or "<value>" (e.g. "1.6").',
                 ),
               ),
@@ -186,11 +139,9 @@ class _CameraCommandsPanelState extends State<CameraCommandsPanel> {
               Expanded(
                 child: CustomCheckbox(
                   label: 'High Speed Mode',
-                  value: cameraHighSpeed,
-                  onChanged: (val) {
-                    setState(() => cameraHighSpeed = val);
-                    _updateService(context);
-                  },
+                  value: cmd.cameraHighSpeed,
+                  onChanged: (val) =>
+                      notifier.update(cmd.copyWith(cameraHighSpeed: val)),
                   tooltip: 'Enable high-speed camera capture mode. This mode is restricted to specific resolutions and frame rates, listed by --list-camera-sizes.',
                 ),
               ),

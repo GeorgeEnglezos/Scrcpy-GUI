@@ -1,134 +1,62 @@
 /// Screen recording settings panel for scrcpy.
-///
-/// This panel provides configuration for recording device screen to video files
-/// with options for format, quality, size, and orientation.
 library;
 
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/command_builder_service.dart';
+
+import '../../services/command_notifier.dart';
 import '../../services/settings_service.dart';
-import '../../utils/clear_notifier.dart';
 import '../../widgets/custom_checkbox.dart';
 import '../../widgets/custom_searchbar.dart';
 import '../../widgets/custom_textinput.dart';
 import '../../widgets/surrounding_panel.dart';
 
-/// Panel for configuring screen recording options.
-///
-/// The [RecordingCommandsPanel] allows configuration of:
-/// - Recording enable/disable
-/// - Output file name and directory
-/// - Video format (mp4, mkv, m4a, mka, opus, aac, flac, wav)
-/// - Maximum frame rate
-/// - Maximum video size
-/// - Recording orientation
-/// - Time limit for recording
-/// - No display mode (record without mirroring)
-///
-/// The panel integrates with [SettingsService] for default directory paths.
 class RecordingCommandsPanel extends StatefulWidget {
-  /// Creates a recording commands panel.
-  const RecordingCommandsPanel({super.key, this.clearController});
-
-  /// Optional controller for clearing all fields in this panel
-  final ClearController? clearController;
+  const RecordingCommandsPanel({super.key});
 
   @override
   State<RecordingCommandsPanel> createState() => _RecordingCommandsPanelState();
 }
 
 class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
-  final List<String> outputFormats = ['mp4', 'mkv', 'm4a', 'mka', 'opus', 'aac', 'flac', 'wav'];
+  final List<String> outputFormats = [
+    'mp4', 'mkv', 'm4a', 'mka', 'opus', 'aac', 'flac', 'wav',
+  ];
   final List<String> orientations = ['0', '90', '180', '270'];
-  final SettingsService _settingsService = SettingsService();
 
-  bool enableRecording = false;
-  String fileName = '';
-  String outputFormat = '';
-  String recordOrientation = '';
-  String recordingsDirectory = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadRecordingsDirectory();
-  }
-
-  Future<void> _loadRecordingsDirectory() async {
-    final settings = await _settingsService.loadSettings();
-    recordingsDirectory = settings.recordingsDirectory;
-
-    // Create directory if it doesn't exist
-    if (recordingsDirectory.isNotEmpty) {
-      final dir = Directory(recordingsDirectory);
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-    }
-  }
-
-  void _updateService(BuildContext context) {
-    final cmdService = Provider.of<CommandBuilderService>(
-      context,
-      listen: false,
-    );
-
-    final options = cmdService.recordingOptions.copyWith(
-      outputFile: fileName,
-      outputFormat: outputFormat,
-      recordOrientation: recordOrientation,
-    );
-
-    cmdService.updateRecordingOptions(options);
-  }
-
-  void _initializeRecordingOptions(BuildContext context) {
+  void _initializeRecordingOptions(CommandNotifier notifier) {
     final now = DateTime.now();
     final formattedDateTime =
-        "${now.year}_${now.month.toString().padLeft(2, '0')}_${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}_${now.minute.toString().padLeft(2, '0')}_${now.second.toString().padLeft(2, '0')}";
-
+        '${now.year}_${now.month.toString().padLeft(2, '0')}_'
+        '${now.day.toString().padLeft(2, '0')}_'
+        '${now.hour.toString().padLeft(2, '0')}_'
+        '${now.minute.toString().padLeft(2, '0')}_'
+        '${now.second.toString().padLeft(2, '0')}';
     final recordingsDir =
         SettingsService.currentSettings?.recordingsDirectory ?? '';
-
-    setState(() {
-      fileName = "$recordingsDir/Scrcpy_$formattedDateTime";
-      outputFormat = "mp4";
-    });
-
-    _updateService(context);
-  }
-
-  void _cleanSettings(BuildContext context) {
-    setState(() {
-      fileName = "";
-      outputFormat = "";
-      recordOrientation = "";
-    });
-
-    _updateService(context);
-  }
-
-  void _clearAllFields() {
-    setState(() {
-      enableRecording = false;
-      fileName = '';
-      outputFormat = '';
-      recordOrientation = '';
-    });
-    _updateService(context);
+    notifier.update(notifier.current.copyWith(
+      outputFile: '$recordingsDir/Scrcpy_$formattedDateTime',
+      outputFormat: 'mp4',
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final notifier = Provider.of<CommandNotifier>(context);
+    final cmd = notifier.current;
+    final enableRecording = cmd.outputFile.isNotEmpty;
+
     return SurroundingPanel(
       icon: Icons.videocam,
       title: 'Recording',
-      panelType: "Recording",
+      panelType: 'Recording',
       showButton: true,
-      onClearPressed: _clearAllFields,
-      clearController: widget.clearController,
+      onSaveDefaultPressed: () => notifier.saveDefault(),
+      onClearPressed: () => notifier.update(cmd.copyWith(
+        outputFile: '',
+        outputFormat: '',
+        recordOrientation: '',
+      )),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -142,11 +70,14 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                   label: 'Enable Recording',
                   value: enableRecording,
                   onChanged: (val) {
-                    setState(() => enableRecording = val);
                     if (val) {
-                      _initializeRecordingOptions(context);
+                      _initializeRecordingOptions(notifier);
                     } else {
-                      _cleanSettings(context);
+                      notifier.update(cmd.copyWith(
+                        outputFile: '',
+                        outputFormat: '',
+                        recordOrientation: '',
+                      ));
                     }
                   },
                   tooltip: 'Record screen to file. The format is determined by the --record-format option if set, or by the file extension.',
@@ -161,11 +92,9 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                     opacity: enableRecording ? 1.0 : 0.5,
                     child: CustomTextField(
                       label: 'File Name',
-                      value: fileName,
-                      onChanged: (val) {
-                        setState(() => fileName = val);
-                        _updateService(context);
-                      },
+                      value: cmd.outputFile,
+                      onChanged: (val) =>
+                          notifier.update(cmd.copyWith(outputFile: val)),
                       tooltip: 'Set the file path for recording. The format is determined by the file extension or the output format option.',
                     ),
                   ),
@@ -186,15 +115,11 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                     child: CustomSearchBar(
                       hintText: 'Select format',
                       suggestions: outputFormats,
-                      onChanged: (val) {
-                        setState(() => outputFormat = val);
-                        _updateService(context);
-                      },
-                      onClear: () {
-                        setState(() => outputFormat = '');
-                        _updateService(context);
-                      },
-                      value: outputFormat,
+                      value: cmd.outputFormat.isEmpty ? null : cmd.outputFormat,
+                      onChanged: (val) =>
+                          notifier.update(cmd.copyWith(outputFormat: val)),
+                      onClear: () =>
+                          notifier.update(cmd.copyWith(outputFormat: '')),
                       tooltip: 'Force recording format (mp4, mkv, m4a, mka, opus, aac, flac or wav).',
                     ),
                   ),
@@ -215,24 +140,19 @@ class _RecordingCommandsPanelState extends State<RecordingCommandsPanel> {
                     child: CustomSearchBar(
                       hintText: 'Record Orientation',
                       suggestions: orientations,
-                      onChanged: (val) {
-                        setState(() => recordOrientation = val);
-                        _updateService(context);
-                      },
-                      onClear: () {
-                        setState(() => recordOrientation = '');
-                        _updateService(context);
-                      },
-                      value: recordOrientation,
+                      value: cmd.recordOrientation.isEmpty
+                          ? null
+                          : cmd.recordOrientation,
+                      onChanged: (val) =>
+                          notifier.update(cmd.copyWith(recordOrientation: val)),
+                      onClear: () =>
+                          notifier.update(cmd.copyWith(recordOrientation: '')),
                       tooltip: 'Set the record orientation. The number represents the clockwise rotation in degrees (0, 90, 180, 270). Default is 0.',
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
-              const Expanded(child: SizedBox()),
-              const SizedBox(width: 16),
-              const Expanded(child: SizedBox()),
+              const Spacer(flex: 2),
             ],
           ),
         ],
