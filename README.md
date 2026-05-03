@@ -4,6 +4,8 @@
 
 A modern, cross-platform graphical user interface for [scrcpy](https://github.com/Genymobile/scrcpy) - the powerful Android screen mirroring and control tool.
 
+<img width="2559" height="1405" alt="6 - Running instances" src="https://github.com/user-attachments/assets/6bd0145a-63c6-4812-b565-16c90664d3c6" />
+
 ---
 
 ## 🎯 Overview
@@ -129,7 +131,11 @@ No manual ADB commands required!
    <img width="48%" alt="App drawer" src="https://github.com/user-attachments/assets/8e0ccf93-1a33-42d6-9d46-d8aac8d810a4" />
    <img width="48%" alt="Settings - Configuration" src="https://github.com/user-attachments/assets/c74b1be6-98f8-474b-81fa-e8bb353db064" />
 </div>
-<img width="2559" height="1405" alt="6 - Running instances" src="https://github.com/user-attachments/assets/6bd0145a-63c6-4812-b565-16c90664d3c6" />
+
+---
+
+### 🎥 App Drawer
+https://github.com/user-attachments/assets/8d427ae9-73b6-49e2-85e3-9ca48b255ad4 
 
 ---
 
