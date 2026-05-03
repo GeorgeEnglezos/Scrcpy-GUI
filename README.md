@@ -135,7 +135,9 @@ No manual ADB commands required!
 ---
 
 ### 🎥 App Drawer
-https://github.com/user-attachments/assets/8d427ae9-73b6-49e2-85e3-9ca48b255ad4 
+
+https://github.com/user-attachments/assets/d727098c-f46c-4ca1-a708-535e9605de5a
+
 
 ---
 
