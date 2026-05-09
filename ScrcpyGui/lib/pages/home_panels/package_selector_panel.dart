@@ -156,7 +156,8 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
       title: 'Applications',
       icon: Icons.apps,
       panelType: 'Package Selector',
-      showButton: false,
+      showButton: true,
+      onSaveDefaultPressed: () => notifier.saveDefault(),
       onClearPressed: () =>
           notifier.update(cmd.copyWith(selectedPackage: '')),
       child: Column(
