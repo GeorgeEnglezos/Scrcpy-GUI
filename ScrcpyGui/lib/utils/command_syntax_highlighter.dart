@@ -38,7 +38,12 @@ class CommandSyntaxHighlighter {
   /// // '--record' and 'file.mp4' in recording color
   /// // '--audio-codec' and 'opus' in audio color
   /// ```
-  static List<InlineSpan> getColorizedSpans(String command) {
+  static List<InlineSpan> getColorizedSpans(
+    String command, {
+    required Color commandColor,
+    required Color valueColor,
+    Color? unknownFlagColor,
+  }) {
     final parts = command.split(' ');
     return parts.map((part) {
       return TextSpan(
@@ -46,7 +51,13 @@ class CommandSyntaxHighlighter {
         style: TextStyle(
           fontFamily: "monospace",
           fontSize: 14,
-          color: _mapColor(part),
+          fontWeight: FontWeight.w600,
+          color: _mapColor(
+            part,
+            commandColor: commandColor,
+            valueColor: valueColor,
+            unknownFlagColor: unknownFlagColor,
+          ),
         ),
       );
     }).toList();
@@ -57,8 +68,13 @@ class CommandSyntaxHighlighter {
   /// This internal method determines the color for each part of the command
   /// by matching against known scrcpy flag patterns. Returns the appropriate
   /// [AppColors] constant or a default color for values and unknown flags.
-  static Color _mapColor(String part) {
-    if (part.startsWith("scrcpy")) return Colors.white;
+  static Color _mapColor(
+    String part, {
+    required Color commandColor,
+    required Color valueColor,
+    Color? unknownFlagColor,
+  }) {
+    if (part.startsWith("scrcpy")) return commandColor;
 
     // Recording flags (Red)
     if (part.startsWith("--record") ||
@@ -112,11 +128,9 @@ class CommandSyntaxHighlighter {
     }
 
     // Default/Unknown flags (White)
-    if (part.startsWith("--")) {
-      return Colors.white;
-    }
+    if (part.startsWith("--")) return unknownFlagColor ?? commandColor;
 
     // Values
-    return Colors.white70;
+    return valueColor;
   }
 }

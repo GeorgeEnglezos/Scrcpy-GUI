@@ -6,7 +6,7 @@ import '../services/app_icon_cache.dart';
 import '../services/commands_service.dart';
 import '../services/log_service.dart';
 import '../services/terminal_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 
 String _display(String cmd) => TerminalService.toDisplayCommand(cmd);
 
@@ -120,18 +120,18 @@ class _FavoritesPageState extends State<FavoritesPage> {
           height: 18,
           fit: BoxFit.contain,
           errorBuilder: (_, __, ___) =>
-              Icon(Icons.apps, size: 18, color: AppColors.textSecondary),
+              Icon(Icons.apps, size: 18, color: context.appTextSecondary),
         ),
       );
     }
 
-    return Icon(Icons.apps, size: 18, color: AppColors.textSecondary);
+    return Icon(Icons.apps, size: 18, color: context.appTextSecondary);
   }
 
   Widget _buildFlagIcon(IconData icon, String tooltip) {
     return Tooltip(
       message: tooltip,
-      child: Icon(icon, size: 16, color: AppColors.textSecondary),
+      child: Icon(icon, size: 16, color: context.appTextSecondary),
     );
   }
 
@@ -175,11 +175,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return Center(child: CircularProgressIndicator(color: context.appPrimary));
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appBackground,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
@@ -192,7 +192,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               child: lastCommand.isEmpty
                   ? Text(
                       'No command available',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: context.appTextSecondary),
                     )
                   : CommandPanel(
                       command: lastCommand,
@@ -200,10 +200,15 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       leading: _buildCommandLeadingIcons(lastCommand),
                       showDelete: false,
                       onTap: () async {
-                        await TerminalService.executeCommand(context, lastCommand, source: 'Favorites/LastCommand');
+                        await TerminalService.executeCommand(
+                          context,
+                          lastCommand,
+                          source: 'Favorites/LastCommand',
+                        );
                         await _loadData();
                       },
-                      onDownload: () => TerminalService.generateScript(context, lastCommand),
+                      onDownload: () =>
+                          TerminalService.generateScript(context, lastCommand),
                     ),
             ),
 
@@ -217,7 +222,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               child: favorites.isEmpty
                   ? Text(
                       'No favorite commands',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: context.appTextSecondary),
                     )
                   : Column(
                       children: List.generate(
@@ -227,10 +232,17 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           displayCommand: _display(favorites[index]),
                           leading: _buildCommandLeadingIcons(favorites[index]),
                           onTap: () async {
-                            await TerminalService.executeCommand(context, favorites[index], source: 'Favorites/Favorites');
+                            await TerminalService.executeCommand(
+                              context,
+                              favorites[index],
+                              source: 'Favorites/Favorites',
+                            );
                             await _loadData();
                           },
-                          onDownload: () => TerminalService.generateScript(context, favorites[index]),
+                          onDownload: () => TerminalService.generateScript(
+                            context,
+                            favorites[index],
+                          ),
                           onDelete: () => _deleteFromFavorites(index),
                         ),
                       ),
@@ -247,7 +259,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               child: mostUsed.isEmpty
                   ? Text(
                       'No most used commands',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: context.appTextSecondary),
                     )
                   : Column(
                       children: List.generate(
@@ -258,10 +270,17 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           leading: _buildCommandLeadingIcons(mostUsed[index]),
                           showDelete: false,
                           onTap: () async {
-                            await TerminalService.executeCommand(context, mostUsed[index], source: 'Favorites/MostUsed');
+                            await TerminalService.executeCommand(
+                              context,
+                              mostUsed[index],
+                              source: 'Favorites/MostUsed',
+                            );
                             await _loadData();
                           },
-                          onDownload: () => TerminalService.generateScript(context, mostUsed[index]),
+                          onDownload: () => TerminalService.generateScript(
+                            context,
+                            mostUsed[index],
+                          ),
                         ),
                       ),
                     ),

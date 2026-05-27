@@ -5,6 +5,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 import '../models/settings_model.dart';
 
 // Import panels
@@ -94,19 +95,23 @@ class _HomePageState extends State<HomePage> {
 
     final dir = SettingsService.currentSettings?.scrcpyDirectory ?? '';
     if (dir.isEmpty) {
-      setState(() => _scrcpyWarning =
-          'Scrcpy was not found on your system PATH and no directory is configured. '
-          'Install scrcpy and add it to PATH, or set the Scrcpy directory in Settings.');
+      setState(
+        () => _scrcpyWarning =
+            'Scrcpy was not found on your system PATH and no directory is configured. '
+            'Install scrcpy and add it to PATH, or set the Scrcpy directory in Settings.',
+      );
       return;
     }
 
     final exe = TerminalService.scrcpyExecutable;
     final exists = await File(exe).exists();
     if (!mounted) return;
-    setState(() => _scrcpyWarning = exists
-        ? null
-        : 'Scrcpy not found at "$exe". Set the correct Scrcpy directory in Settings, '
-          'or ensure scrcpy is installed and available on your system PATH.');
+    setState(
+      () => _scrcpyWarning = exists
+          ? null
+          : 'Scrcpy not found at "$exe". Set the correct Scrcpy directory in Settings, '
+                'or ensure scrcpy is installed and available on your system PATH.',
+    );
   }
 
   /// Re-derives [panelOrder] from the latest settings. Pure — does not call
@@ -179,7 +184,7 @@ class _HomePageState extends State<HomePage> {
         final visiblePanels = panelOrder.where((p) => p.visible).toList();
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: context.appBackground,
           body: Padding(
             padding: const EdgeInsets.all(32),
             child: Column(

@@ -6,7 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
 import '../services/log_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 
 class LogsPage extends StatefulWidget {
   const LogsPage({super.key});
@@ -73,15 +73,18 @@ class _LogsPageState extends State<LogsPage> {
     return base
         .replaceFirst('session_', '')
         .replaceFirst('_', ' ')
-        .replaceAllMapped(RegExp(r'(\d{2})-(\d{2})-(\d{2})$'), (m) => '${m[1]}:${m[2]}:${m[3]}');
+        .replaceAllMapped(
+          RegExp(r'(\d{2})-(\d{2})-(\d{2})$'),
+          (m) => '${m[1]}:${m[2]}:${m[3]}',
+        );
   }
 
-  Color _levelColor(LogLevel level) {
+  Color _levelColor(LogLevel level, BuildContext context) {
     switch (level) {
       case LogLevel.debug:
         return Colors.grey;
       case LogLevel.info:
-        return Colors.white70;
+        return context.appTextSecondary;
       case LogLevel.warning:
         return Colors.orange;
       case LogLevel.error:
@@ -118,7 +121,9 @@ class _LogsPageState extends State<LogsPage> {
               if (_selectedLogContent != null)
                 IconButton(
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: _selectedLogContent!));
+                    Clipboard.setData(
+                      ClipboardData(text: _selectedLogContent!),
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Copied to clipboard')),
                     );
@@ -160,12 +165,12 @@ class _LogsPageState extends State<LogsPage> {
                       const Divider(),
                       const SizedBox(height: 4),
                       if (_logFiles.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             'No saved logs',
                             style: TextStyle(
-                              color: AppColors.textSecondary,
+                              color: context.appTextSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -196,10 +201,13 @@ class _LogsPageState extends State<LogsPage> {
                 // ── Right: content ───────────────────────────────────────────
                 Expanded(
                   child: _selectedLogFile == null
-                      ? _LiveView(entries: liveEntries, levelColor: _levelColor)
+                      ? _LiveView(
+                          entries: liveEntries,
+                          levelColor: (level) => _levelColor(level, context),
+                        )
                       : _loadingFile
-                          ? const Center(child: CircularProgressIndicator())
-                          : _FileView(content: _selectedLogContent ?? ''),
+                      ? const Center(child: CircularProgressIndicator())
+                      : _FileView(content: _selectedLogContent ?? ''),
                 ),
               ],
             ),
@@ -229,6 +237,7 @@ class _FileListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = context.appTextSecondary;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -237,20 +246,20 @@ class _FileListTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: selected
-                ? AppColors.primary.withValues(alpha: 0.15)
+                ? context.appPrimary.withValues(alpha: 0.15)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Row(
             children: [
-              Icon(icon, size: 14, color: iconColor ?? AppColors.textSecondary),
+              Icon(icon, size: 14, color: iconColor ?? textColor),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: selected ? AppColors.primary : AppColors.textSecondary,
+                    color: selected ? context.appPrimary : textColor,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -302,10 +311,10 @@ class _LiveViewState extends State<_LiveView> {
   @override
   Widget build(BuildContext context) {
     if (widget.entries.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No logs yet.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: context.appTextSecondary),
         ),
       );
     }
@@ -328,10 +337,10 @@ class _LiveViewState extends State<_LiveView> {
             children: [
               Text(
                 ts,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontFamily: 'monospace',
-                  color: AppColors.textSecondary,
+                  color: context.appTextSecondary,
                 ),
               ),
               const SizedBox(width: 8),
@@ -381,10 +390,10 @@ class _FileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (content.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'Empty log file.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: context.appTextSecondary),
         ),
       );
     }
@@ -392,10 +401,10 @@ class _FileView extends StatelessWidget {
     return SingleChildScrollView(
       child: SelectableText(
         content,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontFamily: 'monospace',
-          color: Colors.white70,
+          color: context.appTextSecondary,
         ),
       ),
     );

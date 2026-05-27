@@ -6,7 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import '../theme/app_constants.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 
 /// A customized text input field with consistent styling and behavior.
 ///
@@ -84,34 +84,31 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = context.appTextSecondary;
     final textField = SizedBox(
       height: kRowHeight,
       child: TextField(
         controller: _controller,
         onChanged: widget.onChanged,
-        style: TextStyle(color: AppColors.textSecondary, fontSize: kFontSize),
+        style: TextStyle(color: textColor, fontSize: kFontSize, fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           filled: true,
-          fillColor: AppColors.background,
+          fillColor: context.appInputFill,
           labelText: widget.label,
           floatingLabelBehavior: FloatingLabelBehavior.auto,
-          labelStyle: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: kLabelFontSize,
-          ),
+          labelStyle: TextStyle(color: textColor, fontSize: kLabelFontSize, fontWeight: FontWeight.w500),
           floatingLabelStyle: TextStyle(
-            color: AppColors.primary,
+            color: context.appPrimary,
             fontSize: kLabelFontSize - 1,
+            fontWeight: FontWeight.w500,
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: AppColors.textSecondary.withValues(alpha: 0.3),
-            ),
+            borderSide: BorderSide(color: textColor.withValues(alpha: 0.3)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppColors.primary),
+            borderSide: BorderSide(color: context.appPrimary),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: kRowHorizontalPadding,
@@ -122,10 +119,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
     );
 
     if (widget.tooltip != null) {
-      return Tooltip(
-        message: widget.tooltip!,
-        child: textField,
-      );
+      return Tooltip(message: widget.tooltip!, child: textField);
     }
 
     return textField;

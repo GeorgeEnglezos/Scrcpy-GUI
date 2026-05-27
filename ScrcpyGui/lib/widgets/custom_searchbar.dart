@@ -2,8 +2,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_constants.dart';
+import '../theme/app_theme_colors.dart';
 
 class CustomSearchBar extends StatefulWidget {
   final String hintText;
@@ -13,6 +13,7 @@ class CustomSearchBar extends StatefulWidget {
   final VoidCallback? onReload;
   final List<String> suggestions;
   final Widget Function(String suggestion)? suggestionLeadingBuilder;
+
   /// Optional custom matcher. When provided, a suggestion is included if this
   /// returns true. Replaces the default `.contains(query)` check.
   final bool Function(String suggestion, String query)? suggestionMatcher;
@@ -109,7 +110,11 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
         final q = query.toLowerCase();
         final matcher = widget.suggestionMatcher;
         _filteredSuggestions = widget.suggestions
-            .where((s) => matcher != null ? matcher(s, query) : s.toLowerCase().contains(q))
+            .where(
+              (s) => matcher != null
+                  ? matcher(s, query)
+                  : s.toLowerCase().contains(q),
+            )
             .toList();
       }
     });
@@ -156,6 +161,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = context.appTextSecondary;
     final searchBar = OverlayPortal(
       controller: _overlayController,
       overlayChildBuilder: (context) {
@@ -174,7 +180,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                 if (_focusNode.hasFocus) _focusNode.unfocus();
               },
               child: Material(
-                color: AppColors.surface,
+                color: context.appSurface,
                 elevation: 8,
                 borderRadius: BorderRadius.circular(8),
                 child: ConstrainedBox(
@@ -204,9 +210,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                               Expanded(
                                 child: Text(
                                   item,
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                  ),
+                                  style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -236,12 +240,10 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
             height: kRowHeight,
             decoration: BoxDecoration(
               color: widget.enabled
-                  ? AppColors.background
-                  : AppColors.background.withValues(alpha: 0.5),
+                  ? context.appInputFill
+                  : context.appInputFill.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppColors.textSecondary.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: textColor.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -255,15 +257,13 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                       focusNode: _focusNode,
                       onChanged: _onTextChanged,
                       enabled: widget.enabled,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: kFontSize,
-                      ),
+                      style: TextStyle(color: textColor, fontSize: kFontSize, fontWeight: FontWeight.w500),
                       decoration: InputDecoration(
                         hintText: widget.hintText,
                         hintStyle: TextStyle(
-                          color: AppColors.textSecondary.withValues(alpha: 0.6),
+                          color: textColor.withValues(alpha: 0.6),
                           fontSize: kLabelFontSize,
+                          fontWeight: FontWeight.w500,
                         ),
                         border: InputBorder.none,
                         isDense: true,
@@ -278,14 +278,14 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                   IconButton(
                     icon: Icon(
                       Icons.refresh,
-                      color: AppColors.primary,
+                      color: context.appPrimary,
                       size: 20,
                     ),
                     onPressed: widget.enabled ? widget.onReload : null,
                   ),
                 if (widget.onClear != null)
                   IconButton(
-                    icon: Icon(Icons.close, color: AppColors.primary, size: 20),
+                    icon: Icon(Icons.close, color: context.appPrimary, size: 20),
                     onPressed: widget.enabled ? _onClear : null,
                   ),
               ],

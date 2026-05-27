@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../services/app_icon_cache.dart';
 import '../../services/command_notifier.dart';
 import '../../services/device_manager_service.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/app_theme_colors.dart';
 import '../../widgets/custom_searchbar.dart';
 import '../../widgets/surrounding_panel.dart';
 
@@ -127,11 +127,11 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
           height: 18,
           fit: BoxFit.contain,
           errorBuilder: (_, __, ___) =>
-              Icon(Icons.android, size: 18, color: AppColors.textSecondary),
+              Icon(Icons.android, size: 18, color: context.appTextSecondary),
         ),
       );
     }
-    return Icon(Icons.android, size: 18, color: AppColors.textSecondary);
+    return Icon(Icons.android, size: 18, color: context.appTextSecondary);
   }
 
   @override

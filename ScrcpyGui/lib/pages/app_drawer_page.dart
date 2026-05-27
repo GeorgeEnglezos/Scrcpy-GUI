@@ -16,7 +16,7 @@ import '../services/terminal_service.dart';
 import '../services/linux_shortcut_service.dart';
 import '../services/macos_shortcut_service.dart';
 import '../services/windows_shortcut_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _kGridMinTileWidth = 110.0;
@@ -94,7 +94,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     final info = DeviceManagerService.devicesInfo[deviceId];
     if (info == null) return;
 
-    LogService.info('AppDrawer/loadPackages', 'Loading ${info.packages.length} packages for device=${LogService.sanitizeDevice(deviceId)}');
+    LogService.info(
+      'AppDrawer/loadPackages',
+      'Loading ${info.packages.length} packages for device=${LogService.sanitizeDevice(deviceId)}',
+    );
 
     final sorted = List<String>.from(info.packages)
       ..sort((a, b) {
@@ -108,7 +111,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   }
 
   Future<void> _fetchMissingInfo() async {
-    LogService.info('AppDrawer/fetchMissingInfo', 'Starting fetch (helperApkAutoInstall=$_helperApkAutoInstall)');
+    LogService.info(
+      'AppDrawer/fetchMissingInfo',
+      'Starting fetch (helperApkAutoInstall=$_helperApkAutoInstall)',
+    );
     final controller = context.read<AppIconController>();
     await controller.fetchMissing(
       forceUpdate: true,
@@ -145,7 +151,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     final dm = _deviceManager ?? context.read<DeviceManagerService>();
     final deviceId = dm.selectedDevice;
     if (deviceId == null) {
-      LogService.warning('AppDrawer/launchApp', 'No device connected, cannot launch $packageName');
+      LogService.warning(
+        'AppDrawer/launchApp',
+        'No device connected, cannot launch $packageName',
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -161,7 +170,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
     var template = controller.appDrawerSettings.appLaunchCommand.trim();
     if (template.isEmpty) {
-      template = '${TerminalService.scrcpyExecutable} --pause-on-exit=if-error --new-display=1920x1080';
+      template =
+          '${TerminalService.scrcpyExecutable} --pause-on-exit=if-error --new-display=1920x1080';
     } else {
       template = TerminalService.normalizeScrcpyExecutable(template);
     }
@@ -177,7 +187,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }
 
     if (!mounted) return;
-    await TerminalService.executeCommand(context, buffer.toString(), source: 'AppDrawer/LaunchApp');
+    await TerminalService.executeCommand(
+      context,
+      buffer.toString(),
+      source: 'AppDrawer/LaunchApp',
+    );
   }
 
   Future<void> _createDesktopShortcut(
@@ -193,7 +207,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     // or the user can edit it — we omit --serial so it is not device-locked).
     var template = controller.appDrawerSettings.appLaunchCommand.trim();
     if (template.isEmpty) {
-      template = '${TerminalService.scrcpyExecutable} --pause-on-exit=if-error --new-display=1920x1080';
+      template =
+          '${TerminalService.scrcpyExecutable} --pause-on-exit=if-error --new-display=1920x1080';
     } else {
       template = TerminalService.normalizeScrcpyExecutable(template);
     }
@@ -233,7 +248,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
     if (!mounted) return;
     if (error == null) {
-      LogService.info('AppDrawer/createDesktopShortcut', 'Created shortcut "$label" for $packageName');
+      LogService.info(
+        'AppDrawer/createDesktopShortcut',
+        'Created shortcut "$label" for $packageName',
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Shortcut "$label" created on Desktop'),
@@ -242,7 +260,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         ),
       );
     } else {
-      LogService.error('AppDrawer/createDesktopShortcut', 'Failed to create shortcut "$label": $error');
+      LogService.error(
+        'AppDrawer/createDesktopShortcut',
+        'Failed to create shortcut "$label": $error',
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error),
@@ -283,20 +304,25 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
     final entities = dir.listSync();
 
-    final rootFiles = entities
-        .whereType<File>()
-        .where((f) => isScript(f) && matchesQuery(f))
-        .toList()
-      ..sort((a, b) => p
-          .basename(a.path)
-          .toLowerCase()
-          .compareTo(p.basename(b.path).toLowerCase()));
+    final rootFiles =
+        entities
+            .whereType<File>()
+            .where((f) => isScript(f) && matchesQuery(f))
+            .toList()
+          ..sort(
+            (a, b) => p
+                .basename(a.path)
+                .toLowerCase()
+                .compareTo(p.basename(b.path).toLowerCase()),
+          );
 
     final subDirs = entities.whereType<Directory>().toList()
-      ..sort((a, b) => p
-          .basename(a.path)
-          .toLowerCase()
-          .compareTo(p.basename(b.path).toLowerCase()));
+      ..sort(
+        (a, b) => p
+            .basename(a.path)
+            .toLowerCase()
+            .compareTo(p.basename(b.path).toLowerCase()),
+      );
 
     final groups = <_ScriptGroup>[];
 
@@ -305,22 +331,27 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }
 
     for (final subDir in subDirs) {
-      final subFiles = subDir
-          .listSync()
-          .whereType<File>()
-          .where((f) => isScript(f) && matchesQuery(f))
-          .toList()
-        ..sort((a, b) => p
-            .basename(a.path)
-            .toLowerCase()
-            .compareTo(p.basename(b.path).toLowerCase()));
+      final subFiles =
+          subDir
+              .listSync()
+              .whereType<File>()
+              .where((f) => isScript(f) && matchesQuery(f))
+              .toList()
+            ..sort(
+              (a, b) => p
+                  .basename(a.path)
+                  .toLowerCase()
+                  .compareTo(p.basename(b.path).toLowerCase()),
+            );
 
       if (subFiles.isNotEmpty) {
-        groups.add(_ScriptGroup(
-          name: p.basename(subDir.path),
-          isRoot: false,
-          files: subFiles,
-        ));
+        groups.add(
+          _ScriptGroup(
+            name: p.basename(subDir.path),
+            isRoot: false,
+            files: subFiles,
+          ),
+        );
       }
     }
 
@@ -329,7 +360,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
   Future<void> _launchScript(File script) async {
     if (!mounted) return;
-    await TerminalService.executeScriptFile(context, script.path, source: 'AppDrawer/LaunchScript');
+    await TerminalService.executeScriptFile(
+      context,
+      script.path,
+      source: 'AppDrawer/LaunchScript',
+    );
   }
 
   String? _extractStartAppPackage(String scriptText) {
@@ -417,7 +452,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         position.dx,
         position.dy,
       ),
-      color: AppColors.surface,
+      color: context.appSurface,
       items: [
         PopupMenuItem(
           onTap: () => controller.toggleFavorite(pkg),
@@ -426,12 +461,12 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               Icon(
                 isFav ? Icons.favorite : Icons.favorite_border,
                 size: 18,
-                color: isFav ? Colors.pinkAccent : AppColors.textSecondary,
+                color: isFav ? Colors.pinkAccent : context.appTextSecondary,
               ),
               const SizedBox(width: 8),
               Text(
                 isFav ? 'Remove from Favorites' : 'Add to Favorites',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                style: TextStyle(color: context.appTextPrimary, fontSize: 13),
               ),
             ],
           ),
@@ -448,11 +483,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
           },
           child: Row(
             children: [
-              Icon(Icons.copy, size: 18, color: AppColors.textSecondary),
+              Icon(Icons.copy, size: 18, color: context.appTextSecondary),
               const SizedBox(width: 8),
               Text(
                 'Copy Package Name',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                style: TextStyle(color: context.appTextPrimary, fontSize: 13),
               ),
             ],
           ),
@@ -469,19 +504,19 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               Icon(
                 Icons.drive_file_move_outline,
                 size: 18,
-                color: AppColors.textSecondary,
+                color: context.appTextSecondary,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Move to Group',
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                  style: TextStyle(color: context.appTextPrimary, fontSize: 13),
                 ),
               ),
               Icon(
                 Icons.chevron_right,
                 size: 18,
-                color: AppColors.textSecondary,
+                color: context.appTextSecondary,
               ),
             ],
           ),
@@ -494,12 +529,12 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 Icon(
                   Icons.remove_circle_outline,
                   size: 18,
-                  color: AppColors.textSecondary,
+                  color: context.appTextSecondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Remove from Group',
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                  style: TextStyle(color: context.appTextPrimary, fontSize: 13),
                 ),
               ],
             ),
@@ -517,12 +552,12 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 Icon(
                   Icons.desktop_windows_outlined,
                   size: 18,
-                  color: AppColors.textSecondary,
+                  color: context.appTextSecondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Create Desktop Shortcut',
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                  style: TextStyle(color: context.appTextPrimary, fontSize: 13),
                 ),
               ],
             ),
@@ -546,18 +581,18 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         position.dx + 10,
         position.dy,
       ),
-      color: AppColors.surface,
+      color: context.appSurface,
       items: [
         for (var i = 0; i < groups.length; i++)
           PopupMenuItem(
             onTap: () => controller.moveToGroup(pkg, i),
             child: Row(
               children: [
-                Icon(Icons.folder_outlined, size: 18, color: AppColors.primary),
+                Icon(Icons.folder_outlined, size: 18, color: context.appPrimary),
                 const SizedBox(width: 8),
                 Text(
                   groups[i].name,
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                  style: TextStyle(color: context.appTextPrimary, fontSize: 13),
                 ),
               ],
             ),
@@ -574,12 +609,12 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               Icon(
                 Icons.create_new_folder_outlined,
                 size: 18,
-                color: AppColors.primary,
+                color: context.appPrimary,
               ),
               const SizedBox(width: 8),
               Text(
                 'New Group...',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                style: TextStyle(color: context.appTextPrimary, fontSize: 13),
               ),
             ],
           ),
@@ -596,18 +631,18 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: ctx.appSurface,
         title: Text(
           'New Group',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: ctx.appTextPrimary),
         ),
         content: TextField(
           controller: nameController,
           autofocus: true,
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: ctx.appTextPrimary),
           decoration: InputDecoration(
             hintText: 'Group name',
-            hintStyle: TextStyle(color: AppColors.textSecondary),
+            hintStyle: TextStyle(color: ctx.appTextSecondary),
           ),
           onSubmitted: (_) {
             final name = nameController.text.trim();
@@ -628,7 +663,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: ctx.appTextSecondary),
             ),
           ),
           TextButton(
@@ -645,7 +680,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 Navigator.pop(ctx);
               }
             },
-            child: Text('Create', style: TextStyle(color: AppColors.primary)),
+            child: Text('Create', style: TextStyle(color: context.appPrimary)),
           ),
         ],
       ),
@@ -659,14 +694,14 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         builder: (ctx, setDialogState) {
           final groups = controller.appDrawerSettings.groups;
           return AlertDialog(
-            backgroundColor: AppColors.surface,
+            backgroundColor: ctx.appSurface,
             title: Row(
               children: [
-                Icon(Icons.folder_outlined, color: AppColors.primary, size: 22),
+                Icon(Icons.folder_outlined, color: context.appPrimary, size: 22),
                 const SizedBox(width: 8),
                 Text(
                   'Manage Groups',
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 18),
+                  style: TextStyle(color: ctx.appTextPrimary, fontSize: 18),
                 ),
               ],
             ),
@@ -681,7 +716,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                             child: Text(
                               'No groups yet. Create one below.',
                               style: TextStyle(
-                                color: AppColors.textSecondary,
+                                color: ctx.appTextSecondary,
                                 fontSize: 13,
                               ),
                             ),
@@ -697,16 +732,16 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.background,
+                                  color: ctx.appBackground,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.divider),
+                                  border: Border.all(color: ctx.appDivider),
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.folder,
                                       size: 20,
-                                      color: AppColors.primary,
+                                      color: context.appPrimary,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
@@ -722,7 +757,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                                               child: Text(
                                                 group.name,
                                                 style: TextStyle(
-                                                  color: AppColors.textPrimary,
+                                                  color: ctx.appTextPrimary,
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w500,
                                                 ),
@@ -733,7 +768,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                                             Text(
                                               '(${group.items.length})',
                                               style: TextStyle(
-                                                color: AppColors.textSecondary,
+                                                color: ctx.appTextSecondary,
                                                 fontSize: 12,
                                               ),
                                             ),
@@ -746,7 +781,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                                                       vertical: 2,
                                                     ),
                                                 decoration: BoxDecoration(
-                                                  color: AppColors.primary
+                                                  color: context.appPrimary
                                                       .withValues(alpha: 0.15),
                                                   borderRadius:
                                                       BorderRadius.circular(4),
@@ -754,7 +789,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                                                 child: Text(
                                                   'auto',
                                                   style: TextStyle(
-                                                    color: AppColors.primary,
+                                                    color: context.appPrimary,
                                                     fontSize: 10,
                                                   ),
                                                 ),
@@ -769,8 +804,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                                         Icons.arrow_upward,
                                         size: 18,
                                         color: index > 0
-                                            ? AppColors.textSecondary
-                                            : AppColors.divider,
+                                            ? ctx.appTextSecondary
+                                            : ctx.appDivider,
                                       ),
                                       onPressed: index > 0
                                           ? () {
@@ -793,8 +828,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                                         Icons.arrow_downward,
                                         size: 18,
                                         color: index < groups.length - 1
-                                            ? AppColors.textSecondary
-                                            : AppColors.divider,
+                                            ? ctx.appTextSecondary
+                                            : ctx.appDivider,
                                       ),
                                       onPressed: index < groups.length - 1
                                           ? () {
@@ -843,13 +878,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                         null,
                         controller,
                       ).then((_) => setDialogState(() {})),
-                      icon: Icon(Icons.add, size: 18, color: AppColors.primary),
+                      icon: Icon(Icons.add, size: 18, color: context.appPrimary),
                       label: Text(
                         'Add Group',
-                        style: TextStyle(color: AppColors.primary),
+                        style: TextStyle(color: context.appPrimary),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.primary),
+                        side: BorderSide(color: context.appPrimary),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -863,7 +898,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text('Done', style: TextStyle(color: AppColors.primary)),
+                child: Text('Done', style: TextStyle(color: context.appPrimary)),
               ),
             ],
           );
@@ -883,18 +918,18 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: ctx.appSurface,
         title: Text(
           'Rename Group',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: ctx.appTextPrimary),
         ),
         content: TextField(
           controller: nameController,
           autofocus: true,
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: ctx.appTextPrimary),
           decoration: InputDecoration(
             hintText: 'Group name',
-            hintStyle: TextStyle(color: AppColors.textSecondary),
+            hintStyle: TextStyle(color: ctx.appTextSecondary),
           ),
           onSubmitted: (_) {
             final name = nameController.text.trim();
@@ -910,7 +945,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: ctx.appTextSecondary),
             ),
           ),
           TextButton(
@@ -922,7 +957,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 Navigator.pop(ctx);
               }
             },
-            child: Text('Rename', style: TextStyle(color: AppColors.primary)),
+            child: Text('Rename', style: TextStyle(color: context.appPrimary)),
           ),
         ],
       ),
@@ -937,7 +972,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         final packages = _filteredPackages(controller);
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: context.appBackground,
           body: Column(
             children: [
               _buildHeader(hasDevice, controller, packages.length),
@@ -965,7 +1000,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       return Center(
         child: Text(
           'No apps match "$_searchQuery"',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: context.appTextSecondary),
         ),
       );
     }
@@ -1035,7 +1070,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                       icon: Icons.description_outlined,
                       title: 'Scripts',
                       count: totalScripts,
-                      accentColor: AppColors.primary,
+                      accentColor: context.appPrimary,
                       collapsed: controller.appDrawerSettings.scriptsCollapsed,
                       onToggle: controller.toggleScriptsCollapsed,
                       child: _buildScriptGroupedGrid(
@@ -1064,11 +1099,12 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                       icon: Icons.folder,
                       title: group.name,
                       count: groupVisible.length,
-                      accentColor: AppColors.primary,
+                      accentColor: context.appPrimary,
                       collapsed: group.collapsed,
                       onToggle: () {
-                        final idx =
-                            controller.appDrawerSettings.groups.indexOf(group);
+                        final idx = controller.appDrawerSettings.groups.indexOf(
+                          group,
+                        );
                         if (idx >= 0) controller.toggleGroupCollapsed(idx);
                       },
                       onRename: () {
@@ -1126,7 +1162,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 icon: Icons.apps,
                 title: 'Other',
                 count: ungrouped.length,
-                accentColor: AppColors.primary,
+                accentColor: context.appPrimary,
                 collapsed: controller.appDrawerSettings.otherCollapsed,
                 onToggle: controller.toggleOtherCollapsed,
                 child: _buildWrappedGrid(
@@ -1142,7 +1178,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 icon: Icons.apps,
                 title: 'Apps',
                 count: ungrouped.length,
-                accentColor: AppColors.primary,
+                accentColor: context.appPrimary,
                 collapsed: false,
                 onToggle: null,
                 child: _buildWrappedGrid(
@@ -1206,7 +1242,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: AppColors.textSecondary.withValues(alpha: 0.18),
+          color: context.appTextSecondary.withValues(alpha: 0.18),
           width: 1,
         ),
       ),
@@ -1223,7 +1259,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                         ? Icons.folder_special_outlined
                         : Icons.folder_outlined,
                     size: 15,
-                    color: AppColors.textPrimary,
+                    color: context.appTextPrimary,
                   ),
                   const SizedBox(width: 6),
                   Flexible(
@@ -1231,7 +1267,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                       group.name,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: context.appTextPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.2,
@@ -1242,7 +1278,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                   Text(
                     '${group.files.length}',
                     style: TextStyle(
-                      color: AppColors.textSecondary.withValues(alpha: 0.75),
+                      color: context.appTextSecondary.withValues(alpha: 0.75),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1362,7 +1398,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                             title,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: AppColors.textPrimary,
+                              color: context.appTextPrimary,
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                             ),
@@ -1403,7 +1439,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                           size: 18,
                           color: headerColor,
                         ),
-                        color: AppColors.surface,
+                        color: context.appSurface,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(
                           minWidth: 32,
@@ -1540,10 +1576,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
           return AlertDialog(
-            backgroundColor: AppColors.surface,
+            backgroundColor: ctx.appSurface,
             title: Text(
               'Fetch Missing Icons & Labels',
-              style: TextStyle(color: AppColors.textPrimary),
+              style: TextStyle(color: ctx.appTextPrimary),
             ),
             content: SizedBox(
               width: 360,
@@ -1554,10 +1590,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                   Text(
                     missingCount > 0
                         ? '$missingCount app${missingCount == 1 ? '' : 's'} '
-                            'have missing icons or labels.'
+                              'have missing icons or labels.'
                         : 'All apps are up to date.',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: ctx.appTextSecondary,
                       fontSize: 13,
                     ),
                   ),
@@ -1565,7 +1601,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                   Text(
                     'Fetch method',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: ctx.appTextSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1575,9 +1611,9 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     height: 36,
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: ctx.appBackground,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.divider),
+                      border: Border.all(color: ctx.appDivider),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -1586,10 +1622,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                         isDense: true,
                         isExpanded: true,
                         style: TextStyle(
-                          color: AppColors.textPrimary,
+                          color: ctx.appTextPrimary,
                           fontSize: 13,
                         ),
-                        dropdownColor: AppColors.surface,
+                        dropdownColor: ctx.appSurface,
                         items: const [
                           DropdownMenuItem(
                             value: 'helperApk',
@@ -1623,15 +1659,26 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     ),
                     const SizedBox(height: 8),
                     InkWell(
-                      onTap: () => launchUrl(Uri.parse('https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk')),
+                      onTap: () => launchUrl(
+                        Uri.parse(
+                          'https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
+                        ),
+                      ),
                       child: Row(
                         children: [
-                          Icon(Icons.open_in_new, size: 12, color: AppColors.textSecondary),
+                          Icon(
+                            Icons.open_in_new,
+                            size: 12,
+                            color: ctx.appTextSecondary,
+                          ),
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
                               'Source: github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
-                              style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                              style: TextStyle(
+                                color: ctx.appTextSecondary,
+                                fontSize: 11,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -1647,7 +1694,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 onPressed: () => Navigator.pop(ctx),
                 child: Text(
                   'Cancel',
-                  style: TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: ctx.appTextSecondary),
                 ),
               ),
               TextButton(
@@ -1657,7 +1704,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                         controller.fetchMissingOnly(
                           helperApkAutoInstall: autoInstall,
                           onError: (message) {
-                            LogService.error('AppDrawer/fetchMissingOnly', message);
+                            LogService.error(
+                              'AppDrawer/fetchMissingOnly',
+                              message,
+                            );
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -1674,8 +1724,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                   'Continue',
                   style: TextStyle(
                     color: missingCount > 0
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                        ? context.appPrimary
+                        : ctx.appTextSecondary,
                   ),
                 ),
               ),
@@ -1693,17 +1743,17 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   ) {
     final totalCount = controller.labels.length;
     return Container(
-      color: AppColors.surface,
+      color: context.appSurface,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: Row(
         children: [
           // [LEFT SECTION - Icon, Title, Count]
-          Icon(Icons.grid_view, color: AppColors.primary, size: 22),
+          Icon(Icons.grid_view, color: context.appPrimary, size: 22),
           const SizedBox(width: 10),
           Text(
             'App Drawer',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: context.appTextPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
@@ -1712,7 +1762,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
           if (totalCount > 0)
             Text(
               '$filteredCount / $totalCount apps',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: TextStyle(color: context.appTextSecondary, fontSize: 13),
             ),
 
           // [CENTER SPACING]
@@ -1725,7 +1775,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppColors.primary,
+                color: context.appPrimary,
                 value: controller.total > 0
                     ? controller.progress / controller.total
                     : null,
@@ -1736,7 +1786,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               controller.total > 0
                   ? '${controller.progress} / ${controller.total}'
                   : 'Loading...',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              style: TextStyle(color: context.appTextSecondary, fontSize: 12),
             ),
             const SizedBox(width: 12),
           ],
@@ -1748,32 +1798,32 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               height: 40,
               child: TextField(
                 onChanged: (v) => setState(() => _searchQuery = v),
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                style: TextStyle(color: context.appTextPrimary, fontSize: 13),
                 decoration: InputDecoration(
                   hintText: 'Search apps...',
                   hintStyle: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: context.appTextSecondary,
                     fontSize: 13,
                   ),
                   prefixIcon: Icon(
                     Icons.search,
-                    color: AppColors.textSecondary,
+                    color: context.appTextSecondary,
                     size: 18,
                   ),
                   filled: true,
-                  fillColor: AppColors.background,
+                  fillColor: context.appInputFill,
                   contentPadding: EdgeInsets.zero,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppColors.divider),
+                    borderSide: BorderSide(color: context.appDivider),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppColors.divider),
+                    borderSide: BorderSide(color: context.appDivider),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppColors.primary),
+                    borderSide: BorderSide(color: context.appPrimary),
                   ),
                 ),
               ),
@@ -1786,8 +1836,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               message: 'Fetch missing icons & labels',
               child: IconButton(
                 icon: const Icon(Icons.cloud_download, size: 20),
-                color: AppColors.textSecondary,
-                hoverColor: AppColors.hover,
+                color: context.appTextSecondary,
+                hoverColor: context.appHover,
                 onPressed: _showFetchMissingDialog,
               ),
             ),
@@ -1800,8 +1850,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               message: 'Manage Groups',
               child: IconButton(
                 icon: const Icon(Icons.folder_outlined, size: 20),
-                color: AppColors.textSecondary,
-                hoverColor: AppColors.hover,
+                color: context.appTextSecondary,
+                hoverColor: context.appHover,
                 onPressed: () => _showManageGroupsDialog(controller),
               ),
             ),
@@ -1813,7 +1863,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             Tooltip(
               message: 'Reload apps',
               child: IconButton(
-                icon: Icon(Icons.refresh, color: AppColors.textSecondary),
+                icon: Icon(Icons.refresh, color: context.appTextSecondary),
                 onPressed: _reload,
                 splashRadius: 18,
               ),
@@ -1832,18 +1882,18 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             Icon(
               Icons.phone_android,
               size: 64,
-              color: AppColors.textSecondary.withValues(alpha: 0.4),
+              color: context.appTextSecondary.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
               'No device connected',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+              style: TextStyle(color: context.appTextSecondary, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Text(
               'Connect an Android device to see its apps here.',
               style: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.6),
+                color: context.appTextSecondary.withValues(alpha: 0.6),
                 fontSize: 13,
               ),
             ),
@@ -1873,13 +1923,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 Icon(
                   Icons.apps_outlined,
                   size: 52,
-                  color: AppColors.primary.withValues(alpha: 0.5),
+                  color: context.appPrimary.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Choose how to load app data',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: context.appTextPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1888,7 +1938,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 Text(
                   'Select a method below, then tap Load Apps.',
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: context.appTextSecondary,
                     fontSize: 13,
                   ),
                 ),
@@ -1915,15 +1965,26 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                           ),
                           const SizedBox(height: 8),
                           InkWell(
-                            onTap: () => launchUrl(Uri.parse('https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk')),
+                            onTap: () => launchUrl(
+                              Uri.parse(
+                                'https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
+                              ),
+                            ),
                             child: Row(
                               children: [
-                                Icon(Icons.open_in_new, size: 12, color: AppColors.textSecondary),
+                                Icon(
+                                  Icons.open_in_new,
+                                  size: 12,
+                                  color: context.appTextSecondary,
+                                ),
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
                                     'Source: github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
-                                    style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                    style: TextStyle(
+                                      color: context.appTextSecondary,
+                                      fontSize: 11,
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -1963,7 +2024,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                       ),
                     ),
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: context.appPrimary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 32),
                       shape: RoundedRectangleBorder(
@@ -1997,13 +2058,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.12)
-              : AppColors.surface,
+              ? context.appPrimary.withValues(alpha: 0.12)
+              : context.appSurface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.6)
-                : AppColors.divider,
+                ? context.appPrimary.withValues(alpha: 0.6)
+                : context.appDivider,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -2012,20 +2073,20 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
           children: [
             Row(
               children: [
-                Icon(icon, size: 20, color: AppColors.primary),
+                Icon(icon, size: 20, color: context.appPrimary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     title,
                     style: TextStyle(
-                      color: AppColors.textPrimary,
+                      color: context.appTextPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
                 if (isSelected)
-                  Icon(Icons.check_circle, size: 16, color: AppColors.primary),
+                  Icon(Icons.check_circle, size: 16, color: context.appPrimary),
               ],
             ),
             if (badge != null) ...[
@@ -2033,13 +2094,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: context.appPrimary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   badge,
                   style: TextStyle(
-                    color: AppColors.primary,
+                    color: context.appPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
@@ -2050,7 +2111,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             Text(
               description,
               style: TextStyle(
-                color: AppColors.textSecondary,
+                color: context.appTextSecondary,
                 fontSize: 12,
                 height: 1.4,
               ),
@@ -2082,15 +2143,15 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               value: value,
               onChanged: onChanged,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              activeColor: AppColors.primary,
-              side: BorderSide(color: AppColors.textSecondary),
+              activeColor: context.appPrimary,
+              side: BorderSide(color: context.appTextSecondary),
             ),
           ),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
               label,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              style: TextStyle(color: context.appTextSecondary, fontSize: 12),
             ),
           ),
         ],
@@ -2106,13 +2167,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.appSurface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(color: context.appDivider),
           ),
           child: Row(
             children: [
-              Icon(Icons.folder_open, size: 16, color: AppColors.textSecondary),
+              Icon(Icons.folder_open, size: 16, color: context.appTextSecondary),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -2121,7 +2182,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     Text(
                       'Manual icon folder',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: context.appTextSecondary,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2130,7 +2191,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     Text(
                       path,
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: context.appTextPrimary,
                         fontSize: 11,
                         fontFamily: 'monospace',
                       ),
@@ -2140,7 +2201,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     Text(
                       'Drop PNG icons named by package name and edit _labels.json to add app names manually.',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: context.appTextSecondary,
                         fontSize: 11,
                         height: 1.4,
                       ),
@@ -2155,7 +2216,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                   icon: Icon(
                     Icons.open_in_new,
                     size: 16,
-                    color: AppColors.textSecondary,
+                    color: context.appTextSecondary,
                   ),
                   splashRadius: 16,
                   padding: EdgeInsets.zero,
@@ -2188,12 +2249,12 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             Icon(
               Icons.apps,
               size: 64,
-              color: AppColors.textSecondary.withValues(alpha: 0.4),
+              color: context.appTextSecondary.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
               'No user apps found',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+              style: TextStyle(color: context.appTextSecondary, fontSize: 16),
             ),
           ],
         ),
@@ -2208,11 +2269,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeInOut,
       child: Container(
-        color: AppColors.surface,
+        color: context.appSurface,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Divider(height: 1, thickness: 1, color: AppColors.divider),
+            Divider(height: 1, thickness: 1, color: context.appDivider),
             InkWell(
               onTap: () => setState(() => _commandExpanded = !_commandExpanded),
               child: Padding(
@@ -2225,13 +2286,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     Icon(
                       Icons.terminal,
                       size: 16,
-                      color: AppColors.textSecondary,
+                      color: context.appTextSecondary,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'App Launch Command',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: context.appTextSecondary,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
@@ -2239,7 +2300,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     const Spacer(),
                     Icon(
                       _commandExpanded ? Icons.expand_less : Icons.expand_more,
-                      color: AppColors.textSecondary,
+                      color: context.appTextSecondary,
                       size: 20,
                     ),
                   ],
@@ -2264,33 +2325,33 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                             FocusScope.of(context).unfocus();
                           },
                           style: TextStyle(
-                            color: AppColors.textPrimary,
+                            color: context.appTextPrimary,
                             fontSize: 13,
                             fontFamily: 'monospace',
                           ),
                           decoration: InputDecoration(
                             hintText: defaultCmd,
                             hintStyle: TextStyle(
-                              color: AppColors.textSecondary,
+                              color: context.appTextSecondary,
                               fontSize: 13,
                             ),
                             filled: true,
-                            fillColor: AppColors.background,
+                            fillColor: context.appInputFill,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 10,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: AppColors.divider),
+                              borderSide: BorderSide(color: context.appDivider),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: AppColors.divider),
+                              borderSide: BorderSide(color: context.appDivider),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: AppColors.primary),
+                              borderSide: BorderSide(color: context.appPrimary),
                             ),
                           ),
                         ),
@@ -2303,7 +2364,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                         icon: Icon(
                           Icons.restore,
                           size: 20,
-                          color: AppColors.textSecondary,
+                          color: context.appTextSecondary,
                         ),
                         splashRadius: 18,
                         onPressed: () {
@@ -2321,7 +2382,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                       child: Icon(
                         Icons.info_outline,
                         size: 18,
-                        color: AppColors.textSecondary,
+                        color: context.appTextSecondary,
                       ),
                     ),
                   ],
@@ -2376,13 +2437,13 @@ class _AppTileState extends State<_AppTile> {
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
             color: _hovered
-                ? AppColors.primary.withValues(alpha: 0.12)
-                : AppColors.surface,
+                ? context.appPrimary.withValues(alpha: 0.12)
+                : context.appSurface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _hovered
-                  ? AppColors.primary.withValues(alpha: 0.4)
-                  : AppColors.divider,
+                  ? context.appPrimary.withValues(alpha: 0.4)
+                  : context.appDivider,
             ),
           ),
           padding: EdgeInsets.zero,
@@ -2409,13 +2470,13 @@ class _AppTileState extends State<_AppTile> {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: context.appSurface,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         Icons.more_vert,
                         size: 16,
-                        color: AppColors.textSecondary,
+                        color: context.appTextSecondary,
                       ),
                     ),
                   ),
@@ -2436,7 +2497,7 @@ class _AppTileState extends State<_AppTile> {
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: context.appTextPrimary,
                         fontSize: 11,
                         height: 1.3,
                       ),
@@ -2464,7 +2525,7 @@ class _AppTileState extends State<_AppTile> {
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: AppColors.primary.withValues(alpha: 0.5),
+              color: context.appPrimary.withValues(alpha: 0.5),
             ),
           ),
         ),
@@ -2492,12 +2553,12 @@ class _AppTileState extends State<_AppTile> {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.15),
+        color: context.appPrimary.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(
         Icons.android,
-        color: AppColors.primary.withValues(alpha: 0.6),
+        color: context.appPrimary.withValues(alpha: 0.6),
         size: size * 0.6,
       ),
     );
@@ -2537,13 +2598,13 @@ class _ScriptTileState extends State<_ScriptTile> {
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
             color: _hovered
-                ? AppColors.primary.withValues(alpha: 0.12)
-                : AppColors.surface,
+                ? context.appPrimary.withValues(alpha: 0.12)
+                : context.appSurface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _hovered
-                  ? AppColors.primary.withValues(alpha: 0.4)
-                  : AppColors.divider,
+                  ? context.appPrimary.withValues(alpha: 0.4)
+                  : context.appDivider,
             ),
           ),
           padding: EdgeInsets.zero,
@@ -2582,7 +2643,7 @@ class _ScriptTileState extends State<_ScriptTile> {
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: context.appTextPrimary,
                         fontSize: 11,
                         height: 1.3,
                       ),

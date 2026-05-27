@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 import '../widgets/surrounding_panel.dart';
 
 class ShortcutsPage extends StatelessWidget {
@@ -101,10 +101,10 @@ class ShortcutsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appBackground,
       body: Column(
         children: [
-          _buildHeader(),
+          _buildHeader(context),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -127,6 +127,7 @@ class ShortcutsPage extends StatelessWidget {
                           Icons.monitor,
                           'Display',
                           _display,
+                          context,
                           isWide,
                         ),
                       ),
@@ -136,6 +137,7 @@ class ShortcutsPage extends StatelessWidget {
                           Icons.crop_free,
                           'Window',
                           _window,
+                          context,
                           isWide,
                         ),
                       ),
@@ -145,6 +147,7 @@ class ShortcutsPage extends StatelessWidget {
                           Icons.phone_android,
                           'Device Buttons',
                           _deviceButtons,
+                          context,
                           isWide,
                         ),
                       ),
@@ -154,6 +157,7 @@ class ShortcutsPage extends StatelessWidget {
                           Icons.light_mode,
                           'Screen Control',
                           _screenControl,
+                          context,
                           isWide,
                         ),
                       ),
@@ -163,6 +167,7 @@ class ShortcutsPage extends StatelessWidget {
                           Icons.content_paste,
                           'Clipboard',
                           _clipboard,
+                          context,
                           isWide,
                         ),
                       ),
@@ -172,6 +177,7 @@ class ShortcutsPage extends StatelessWidget {
                           Icons.view_agenda_outlined,
                           'Panels',
                           _panels,
+                          context,
                           isWide,
                         ),
                       ),
@@ -181,12 +187,13 @@ class ShortcutsPage extends StatelessWidget {
                           Icons.touch_app,
                           'Gestures & Other',
                           _gestures,
+                          context,
                           isWide,
                         ),
                       ),
                       StaggeredGridTile.fit(
                         crossAxisCellCount: columns,
-                        child: _buildFootnotes(),
+                        child: _buildFootnotes(context),
                       ),
                     ],
                   );
@@ -199,14 +206,14 @@ class ShortcutsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
+        color: context.appPrimary.withValues(alpha: 0.1),
         border: Border(
           bottom: BorderSide(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: context.appPrimary.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -216,18 +223,18 @@ class ShortcutsPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.2),
+              color: context.appPrimary.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.keyboard, color: AppColors.primary, size: 20),
+            child: Icon(Icons.keyboard, color: context.appPrimary, size: 20),
           ),
           const SizedBox(width: 12),
-          const Text(
+          Text(
             'Scrcpy Shortcuts',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: context.appTextPrimary,
             ),
           ),
           const SizedBox(width: 16),
@@ -235,15 +242,15 @@ class ShortcutsPage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.15),
+                color: context.appPrimary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.4),
+                  color: context.appPrimary.withValues(alpha: 0.4),
                 ),
               ),
               child: Text(
                 'MOD = Left Alt  or  Left Super (Win / Cmd)',
-                style: TextStyle(fontSize: 12, color: AppColors.primaryLight),
+                style: TextStyle(fontSize: 12, color: context.appPrimary),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -257,6 +264,7 @@ class ShortcutsPage extends StatelessWidget {
     IconData icon,
     String title,
     List<_Shortcut> shortcuts,
+    BuildContext context,
     bool isWide,
   ) {
     return SurroundingPanel(
@@ -269,18 +277,25 @@ class ShortcutsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (int i = 0; i < shortcuts.length; i++)
-            _buildShortcutRow(shortcuts[i], i.isEven, isWide),
+            _buildShortcutRow(shortcuts[i], i.isEven, context, isWide),
         ],
       ),
     );
   }
 
-  Widget _buildShortcutRow(_Shortcut shortcut, bool isEven, bool isWide) {
+  Widget _buildShortcutRow(
+    _Shortcut shortcut,
+    bool isEven,
+    BuildContext context,
+    bool isWide,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: isEven
-            ? Colors.white.withValues(alpha: 0.02)
+            ? context.appHover.withValues(
+                alpha: context.isDarkTheme ? 0.12 : 0.4,
+              )
             : Colors.transparent,
       ),
       child: Builder(
@@ -291,7 +306,10 @@ class ShortcutsPage extends StatelessWidget {
               Flexible(
                 child: Text(
                   shortcut.action,
-                  style: const TextStyle(fontSize: 13, color: Colors.white70),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.appTextSecondary,
+                  ),
                 ),
               ),
               if (shortcut.tooltip != null) ...[
@@ -301,7 +319,7 @@ class ShortcutsPage extends StatelessWidget {
                   child: Icon(
                     Icons.info_outline,
                     size: 13,
-                    color: AppColors.textSecondary,
+                    color: context.appTextSecondary,
                   ),
                 ),
               ],
@@ -314,7 +332,7 @@ class ShortcutsPage extends StatelessWidget {
               children: [
                 Expanded(child: label),
                 const SizedBox(width: 16),
-                Flexible(child: _buildCombos(shortcut.combos)),
+                Flexible(child: _buildCombos(shortcut.combos, context)),
               ],
             );
           }
@@ -324,7 +342,7 @@ class ShortcutsPage extends StatelessWidget {
             children: [
               label,
               const SizedBox(height: 6),
-              _buildCombos(shortcut.combos),
+              _buildCombos(shortcut.combos, context),
             ],
           );
         },
@@ -332,7 +350,7 @@ class ShortcutsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCombos(List<String> combos) {
+  Widget _buildCombos(List<String> combos, BuildContext context) {
     return Wrap(
       spacing: 6,
       runSpacing: 4,
@@ -345,24 +363,24 @@ class ShortcutsPage extends StatelessWidget {
               'or',
               style: TextStyle(
                 fontSize: 11,
-                color: AppColors.textSecondary,
+                color: context.appTextSecondary,
                 fontStyle: FontStyle.italic,
               ),
             ),
-          _buildSingleCombo(combos[i]),
+          _buildSingleCombo(combos[i], context),
         ],
       ],
     );
   }
 
-  Widget _buildSingleCombo(String combo) {
+  Widget _buildSingleCombo(String combo, BuildContext context) {
     final bool isMouse =
         combo.contains('click') ||
         combo.contains('Drag') ||
         combo.contains('drop');
 
     if (isMouse) {
-      return _buildMouseChip(combo);
+      return _buildMouseChip(combo, context);
     }
 
     // For combos like "Ctrl+click-and-move", split at the first mouse-action token
@@ -377,7 +395,7 @@ class ShortcutsPage extends StatelessWidget {
               '+',
               style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textSecondary,
+                color: context.appTextSecondary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -386,35 +404,40 @@ class ShortcutsPage extends StatelessWidget {
       }
       final key = keys[i];
       if (key.contains('click') || key.contains('move')) {
-        chips.add(_buildMouseChip(key));
+        chips.add(_buildMouseChip(key, context));
       } else {
-        chips.add(_buildKeyChip(key));
+        chips.add(_buildKeyChip(key, context));
       }
     }
 
     return Row(mainAxisSize: MainAxisSize.min, children: chips);
   }
 
-  Widget _buildKeyChip(String key) {
+  Widget _buildKeyChip(String key, BuildContext context) {
     final bool isMod = key == 'MOD';
     final bool isModifier = key == 'Shift' || key == 'Ctrl' || key == 'Alt';
+    final bool isDark = context.isDarkTheme;
 
     final Color bgColor;
     final Color borderColor;
     final Color textColor;
+    final Color shadowColor;
 
     if (isMod) {
-      bgColor = AppColors.primary.withValues(alpha: 0.25);
-      borderColor = AppColors.primary.withValues(alpha: 0.7);
-      textColor = AppColors.primaryLight;
+      bgColor = context.appPrimary.withValues(alpha: 0.25);
+      borderColor = context.appPrimary.withValues(alpha: 0.7);
+      textColor = context.appPrimary;
+      shadowColor = context.appPrimary.withValues(alpha: isDark ? 0.25 : 0.15);
     } else if (isModifier) {
-      bgColor = const Color(0xFF2A2A40);
-      borderColor = const Color(0xFF5555AA);
-      textColor = const Color(0xFFAABBFF);
+      bgColor = context.appPrimary.withValues(alpha: 0.1);
+      borderColor = context.appPrimary.withValues(alpha: 0.4);
+      textColor = context.appPrimary;
+      shadowColor = context.appPrimary.withValues(alpha: isDark ? 0.15 : 0.1);
     } else {
-      bgColor = const Color(0xFF252525);
-      borderColor = const Color(0xFF505050);
-      textColor = Colors.white;
+      bgColor = context.appSurface;
+      borderColor = context.appDivider;
+      textColor = context.appTextPrimary;
+      shadowColor = context.appDivider.withValues(alpha: isDark ? 0.25 : 0.3);
     }
 
     return Container(
@@ -425,7 +448,7 @@ class ShortcutsPage extends StatelessWidget {
         border: Border.all(color: borderColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: shadowColor,
             offset: const Offset(0, 2),
             blurRadius: 0,
           ),
@@ -443,26 +466,30 @@ class ShortcutsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMouseChip(String label) {
+  Widget _buildMouseChip(String label, BuildContext context) {
+    final mouseBg = context.appPrimary.withValues(alpha: 0.08);
+    final mouseBorder = context.appPrimary.withValues(alpha: 0.35);
+    final mouseText = context.appPrimary;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2830),
+        color: mouseBg,
         borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: const Color(0xFF3A5060), width: 1),
+        border: Border.all(color: mouseBorder, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.mouse, size: 12, color: Color(0xFF7DBFDF)),
+          Icon(Icons.mouse, size: 12, color: mouseText),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
               label,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF7DBFDF),
+                color: mouseText,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -472,7 +499,7 @@ class ShortcutsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFootnotes() {
+  Widget _buildFootnotes(BuildContext context) {
     return SurroundingPanel(
       icon: Icons.info_outline,
       title: 'Notes',
@@ -484,31 +511,34 @@ class ShortcutsPage extends StatelessWidget {
         children: [
           _buildNote(
             'Shortcuts with repeated keys (e.g. MOD+n+n): keep MOD held, double-press the last key, then release MOD.',
+            context,
           ),
           _buildNote(
             'All Ctrl+key shortcuts are forwarded to the device and handled by the active app.',
+            context,
           ),
           _buildNote(
             'The MOD key can be changed with the settings page. Options: lctrl, rctrl, lalt, ralt, lsuper, rsuper.',
+            context,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNote(String text) {
+  Widget _buildNote(String text, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('• ', style: TextStyle(color: AppColors.primary, fontSize: 13)),
+          Text('• ', style: TextStyle(color: context.appPrimary, fontSize: 13)),
           Expanded(
             child: Text(
               text,
               style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textSecondary,
+                color: context.appTextSecondary,
                 height: 1.4,
               ),
             ),
