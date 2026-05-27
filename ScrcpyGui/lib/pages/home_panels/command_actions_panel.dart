@@ -26,9 +26,7 @@ class CommandActionsPanel extends StatefulWidget {
 }
 
 class _CommandActionsPanelState extends State<CommandActionsPanel> {
-  final TextEditingController _ipController = TextEditingController(
-    text: '192.168.1.',
-  );
+  final TextEditingController _ipController = TextEditingController();
   final TextEditingController _portController = TextEditingController(
     text: '5555',
   );
