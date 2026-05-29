@@ -3,7 +3,7 @@ import '../widgets/command_panel.dart';
 import '../widgets/surrounding_panel.dart';
 import '../services/log_service.dart';
 import '../services/terminal_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../services/update_service.dart';
@@ -40,7 +40,6 @@ class _ResourcesPageState extends State<ResourcesPage> {
       setState(() => _nightlyResult = result);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -99,14 +98,16 @@ class _ResourcesPageState extends State<ResourcesPage> {
       },
       {
         'title': 'Web Scrcpy',
-        'description': 'A very light web version of the app built with Angular.',
+        'description':
+            'A very light web version of the app built with Angular.',
         'url': 'https://scrcpy-ui.web.app/',
       },
       {
         'title': 'Helper APK',
         'description':
             'The Android helper app used by ScrcpyGUI to extract app icons and labels directly from your device.',
-        'url': 'https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
+        'url':
+            'https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
       },
       {
         'title': 'Support',
@@ -201,6 +202,9 @@ class _ResourcesPageState extends State<ResourcesPage> {
     ];
 
     Widget buildCategory(String title, List<Map<String, String>> links) {
+      final cardColor = context.appCommandSurface;
+      final titleColor = context.appTextPrimary;
+      final descriptionColor = context.appTextSecondary;
       return SurroundingPanel(
         icon: Icons.link,
         title: title,
@@ -223,7 +227,10 @@ class _ResourcesPageState extends State<ResourcesPage> {
                   if (await canLaunchUrl(url)) {
                     await launchUrl(url, mode: LaunchMode.externalApplication);
                   } else {
-                    LogService.warning('ResourcesPage/openLink', 'Cannot open ${link['url']}');
+                    LogService.warning(
+                      'ResourcesPage/openLink',
+                      'Cannot open ${link['url']}',
+                    );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -238,8 +245,9 @@ class _ResourcesPageState extends State<ResourcesPage> {
                   alignment: Alignment.topLeft,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.commandGrey,
+                    color: cardColor,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.appDivider),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,10 +257,10 @@ class _ResourcesPageState extends State<ResourcesPage> {
                         link['title']!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: titleColor,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -260,10 +268,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
                         link['description']!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.white70,
-                        ),
+                        style: TextStyle(fontSize: 14, color: descriptionColor),
                       ),
                       const SizedBox(height: 12),
                       Align(
@@ -278,7 +283,10 @@ class _ResourcesPageState extends State<ResourcesPage> {
                                 mode: LaunchMode.externalApplication,
                               );
                             } else {
-                              LogService.warning('ResourcesPage/openLink', 'Cannot open ${link['url']}');
+                              LogService.warning(
+                                'ResourcesPage/openLink',
+                                'Cannot open ${link['url']}',
+                              );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -289,6 +297,10 @@ class _ResourcesPageState extends State<ResourcesPage> {
                               }
                             }
                           },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: context.appPrimary,
+                            foregroundColor: Colors.white,
+                          ),
                           child: const Text('Open'),
                         ),
                       ),
@@ -303,6 +315,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
     }
 
     Widget buildFaqs() {
+      final titleColor = context.appTextPrimary;
+      final answerColor = context.appTextSecondary;
       return SurroundingPanel(
         icon: Icons.question_answer,
         title: 'FAQs',
@@ -313,11 +327,13 @@ class _ResourcesPageState extends State<ResourcesPage> {
             return ExpansionTile(
               title: Text(
                 faq['question']!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: titleColor,
                 ),
               ),
+              iconColor: context.appPrimary,
+              collapsedIconColor: answerColor,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -327,7 +343,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     faq['answer']!,
-                    style: const TextStyle(color: Colors.white70),
+                    style: TextStyle(color: answerColor),
                   ),
                 ),
               ],
@@ -338,7 +354,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appBackground,
       body: Column(
         children: [
           // Fixed header at the top
@@ -347,12 +363,15 @@ class _ResourcesPageState extends State<ResourcesPage> {
               if (_nightlyResult != null && !_hideNightlyBanner)
                 _buildNightlyBanner(_nightlyResult!),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: context.appPrimary.withValues(alpha: 0.1),
                   border: Border(
                     bottom: BorderSide(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: context.appPrimary.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
@@ -362,29 +381,32 @@ class _ResourcesPageState extends State<ResourcesPage> {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: context.appPrimary.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         Icons.info_outline,
-                        color: AppColors.primary,
+                        color: context.appPrimary,
                         size: 20,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       'Developed by George Englezos',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.appTextPrimary,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: context.appPrimary.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -392,7 +414,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.primary,
+                          color: context.appPrimary,
                         ),
                       ),
                     ),
@@ -542,19 +564,30 @@ class _ResourcesPageState extends State<ResourcesPage> {
               color: Colors.orange.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.science_outlined, color: Colors.orange, size: 20),
+            child: const Icon(
+              Icons.science_outlined,
+              color: Colors.orange,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Row(
               children: [
-                const Text(
+                Text(
                   'Nightly Build Available',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: context.appTextPrimary,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
@@ -573,24 +606,26 @@ class _ResourcesPageState extends State<ResourcesPage> {
           ),
           const SizedBox(width: 16),
           ElevatedButton(
-            onPressed: () => UpdateService.launchReleasePage(nightly.downloadUrl),
+            onPressed: () =>
+                UpdateService.launchReleasePage(nightly.downloadUrl),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Download Nightly'),
           ),
           const SizedBox(width: 12),
           IconButton(
             onPressed: () => setState(() => _hideNightlyBanner = true),
-            icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 20),
+            icon: Icon(Icons.close, color: context.appTextSecondary, size: 20),
             tooltip: 'Dismiss',
           ),
         ],
       ),
     );
   }
-
 }

@@ -14,6 +14,7 @@ library;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import '../theme/app_theme_colors.dart';
 import 'commands_service.dart';
 import 'log_service.dart';
 import 'settings_service.dart';
@@ -334,7 +335,13 @@ class TerminalService {
   ) {
     showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: dialogContext.appSurface,
+        titleTextStyle: TextStyle(
+          color: dialogContext.appTextPrimary,
+          fontSize: 20,
+          fontWeight: FontWeight.w500,
+        ),
         title: Text('Output for: $command'),
         content: SizedBox(
           width: 600,
@@ -342,14 +349,18 @@ class TerminalService {
           child: SingleChildScrollView(
             child: SelectableText(
               output.isNotEmpty ? output : 'No output received.',
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 13,
+                color: dialogContext.appTextPrimary,
+              ),
             ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text('Close', style: TextStyle(color: dialogContext.appPrimary)),
           ),
         ],
       ),

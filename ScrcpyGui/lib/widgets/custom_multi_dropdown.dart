@@ -8,7 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 
 /// A customized multi-select dropdown with consistent styling and behavior.
 ///
@@ -61,6 +61,7 @@ class CustomMultiDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = context.appTextSecondary;
     final dropdown = MultiDropdown<String>(
       items: items,
       controller: controller,
@@ -68,26 +69,21 @@ class CustomMultiDropdown extends StatelessWidget {
       fieldDecoration: FieldDecoration(
         inputDecoration: InputDecoration(
           filled: true,
-          fillColor: AppColors.background,
+          fillColor: context.appInputFill,
           labelText: label,
           floatingLabelBehavior: FloatingLabelBehavior.auto,
-          labelStyle: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 13,
-          ),
-          floatingLabelStyle: const TextStyle(
-            color: AppColors.primary,
+          labelStyle: TextStyle(color: textColor, fontSize: 13),
+          floatingLabelStyle: TextStyle(
+            color: context.appPrimary,
             fontSize: 12,
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: AppColors.textSecondary.withValues(alpha: 0.3),
-            ),
+            borderSide: BorderSide(color: textColor.withValues(alpha: 0.3)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.primary),
+            borderSide: BorderSide(color: context.appPrimary),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -100,20 +96,20 @@ class CustomMultiDropdown extends StatelessWidget {
         ),
       ),
       dropdownDecoration: DropdownDecoration(
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.appSurface,
         maxHeight: 250,
         borderRadius: BorderRadius.circular(8),
       ),
       dropdownItemDecoration: DropdownItemDecoration(
-        selectedBackgroundColor: AppColors.primary.withValues(alpha: 0.15),
-        textColor: Colors.white70,
-        selectedTextColor: Colors.white,
+        selectedBackgroundColor: context.appPrimary.withValues(alpha: 0.15),
+        textColor: textColor,
+        selectedTextColor: context.appTextPrimary,
       ),
       chipDecoration: ChipDecoration(
-        backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-        labelStyle: const TextStyle(color: Colors.white, fontSize: 13),
+        backgroundColor: context.appPrimary.withValues(alpha: 0.2),
+        labelStyle: TextStyle(color: context.appTextPrimary, fontSize: 13),
         borderRadius: BorderRadius.circular(6),
-        deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white70),
+        deleteIcon: Icon(Icons.close, size: 16, color: textColor),
         spacing: 6,
         runSpacing: 6,
       ),

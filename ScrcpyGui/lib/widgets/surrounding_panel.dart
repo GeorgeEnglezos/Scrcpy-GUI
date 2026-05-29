@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 import '../services/settings_service.dart';
 
 class PanelTheme {
@@ -20,6 +21,7 @@ class SurroundingPanel extends StatefulWidget {
   final IconData? buttonIcon;
   final VoidCallback? onButtonPressed;
   final VoidCallback? onClearPressed;
+
   /// Async callback for the "save as default" button. Should return true if
   /// persistence succeeded, false otherwise. The button awaits this and
   /// shows a success or failure snackbar based on the result.
@@ -70,10 +72,6 @@ class _SurroundingPanelState extends State<SurroundingPanel> {
   }
 
   static final Map<String, PanelTheme> themeMap = {
-    'Default': PanelTheme(
-      primary: AppColors.primary,
-      secondary: AppColors.primaryDark,
-    ),
     'Recording': PanelTheme(
       primary: AppColors.recordingPrimary,
       secondary: AppColors.recordingSecondary,
@@ -104,11 +102,14 @@ class _SurroundingPanelState extends State<SurroundingPanel> {
     ),
   };
 
-  PanelTheme get currentTheme =>
-      themeMap[widget.panelType] ?? themeMap['Default']!;
+  PanelTheme _currentTheme(BuildContext context) {
+    return themeMap[widget.panelType] ??
+        PanelTheme(primary: context.appPrimary, secondary: context.appPrimary);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final currentTheme = _currentTheme(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.transparent,
@@ -162,10 +163,10 @@ class _SurroundingPanelState extends State<SurroundingPanel> {
                   Expanded(
                     child: Text(
                       widget.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.appTextPrimary,
                       ),
                     ),
                   ),
@@ -194,8 +195,9 @@ class _SurroundingPanelState extends State<SurroundingPanel> {
                           size: 20,
                         ),
                         style: IconButton.styleFrom(
-                          backgroundColor:
-                              currentTheme.primary.withValues(alpha: 0.2),
+                          backgroundColor: currentTheme.primary.withValues(
+                            alpha: 0.2,
+                          ),
                           padding: const EdgeInsets.all(8),
                           minimumSize: const Size(32, 32),
                         ),
@@ -204,7 +206,8 @@ class _SurroundingPanelState extends State<SurroundingPanel> {
                     ),
                   if (widget.showButton)
                     IconButton(
-                      onPressed: widget.onClearPressed ??
+                      onPressed:
+                          widget.onClearPressed ??
                           widget.onButtonPressed ??
                           () {},
                       icon: Icon(
@@ -213,8 +216,9 @@ class _SurroundingPanelState extends State<SurroundingPanel> {
                         size: 20,
                       ),
                       style: IconButton.styleFrom(
-                        backgroundColor:
-                            currentTheme.primary.withValues(alpha: 0.2),
+                        backgroundColor: currentTheme.primary.withValues(
+                          alpha: 0.2,
+                        ),
                         padding: const EdgeInsets.all(8),
                         minimumSize: const Size(32, 32),
                       ),
@@ -237,7 +241,8 @@ class _SurroundingPanelState extends State<SurroundingPanel> {
                   : const BoxConstraints(maxHeight: 0),
               child: ClipRect(
                 child: Padding(
-                  padding: widget.contentPadding ??
+                  padding:
+                      widget.contentPadding ??
                       EdgeInsets.only(
                         top: widget.topContentPadding,
                         left: 24,

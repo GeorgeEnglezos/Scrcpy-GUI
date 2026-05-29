@@ -6,7 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import '../theme/app_constants.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 
 /// A customized checkbox with label and consistent styling.
 ///
@@ -50,6 +50,7 @@ class CustomCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = context.appTextSecondary;
     final checkbox = SizedBox(
       height: kRowHeight - 2, // slightly shorter than text input
       child: InkWell(
@@ -60,12 +61,12 @@ class CustomCheckbox extends StatelessWidget {
             horizontal: kRowHorizontalPadding,
           ),
           decoration: BoxDecoration(
-            color: AppColors.background,
+            color: context.appInputFill,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: value
-                  ? AppColors.primary
-                  : AppColors.textSecondary.withValues(alpha: 0.3),
+                  ? context.appPrimary
+                  : textColor.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -75,8 +76,9 @@ class CustomCheckbox extends StatelessWidget {
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: value ? Colors.white : AppColors.textSecondary,
+                    color: value ? context.appTextPrimary : textColor,
                     fontSize: kFontSize,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -86,8 +88,8 @@ class CustomCheckbox extends StatelessWidget {
                 child: Checkbox(
                   value: value,
                   onChanged: (val) => onChanged(val ?? false),
-                  activeColor: AppColors.primary,
-                  checkColor: Colors.white,
+                  activeColor: context.appPrimary,
+                  checkColor: context.appOnPrimary,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: const VisualDensity(
                     vertical: -4,
@@ -102,10 +104,7 @@ class CustomCheckbox extends StatelessWidget {
     );
 
     if (tooltip != null) {
-      return Tooltip(
-        message: tooltip!,
-        child: checkbox,
-      );
+      return Tooltip(message: tooltip!, child: checkbox);
     }
 
     return checkbox;

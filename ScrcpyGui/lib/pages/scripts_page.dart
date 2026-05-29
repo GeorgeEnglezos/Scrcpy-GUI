@@ -7,7 +7,7 @@ import '../services/app_icon_cache.dart';
 import '../services/log_service.dart';
 import '../services/settings_service.dart';
 import '../services/terminal_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 
 class ScriptFileGroup {
   final String groupName;
@@ -97,7 +97,11 @@ class _ScriptsPageState extends State<ScriptsPage> {
         await sourceFile.copy(targetPath);
         copiedCount++;
       } catch (e) {
-        LogService.error('ScriptsPage/dropFiles', 'Error copying ${path.basename(filePath)}', err: e);
+        LogService.error(
+          'ScriptsPage/dropFiles',
+          'Error copying ${path.basename(filePath)}',
+          err: e,
+        );
         errors.add('Error copying ${path.basename(filePath)}: $e');
       }
     }
@@ -221,7 +225,11 @@ class _ScriptsPageState extends State<ScriptsPage> {
       });
       await _hydrateScriptIcons(groups);
     } catch (e) {
-      LogService.error('ScriptsPage/loadScripts', 'Failed to load script files', err: e);
+      LogService.error(
+        'ScriptsPage/loadScripts',
+        'Failed to load script files',
+        err: e,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -250,7 +258,11 @@ class _ScriptsPageState extends State<ScriptsPage> {
         await Process.run('xdg-open', [directory]);
       }
     } catch (e) {
-      LogService.error('ScriptsPage/openFileLocation', 'Failed to open location', err: e);
+      LogService.error(
+        'ScriptsPage/openFileLocation',
+        'Failed to open location',
+        err: e,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -312,14 +324,14 @@ class _ScriptsPageState extends State<ScriptsPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
+      return Scaffold(
+        backgroundColor: context.appBackground,
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appBackground,
       body: DropTarget(
         onDragEntered: (details) {
           setState(() {
@@ -345,21 +357,21 @@ class _ScriptsPageState extends State<ScriptsPage> {
               // Header with refresh button
               Row(
                 children: [
-                  Icon(Icons.terminal, color: AppColors.primary, size: 32),
+                  Icon(Icons.terminal, color: context.appPrimary, size: 32),
                   const SizedBox(width: 12),
                   Text(
                     Platform.isWindows ? 'Batch Scripts' : 'Shell Scripts',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.appTextPrimary,
                     ),
                   ),
                   const Spacer(),
                   ElevatedButton.icon(
                     onPressed: _loadBatFiles,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: context.appPrimary,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -368,10 +380,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    label: const Text(
+                    icon: Icon(Icons.refresh, color: context.appOnPrimary),
+                    label: Text(
                       'Refresh',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.appOnPrimary),
                     ),
                   ),
                 ],
@@ -460,18 +472,19 @@ class _ScriptsPageState extends State<ScriptsPage> {
 
   Widget _buildDropZone() {
     final scriptTypes = _scriptExtensions.join(', ');
+    final textColor = context.appTextSecondary;
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: _isDragging
-            ? AppColors.primary.withValues(alpha: 0.2)
-            : AppColors.surface,
+            ? context.appPrimary.withValues(alpha: 0.2)
+            : context.appSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: _isDragging
-              ? AppColors.primary
-              : AppColors.textSecondary.withValues(alpha: 0.3),
+              ? context.appPrimary
+              : textColor.withValues(alpha: 0.3),
           width: 2,
           strokeAlign: BorderSide.strokeAlignInside,
         ),
@@ -482,8 +495,8 @@ class _ScriptsPageState extends State<ScriptsPage> {
             _isDragging ? Icons.file_download : Icons.file_upload,
             size: 48,
             color: _isDragging
-                ? AppColors.primary
-                : AppColors.textSecondary.withValues(alpha: 0.7),
+                ? context.appPrimary
+                : textColor.withValues(alpha: 0.7),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -495,7 +508,9 @@ class _ScriptsPageState extends State<ScriptsPage> {
                       ? 'Drop files here to copy them'
                       : 'Drag & Drop Scripts Here',
                   style: TextStyle(
-                    color: _isDragging ? AppColors.primary : Colors.white,
+                    color: _isDragging
+                        ? context.appPrimary
+                        : context.appTextPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -504,7 +519,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
                 Text(
                   'Supported formats: $scriptTypes',
                   style: TextStyle(
-                    color: AppColors.textSecondary.withValues(alpha: 0.8),
+                    color: textColor.withValues(alpha: 0.8),
                     fontSize: 13,
                   ),
                 ),
@@ -512,7 +527,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
                 Text(
                   'Files will be copied to: $_currentDirectory',
                   style: TextStyle(
-                    color: AppColors.textSecondary.withValues(alpha: 0.6),
+                    color: textColor.withValues(alpha: 0.6),
                     fontSize: 11,
                   ),
                 ),
@@ -526,6 +541,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
 
   Widget _buildEmptyState() {
     final scriptTypes = _scriptExtensions.join(', ');
+    final textColor = context.appTextSecondary;
 
     return Center(
       child: Padding(
@@ -536,18 +552,18 @@ class _ScriptsPageState extends State<ScriptsPage> {
             Icon(
               Icons.insert_drive_file_outlined,
               size: 64,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
+              color: textColor.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
               'No script files found',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+              style: TextStyle(color: textColor, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Text(
               'Place script files ($scriptTypes) in:\n$_currentDirectory',
               style: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.7),
+                color: textColor.withValues(alpha: 0.7),
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -556,7 +572,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
             Text(
               'Or create subfolders to organize them into groups',
               style: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.7),
+                color: textColor.withValues(alpha: 0.7),
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -583,7 +599,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
           errorBuilder: (_, __, ___) => Icon(
             Icons.insert_drive_file,
             size: 18,
-            color: AppColors.textSecondary,
+            color: context.appTextSecondary,
           ),
         ),
       );
@@ -592,25 +608,24 @@ class _ScriptsPageState extends State<ScriptsPage> {
     return Icon(
       Icons.insert_drive_file,
       size: 18,
-      color: AppColors.textSecondary,
+      color: context.appTextSecondary,
     );
   }
 
   Widget _buildFileList(ScriptFileGroup group) {
+    final textColor = context.appTextSecondary;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.appInputFill,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.textSecondary.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: textColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.appSurface,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
@@ -620,7 +635,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
               children: [
                 Icon(
                   group.isRoot ? Icons.folder_special : Icons.folder,
-                  color: AppColors.primary,
+                  color: context.appPrimary,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
@@ -628,7 +643,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   child: Text(
                     group.groupName,
                     style: TextStyle(
-                      color: AppColors.primary,
+                      color: context.appPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -664,7 +679,9 @@ class _ScriptsPageState extends State<ScriptsPage> {
     }
 
     final fileName = path.basename(file.path);
-    final nameController = TextEditingController(text: path.basenameWithoutExtension(file.path));
+    final nameController = TextEditingController(
+      text: path.basenameWithoutExtension(file.path),
+    );
     final contentController = TextEditingController(text: content);
     final ext = path.extension(file.path);
 
@@ -673,10 +690,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.appSurface,
         title: Text(
           'Edit Script: $fileName',
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: TextStyle(color: context.appTextPrimary, fontSize: 16),
         ),
         content: SizedBox(
           width: 640,
@@ -686,44 +703,51 @@ class _ScriptsPageState extends State<ScriptsPage> {
             children: [
               Text(
                 'File Name',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                style: TextStyle(color: context.appTextSecondary, fontSize: 12),
               ),
               const SizedBox(height: 6),
               TextField(
                 controller: nameController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.appTextPrimary),
                 decoration: InputDecoration(
                   suffixText: ext,
-                  suffixStyle: TextStyle(color: AppColors.textSecondary),
+                  suffixStyle: TextStyle(color: context.appTextSecondary),
                   filled: true,
-                  fillColor: AppColors.background,
+                  fillColor: context.appInputFill,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                    borderSide: BorderSide(
+                      color: context.appTextSecondary.withValues(alpha: 0.3),
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                    borderSide: BorderSide(
+                      color: context.appTextSecondary.withValues(alpha: 0.3),
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: AppColors.primary),
+                    borderSide: BorderSide(color: context.appPrimary),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               Text(
                 'Content',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                style: TextStyle(color: context.appTextSecondary, fontSize: 12),
               ),
               const SizedBox(height: 6),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 400),
                 child: TextField(
                   controller: contentController,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.appTextPrimary,
                     fontFamily: 'monospace',
                     fontSize: 13,
                   ),
@@ -731,18 +755,22 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   expands: true,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: AppColors.background,
+                    fillColor: context.appInputFill,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(
+                        color: context.appTextSecondary.withValues(alpha: 0.3),
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(
+                        color: context.appTextSecondary.withValues(alpha: 0.3),
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(color: AppColors.primary),
+                      borderSide: BorderSide(color: context.appPrimary),
                     ),
                     contentPadding: const EdgeInsets.all(12),
                   ),
@@ -754,10 +782,13 @@ class _ScriptsPageState extends State<ScriptsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: ctx.appTextSecondary),
+            ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(backgroundColor: context.appPrimary),
             onPressed: () async {
               final newName = nameController.text.trim();
               final newContent = contentController.text;
@@ -769,7 +800,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
                 final newFileName = '$newName$ext';
                 File targetFile = file;
                 if (newFileName != fileName) {
-                  final newPath = path.join(path.dirname(file.path), newFileName);
+                  final newPath = path.join(
+                    path.dirname(file.path),
+                    newFileName,
+                  );
                   targetFile = await file.rename(newPath);
                   _scriptPackageByPath.remove(file.path);
                 }
@@ -789,7 +823,11 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   );
                 }
               } catch (e) {
-                LogService.error('ScriptsPage/editScript', 'Failed to save script', err: e);
+                LogService.error(
+                  'ScriptsPage/editScript',
+                  'Failed to save script',
+                  err: e,
+                );
                 if (ctx.mounted) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
                     SnackBar(
@@ -800,7 +838,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
                 }
               }
             },
-            child: const Text('Save', style: TextStyle(color: Colors.white)),
+            child: Text('Save', style: TextStyle(color: context.appOnPrimary)),
           ),
         ],
       ),
@@ -816,14 +854,13 @@ class _ScriptsPageState extends State<ScriptsPage> {
     final iconFile = packageName != null
         ? _scriptIconByPackage[packageName]
         : null;
+    final textColor = context.appTextSecondary;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.textSecondary.withValues(alpha: 0.1),
-          ),
+          bottom: BorderSide(color: textColor.withValues(alpha: 0.1)),
         ),
       ),
       child: Row(
@@ -833,10 +870,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
           Expanded(
             child: Text(
               fileName,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: textColor, fontSize: 14),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -844,26 +878,30 @@ class _ScriptsPageState extends State<ScriptsPage> {
           Tooltip(
             message: 'Run script',
             child: ElevatedButton(
-              onPressed: () => TerminalService.executeScriptFile(context, file.path, source: 'Scripts/RunScript'),
+              onPressed: () => TerminalService.executeScriptFile(
+                context,
+                file.path,
+                source: 'Scripts/RunScript',
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: context.appPrimary,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 minimumSize: const Size(32, 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.play_arrow,
                 size: 16,
-                color: Colors.white,
+                color: context.appOnPrimary,
               ),
             ),
           ),
           IconButton(
             onPressed: () => _openEditDialog(file),
             icon: const Icon(Icons.edit, size: 18),
-            color: AppColors.textSecondary,
+            color: textColor,
             tooltip: 'View / Edit script',
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -871,7 +909,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
           IconButton(
             onPressed: () => _openFileLocation(file.path),
             icon: const Icon(Icons.folder_open, size: 18),
-            color: AppColors.textSecondary,
+            color: textColor,
             tooltip: 'Open location',
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),

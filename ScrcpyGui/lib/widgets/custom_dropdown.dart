@@ -6,7 +6,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 
 /// A customized dropdown selector with consistent styling and behavior.
 ///
@@ -66,41 +66,38 @@ class CustomDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = context.appTextSecondary;
     return DropdownButtonFormField<String>(
       initialValue: items.contains(value) ? value : null, // prevents assertion
       onChanged: onChanged,
       isExpanded: true, // ✅ makes dropdown take all available horizontal space
-      dropdownColor: AppColors.surface,
+      dropdownColor: context.appSurface,
       borderRadius: BorderRadius.circular(8),
       icon: Transform.translate(
         offset: const Offset(3, 0),
-        child: const Icon(Icons.arrow_drop_down, color: Colors.white),
+        child: Icon(Icons.arrow_drop_down, color: context.appTextPrimary),
       ),
-      style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+      style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w500),
       hint: hint != null
           ? Text(
               hint!,
-              style: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.7),
-              ),
+              style: TextStyle(color: textColor.withValues(alpha: 0.7), fontWeight: FontWeight.w500),
             )
           : null,
       decoration: InputDecoration(
         filled: true,
-        fillColor: AppColors.background,
+        fillColor: context.appInputFill,
         labelText: label,
         floatingLabelBehavior: FloatingLabelBehavior.auto,
-        labelStyle: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-        floatingLabelStyle: TextStyle(color: AppColors.primary, fontSize: 12),
+        labelStyle: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w500),
+        floatingLabelStyle: TextStyle(color: context.appPrimary, fontSize: 12, fontWeight: FontWeight.w500),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: AppColors.textSecondary.withValues(alpha: 0.3),
-          ),
+          borderSide: BorderSide(color: textColor.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppColors.primary),
+          borderSide: BorderSide(color: context.appPrimary),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

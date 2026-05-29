@@ -7,7 +7,8 @@ import 'package:multi_dropdown/multi_dropdown.dart';
 import '../models/settings_model.dart';
 import '../services/log_service.dart';
 import '../services/settings_service.dart';
-import '../theme/app_colors.dart';
+import '../services/color_theme_notifier.dart';
+import '../theme/app_theme_colors.dart';
 import '../widgets/surrounding_panel.dart';
 import '../widgets/custom_checkbox.dart';
 import '../widgets/custom_dropdown.dart';
@@ -63,7 +64,8 @@ class _SettingsPageState extends State<SettingsPage> {
         ? (downloadsDir.isNotEmpty ? downloadsDir : '$settingsDir/Downloads')
         : settings.batDirectory;
 
-    final defaultsApplied = recordingsDir != settings.recordingsDirectory ||
+    final defaultsApplied =
+        recordingsDir != settings.recordingsDirectory ||
         downloadsDir != settings.downloadsDirectory ||
         batDir != settings.batDirectory;
 
@@ -142,7 +144,11 @@ class _SettingsPageState extends State<SettingsPage> {
         await Process.run('xdg-open', [directory.path]);
       }
     } catch (e) {
-      LogService.error('SettingsPage/openFolder', 'Failed to open folder', err: e);
+      LogService.error(
+        'SettingsPage/openFolder',
+        'Failed to open folder',
+        err: e,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -192,14 +198,14 @@ class _SettingsPageState extends State<SettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
+        backgroundColor: context.appSurface,
+        title: Text(
           'Reset User Interface?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: context.appTextPrimary),
         ),
-        content: const Text(
+        content: Text(
           'This will reset all panel settings (order, visibility, full width, and lock expanded) to their defaults. Directory settings and other preferences will not be affected.\n\nThis action cannot be undone.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: context.appTextSecondary),
         ),
         actions: [
           TextButton(
@@ -228,14 +234,14 @@ class _SettingsPageState extends State<SettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
+        backgroundColor: context.appSurface,
+        title: Text(
           'Reset All Settings?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: context.appTextPrimary),
         ),
-        content: const Text(
+        content: Text(
           'This will reset ALL settings to their defaults, including:\n• Panel settings (order, visibility, etc.)\n• Directory paths\n• Functionality preferences\n• Boot tab selection\n\nThis action cannot be undone.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: context.appTextSecondary),
         ),
         actions: [
           TextButton(
@@ -263,14 +269,14 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
+      return Scaffold(
+        backgroundColor: context.appBackground,
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appBackground,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
@@ -410,7 +416,8 @@ class _SettingsPageState extends State<SettingsPage> {
             label: 'Show Scripts tab',
             value: _settings.showBatFilesTab,
             onChanged: (value) {
-              final resetBootTab = !value &&
+              final resetBootTab =
+                  !value &&
                   (_settings.bootTab == 'Scripts' ||
                       _settings.bootTab == 'Bat Files');
               setState(() {
@@ -454,10 +461,29 @@ class _SettingsPageState extends State<SettingsPage> {
             value: _settings.checkForUpdatesOnStartup,
             onChanged: (value) {
               setState(() {
-                _settings =
-                    _settings.copyWith(checkForUpdatesOnStartup: value);
+                _settings = _settings.copyWith(checkForUpdatesOnStartup: value);
               });
               _saveSettings();
+            },
+          ),
+          const SizedBox(height: 16),
+          Builder(
+            builder: (context) {
+              final themeNotifier = context.watch<ColorThemeNotifier>();
+              return CustomDropdown(
+                label: 'Color Theme',
+                value: themeNotifier.current.name,
+                items: themeNotifier.presets.map((p) => p.name).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    context.read<ColorThemeNotifier>().setPreset(value);
+                    setState(() {
+                      _settings = _settings.copyWith(colorPreset: value);
+                    });
+                    _saveSettings();
+                  }
+                },
+              );
             },
           ),
           const SizedBox(height: 16),
@@ -562,7 +588,7 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           const SizedBox(height: 24),
-          const Divider(color: AppColors.hover),
+          Divider(color: context.appHover),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerLeft,
@@ -573,14 +599,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     final confirmed = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        backgroundColor: AppColors.surface,
-                        title: const Text(
+                        backgroundColor: context.appSurface,
+                        title: Text(
                           'Clear Internal Cache?',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: context.appTextPrimary),
                         ),
-                        content: const Text(
+                        content: Text(
                           'This will delete all locally cached app icons and labels. You will need to scrape again to restore them.',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: TextStyle(color: context.appTextSecondary),
                         ),
                         actions: [
                           TextButton(
@@ -625,11 +651,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Flexible(
+                Flexible(
                   child: Text(
                     'Deletes local icon/label copies. Helpful if scraping failed previously.',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: context.appTextSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -643,20 +669,19 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildPanelOrderTable() {
+    final textColor = context.appTextSecondary;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.appInputFill,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.textSecondary.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: textColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.appSurface,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
@@ -670,7 +695,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: Text(
                     'Panel',
                     style: TextStyle(
-                      color: AppColors.primary,
+                      color: context.appPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -681,7 +706,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Text(
                       'Show',
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: context.appPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -693,7 +718,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Text(
                       'Full Width',
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: context.appPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -705,7 +730,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Text(
                       'Lock Expanded',
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: context.appPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -724,14 +749,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildPanelRow(int index) {
     final panel = _settings.panelOrder[index];
+    final textColor = context.appTextSecondary;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.textSecondary.withValues(alpha: 0.1),
-          ),
+          bottom: BorderSide(color: textColor.withValues(alpha: 0.1)),
         ),
       ),
       child: Row(
@@ -743,15 +767,15 @@ class _SettingsPageState extends State<SettingsPage> {
                 IconButton(
                   icon: const Icon(Icons.arrow_upward, size: 18),
                   color: index > 0
-                      ? AppColors.primary
-                      : AppColors.textSecondary.withValues(alpha: 0.3),
+                      ? context.appPrimary
+                      : textColor.withValues(alpha: 0.3),
                   onPressed: index > 0 ? () => _movePanelUp(index) : null,
                 ),
                 IconButton(
                   icon: const Icon(Icons.arrow_downward, size: 18),
                   color: index < _settings.panelOrder.length - 1
-                      ? AppColors.primary
-                      : AppColors.textSecondary.withValues(alpha: 0.3),
+                      ? context.appPrimary
+                      : textColor.withValues(alpha: 0.3),
                   onPressed: index < _settings.panelOrder.length - 1
                       ? () => _movePanelDown(index)
                       : null,
@@ -763,7 +787,7 @@ class _SettingsPageState extends State<SettingsPage> {
             flex: 3,
             child: Text(
               panel.displayName,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              style: TextStyle(color: textColor, fontSize: 14),
             ),
           ),
           Expanded(
@@ -777,7 +801,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     (p) => p.copyWith(visible: value ?? false),
                   );
                 },
-                activeColor: AppColors.primary,
+                activeColor: context.appPrimary,
+                checkColor: context.appOnPrimary,
               ),
             ),
           ),
@@ -792,7 +817,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     (p) => p.copyWith(isFullWidth: value ?? false),
                   );
                 },
-                activeColor: AppColors.primary,
+                activeColor: context.appPrimary,
+                checkColor: context.appOnPrimary,
               ),
             ),
           ),
@@ -807,7 +833,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     (p) => p.copyWith(lockedExpanded: value ?? false),
                   );
                 },
-                activeColor: AppColors.primary,
+                activeColor: context.appPrimary,
+                checkColor: context.appOnPrimary,
               ),
             ),
           ),
@@ -898,13 +925,14 @@ class _SettingsPageState extends State<SettingsPage> {
     bool showOpenButton = true,
     bool showBrowseButton = true,
   }) {
+    final textColor = context.appTextSecondary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.appTextPrimary,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -919,18 +947,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: context.appInputFill,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.textSecondary.withValues(alpha: 0.2),
-                  ),
+                  border: Border.all(color: textColor.withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   path,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: textColor, fontSize: 13),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -962,7 +985,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ElevatedButton(
                 onPressed: onBrowse,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: context.appPrimary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 12,
@@ -971,9 +994,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'Browse...',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: context.appOnPrimary),
                 ),
               ),
             ],

@@ -56,49 +56,49 @@ class PanelSettings {
 /// Default panel order. Builds a fresh list on every call so callers can
 /// safely mutate the result without affecting future calls.
 List<PanelSettings> buildDefaultPanels() => [
-      const PanelSettings(
-        id: 'actions',
-        displayName: 'Command Actions',
-        isFullWidth: true,
-        lockedExpanded: true,
-      ),
-      const PanelSettings(id: 'package', displayName: 'Package Commands'),
-      const PanelSettings(id: 'audio', displayName: 'Audio Commands'),
-      const PanelSettings(id: 'common', displayName: 'Common Commands'),
-      const PanelSettings(
-        id: 'camera',
-        displayName: 'Camera Commands',
-        visible: false,
-      ),
-      const PanelSettings(
-        id: 'input',
-        displayName: 'Input Control',
-        visible: false,
-      ),
-      const PanelSettings(
-        id: 'display',
-        displayName: 'Display/Window',
-        visible: false,
-      ),
-      const PanelSettings(
-        id: 'network',
-        displayName: 'Network/Connection',
-        visible: false,
-      ),
-      const PanelSettings(id: 'virtual', displayName: 'Virtual Display Commands'),
-      const PanelSettings(id: 'recording', displayName: 'Recording Commands'),
-      const PanelSettings(
-        id: 'advanced',
-        displayName: 'Advanced/Developer',
-        visible: false,
-      ),
-      const PanelSettings(id: 'otg', displayName: 'OTG Mode', visible: false),
-      const PanelSettings(
-        id: 'running',
-        displayName: 'Running Instances',
-        visible: false,
-      ),
-    ];
+  const PanelSettings(
+    id: 'actions',
+    displayName: 'Command Actions',
+    isFullWidth: true,
+    lockedExpanded: true,
+  ),
+  const PanelSettings(id: 'package', displayName: 'Package Commands'),
+  const PanelSettings(id: 'audio', displayName: 'Audio Commands'),
+  const PanelSettings(id: 'common', displayName: 'Common Commands'),
+  const PanelSettings(
+    id: 'camera',
+    displayName: 'Camera Commands',
+    visible: false,
+  ),
+  const PanelSettings(
+    id: 'input',
+    displayName: 'Input Control',
+    visible: false,
+  ),
+  const PanelSettings(
+    id: 'display',
+    displayName: 'Display/Window',
+    visible: false,
+  ),
+  const PanelSettings(
+    id: 'network',
+    displayName: 'Network/Connection',
+    visible: false,
+  ),
+  const PanelSettings(id: 'virtual', displayName: 'Virtual Display Commands'),
+  const PanelSettings(id: 'recording', displayName: 'Recording Commands'),
+  const PanelSettings(
+    id: 'advanced',
+    displayName: 'Advanced/Developer',
+    visible: false,
+  ),
+  const PanelSettings(id: 'otg', displayName: 'OTG Mode', visible: false),
+  const PanelSettings(
+    id: 'running',
+    displayName: 'Running Instances',
+    visible: false,
+  ),
+];
 
 /// App-wide settings. Immutable — use [copyWith] to derive a new instance.
 class AppSettings {
@@ -106,12 +106,14 @@ class AppSettings {
   final String scrcpyDirectory;
   final String recordingsDirectory;
   final String downloadsDirectory;
-  final String batDirectory; // NOTE: Also stores .sh/.command files on macOS/Linux
+  final String
+  batDirectory; // NOTE: Also stores .sh/.command files on macOS/Linux
   final bool openCmdWindows;
   final bool showBatFilesTab; // NOTE: Shows script files on all platforms
   final bool showAppDrawerTab;
   final bool showManualIpInput;
   final String bootTab;
+  final String colorPreset;
   final String settingsDirectory;
   final List<String> shortcutMod;
   final bool checkForUpdatesOnStartup;
@@ -130,14 +132,15 @@ class AppSettings {
     this.showAppDrawerTab = true,
     this.showManualIpInput = false,
     this.bootTab = 'Home',
+    this.colorPreset = 'Dark',
     this.settingsDirectory = '',
     List<String> shortcutMod = const [],
     this.checkForUpdatesOnStartup = true,
     this.loggingEnabled = false,
     this.fileLoggingEnabled = false,
     this.defaultPreset,
-  })  : panelOrder = List.unmodifiable(panelOrder),
-        shortcutMod = List.unmodifiable(shortcutMod);
+  }) : panelOrder = List.unmodifiable(panelOrder),
+       shortcutMod = List.unmodifiable(shortcutMod);
 
   /// Returns a new instance with the given fields replaced. To set
   /// [defaultPreset] back to null explicitly, pass [clearDefaultPreset] = true.
@@ -152,6 +155,7 @@ class AppSettings {
     bool? showAppDrawerTab,
     bool? showManualIpInput,
     String? bootTab,
+    String? colorPreset,
     String? settingsDirectory,
     List<String>? shortcutMod,
     bool? checkForUpdatesOnStartup,
@@ -171,14 +175,16 @@ class AppSettings {
       showAppDrawerTab: showAppDrawerTab ?? this.showAppDrawerTab,
       showManualIpInput: showManualIpInput ?? this.showManualIpInput,
       bootTab: bootTab ?? this.bootTab,
+      colorPreset: colorPreset ?? this.colorPreset,
       settingsDirectory: settingsDirectory ?? this.settingsDirectory,
       shortcutMod: shortcutMod ?? this.shortcutMod,
       checkForUpdatesOnStartup:
           checkForUpdatesOnStartup ?? this.checkForUpdatesOnStartup,
       loggingEnabled: loggingEnabled ?? this.loggingEnabled,
       fileLoggingEnabled: fileLoggingEnabled ?? this.fileLoggingEnabled,
-      defaultPreset:
-          clearDefaultPreset ? null : (defaultPreset ?? this.defaultPreset),
+      defaultPreset: clearDefaultPreset
+          ? null
+          : (defaultPreset ?? this.defaultPreset),
     );
   }
 
@@ -194,6 +200,7 @@ class AppSettings {
       showAppDrawerTab: true,
       showManualIpInput: false,
       bootTab: 'Home',
+      colorPreset: 'Dark',
       settingsDirectory: '',
       shortcutMod: const [],
       checkForUpdatesOnStartup: true,
@@ -218,14 +225,17 @@ class AppSettings {
       showAppDrawerTab: json['showAppDrawerTab'] as bool? ?? true,
       showManualIpInput: json['showManualIpInput'] as bool? ?? false,
       bootTab: json['bootTab'] as String? ?? 'Home',
+      colorPreset: json['colorPreset'] as String? ?? 'Dark',
       shortcutMod:
           (json['shortcutMod'] as List<dynamic>?)?.cast<String>() ?? [],
-      checkForUpdatesOnStartup: json['checkForUpdatesOnStartup'] as bool? ?? true,
+      checkForUpdatesOnStartup:
+          json['checkForUpdatesOnStartup'] as bool? ?? true,
       loggingEnabled: json['loggingEnabled'] as bool? ?? false,
       fileLoggingEnabled: json['fileLoggingEnabled'] as bool? ?? false,
       defaultPreset: json['defaultPreset'] != null
           ? ScrcpyCommand.fromJson(
-              json['defaultPreset'] as Map<String, dynamic>)
+              json['defaultPreset'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
@@ -242,6 +252,7 @@ class AppSettings {
       'showAppDrawerTab': showAppDrawerTab,
       'showManualIpInput': showManualIpInput,
       'bootTab': bootTab,
+      'colorPreset': colorPreset,
       'shortcutMod': shortcutMod,
       'checkForUpdatesOnStartup': checkForUpdatesOnStartup,
       'loggingEnabled': loggingEnabled,

@@ -1,4 +1,4 @@
-﻿/// Scrcpy GUI - Cross-platform GUI for scrcpy
+/// Scrcpy GUI - Cross-platform GUI for scrcpy
 /// Author: George Englezos
 /// https://github.com/GeorgeEnglezos/Scrcpy-GUI
 library;
@@ -17,12 +17,14 @@ import 'models/settings_model.dart';
 import 'pages/home_page.dart';
 import 'pages/logs_page.dart';
 import 'services/app_icon_controller.dart';
+import 'services/color_theme_notifier.dart';
+import 'services/color_theme_service.dart';
 import 'services/log_service.dart';
 import 'services/command_notifier.dart';
 import 'services/device_manager_service.dart';
 import 'services/settings_service.dart';
-import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
+import 'theme/app_theme_colors.dart';
 import 'widgets/sidebar.dart';
 import 'services/update_service.dart';
 
@@ -50,6 +52,13 @@ Future<void> main() async {
   final settings = await settingsService.loadSettings();
   final appDrawerSettings = await settingsService.loadAppDrawerSettings();
 
+  // Load color presets and resolve the active preset
+  final colorPresets = await ColorThemeService.loadPresets();
+  final colorThemeNotifier = ColorThemeNotifier(
+    presets: colorPresets,
+    selectedName: settings.colorPreset,
+  );
+
   // Initialize logging (must be after loadSettings — depends on currentSettings being populated)
   await LogService.init();
 
@@ -74,6 +83,7 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<CommandNotifier>.value(value: commandNotifier),
         ChangeNotifierProvider<AppIconController>.value(value: iconController),
+        ChangeNotifierProvider<ColorThemeNotifier>.value(value: colorThemeNotifier),
         ChangeNotifierProvider<LogService>.value(value: LogService.instance),
       ],
       child: ScrcpyGuiApp(settings: settings),
@@ -226,7 +236,19 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
     return MaterialApp(
       title: 'Scrcpy GUI',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme.copyWith(
+        colorScheme: AppTheme.lightTheme.colorScheme.copyWith(
+          primary: context.watch<ColorThemeNotifier>().current.primary,
+        ),
+      ),
+      darkTheme: AppTheme.darkTheme.copyWith(
+        colorScheme: AppTheme.darkTheme.colorScheme.copyWith(
+          primary: context.watch<ColorThemeNotifier>().current.primary,
+        ),
+      ),
+      themeMode: context.watch<ColorThemeNotifier>().current.brightness == 'dark'
+          ? ThemeMode.dark
+          : ThemeMode.light,
       home: Scaffold(
         body: Row(
           children: [
@@ -253,7 +275,8 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
             Expanded(
               child: Column(
                 children: [
-                  if (_updateResult != null && !_hideBanner) _buildUpdateBanner(),
+                  if (_updateResult != null && !_hideBanner)
+                    _buildUpdateBanner(context),
                   Expanded(
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 250),
@@ -269,14 +292,14 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
     );
   }
 
-  Widget _buildUpdateBanner() {
+  Widget _buildUpdateBanner(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
+        color: context.appPrimary.withValues(alpha: 0.1),
         border: Border(
           bottom: BorderSide(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: context.appPrimary.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -286,25 +309,21 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.2),
+              color: context.appPrimary.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.update,
-              color: AppColors.primary,
-              size: 20,
-            ),
+            child: Icon(Icons.update, color: context.appPrimary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Row(
               children: [
-                const Text(
+                Text(
                   'Update Available',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: context.appTextPrimary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -314,7 +333,7 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
+                    color: context.appPrimary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -322,7 +341,7 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.primary,
+                      color: context.appPrimary,
                     ),
                   ),
                 ),
@@ -331,9 +350,10 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
           ),
           const SizedBox(width: 16),
           ElevatedButton(
-            onPressed: () => UpdateService.launchReleasePage(_updateResult?.downloadUrl),
+            onPressed: () =>
+                UpdateService.launchReleasePage(_updateResult?.downloadUrl),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: context.appPrimary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -345,12 +365,15 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
           const SizedBox(width: 12),
           IconButton(
             onPressed: () => setState(() => _hideBanner = true),
-            icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 20),
+            icon: Icon(
+              Icons.close,
+              color: context.appTextSecondary,
+              size: 20,
+            ),
             tooltip: 'Dismiss',
           ),
         ],
       ),
     );
   }
-
 }

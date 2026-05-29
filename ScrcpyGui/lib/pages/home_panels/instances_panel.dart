@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/scrcpy_instance_model.dart';
 import '../../services/settings_service.dart';
 import '../../services/terminal_service.dart';
+import '../../theme/app_theme_colors.dart';
 import '../../widgets/surrounding_panel.dart';
 
 class InstancesPanel extends StatefulWidget {
@@ -177,8 +178,8 @@ class _InstancesPanelState extends State<InstancesPanel> {
                 _instances.isEmpty
                     ? 'No running instances'
                     : '${_instances.length} instance(s) running',
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: context.appTextSecondary,
                   fontSize: 14,
                 ),
               ),
@@ -230,8 +231,8 @@ class _InstancesPanelState extends State<InstancesPanel> {
                                   Expanded(
                                     child: Text(
                                       instance.windowTitle ?? 'PID: ${instance.pid}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: context.appTextPrimary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -252,8 +253,8 @@ class _InstancesPanelState extends State<InstancesPanel> {
                                     ),
                                     child: Text(
                                       instance.connectionTypeString,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: context.appTextPrimary,
                                         fontSize: 10,
                                       ),
                                     ),
@@ -266,8 +267,8 @@ class _InstancesPanelState extends State<InstancesPanel> {
                                   Expanded(
                                     child: Text(
                                       'Device: ${instance.deviceId}',
-                                      style: const TextStyle(
-                                        color: Colors.white70,
+                                      style: TextStyle(
+                                        color: context.appTextSecondary,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -276,8 +277,8 @@ class _InstancesPanelState extends State<InstancesPanel> {
                                   if (_isExpanded && instance.memoryUsage != null)
                                     Text(
                                       'Mem: ${instance.memoryUsage!.toStringAsFixed(0)} MB',
-                                      style: const TextStyle(
-                                        color: Colors.white60,
+                                      style: TextStyle(
+                                        color: context.appTextSecondary,
                                         fontSize: 11,
                                       ),
                                     ),
@@ -289,16 +290,16 @@ class _InstancesPanelState extends State<InstancesPanel> {
                                   children: [
                                     Text(
                                       'Uptime: ${instance.uptimeString}',
-                                      style: const TextStyle(
-                                        color: Colors.white60,
+                                      style: TextStyle(
+                                        color: context.appTextSecondary,
                                         fontSize: 11,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Text(
                                       'PID: ${instance.pid}',
-                                      style: const TextStyle(
-                                        color: Colors.white60,
+                                      style: TextStyle(
+                                        color: context.appTextSecondary,
                                         fontSize: 11,
                                       ),
                                     ),

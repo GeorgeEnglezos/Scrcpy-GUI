@@ -9,6 +9,8 @@ import '../../services/commands_service.dart';
 import '../../services/log_service.dart';
 import '../../services/settings_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_constants.dart';
+import '../../theme/app_theme_colors.dart';
 import 'package:provider/provider.dart';
 
 class CommandActionsPanel extends StatefulWidget {
@@ -26,9 +28,7 @@ class CommandActionsPanel extends StatefulWidget {
 }
 
 class _CommandActionsPanelState extends State<CommandActionsPanel> {
-  final TextEditingController _ipController = TextEditingController(
-    text: '192.168.1.',
-  );
+  final TextEditingController _ipController = TextEditingController();
   final TextEditingController _portController = TextEditingController(
     text: '5555',
   );
@@ -103,9 +103,12 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                             child: DropdownButton<String>(
                               isExpanded: true,
                               value: selected,
-                              hint: const Text(
+                              style: TextStyle(color: context.appTextPrimary, fontSize: kFontSize),
+                              dropdownColor: context.appSurface,
+                              hint: Text(
                                 'Select Device',
                                 overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: context.appTextSecondary, fontSize: kFontSize),
                               ),
                               items: devices.map((device) {
                                 return DropdownMenuItem<String>(
@@ -113,6 +116,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                                   child: Text(
                                     device.deviceId,
                                     overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(color: context.appTextPrimary, fontSize: kFontSize),
                                   ),
                                 );
                               }).toList(),
@@ -171,36 +175,32 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                                 Container(
                                   height: 40,
                                   width: 1,
-                                  color: Colors.grey.shade400,
+                                  color: context.appDivider,
                                 ),
                               if (showIpField)
                                 SizedBox(
                                   width: 130,
                                   child: TextField(
                                     controller: _ipController,
+                                    style: TextStyle(color: context.appTextSecondary, fontSize: kFontSize, fontWeight: FontWeight.w500),
                                     decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor: context.appInputFill,
                                       labelText: 'IP (optional)',
                                       hintText: '192.168.1.x',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
+                                      labelStyle: TextStyle(color: context.appTextSecondary, fontSize: kLabelFontSize, fontWeight: FontWeight.w500),
+                                      floatingLabelStyle: TextStyle(color: context.appPrimary, fontSize: kLabelFontSize - 1, fontWeight: FontWeight.w500),
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
-                                        borderSide: BorderSide(
-                                          color: Colors.grey.shade400,
-                                        ),
+                                        borderSide: BorderSide(color: context.appTextSecondary.withValues(alpha: 0.3)),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
-                                        borderSide: BorderSide(
-                                          color: Colors.blue.shade600,
-                                          width: 2,
-                                        ),
+                                        borderSide: BorderSide(color: context.appPrimary),
                                       ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 8,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: kRowHorizontalPadding,
+                                        vertical: kRowVerticalPadding / 2,
                                       ),
                                     ),
                                     keyboardType: TextInputType.text,
@@ -216,29 +216,25 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                                 width: 100,
                                 child: TextField(
                                   controller: _portController,
+                                  style: TextStyle(color: context.appTextSecondary, fontSize: kFontSize, fontWeight: FontWeight.w500),
                                   decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: context.appInputFill,
                                     labelText: 'Port',
                                     hintText: '5555',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                                    labelStyle: TextStyle(color: context.appTextSecondary, fontSize: kLabelFontSize, fontWeight: FontWeight.w500),
+                                    floatingLabelStyle: TextStyle(color: context.appPrimary, fontSize: kLabelFontSize - 1, fontWeight: FontWeight.w500),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: Colors.grey.shade400,
-                                      ),
+                                      borderSide: BorderSide(color: context.appTextSecondary.withValues(alpha: 0.3)),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: Colors.blue.shade600,
-                                        width: 2,
-                                      ),
+                                      borderSide: BorderSide(color: context.appPrimary),
                                     ),
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: kRowHorizontalPadding,
+                                      vertical: kRowVerticalPadding / 2,
                                     ),
                                   ),
                                   keyboardType: TextInputType.number,

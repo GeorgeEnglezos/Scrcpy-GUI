@@ -5,7 +5,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 
 /// A vertical navigation sidebar with icon-based menu items.
 ///
@@ -49,11 +49,16 @@ class Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = context.appTextSecondary;
     final List<_SidebarItem> items = [
       const _SidebarItem(icon: Icons.home, label: 'Home'),
       const _SidebarItem(icon: Icons.favorite, label: 'Favorites'),
       if (showAppDrawerTab)
-        const _SidebarItem(icon: Icons.grid_view, label: 'App Drawer', beta: true),
+        const _SidebarItem(
+          icon: Icons.grid_view,
+          label: 'App Drawer',
+          beta: true,
+        ),
       if (showBatFilesTab)
         const _SidebarItem(icon: Icons.terminal, label: 'Scripts'),
       const _SidebarItem(icon: Icons.folder, label: 'Resources'),
@@ -66,11 +71,11 @@ class Sidebar extends StatelessWidget {
     return Container(
       width: 80,
       height: double.infinity,
-      color: AppColors.surface,
+      color: context.appSurface,
       child: Column(
         children: [
           const SizedBox(height: 20),
-          Icon(Icons.phone_android, color: AppColors.primary, size: 32),
+          Icon(Icons.phone_android, color: context.appPrimary, size: 32),
           const SizedBox(height: 40),
           Expanded(
             child: ListView.builder(
@@ -91,7 +96,7 @@ class Sidebar extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: selected
-                            ? AppColors.primary.withValues(alpha: 0.15)
+                            ? context.appPrimary.withValues(alpha: 0.15)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -101,25 +106,24 @@ class Sidebar extends StatelessWidget {
                           children: [
                             Icon(
                               item.icon,
-                              color: selected
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
+                              color: selected ? context.appPrimary : textColor,
                             ),
                             const SizedBox(height: 4),
                             Text(
                               item.label,
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: selected
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary,
+                                color: selected ? context.appPrimary : textColor,
                                 fontSize: 11,
                               ),
                             ),
                             if (item.beta) ...[
                               const SizedBox(height: 2),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.amber.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
@@ -153,5 +157,9 @@ class _SidebarItem {
   final IconData icon;
   final String label;
   final bool beta;
-  const _SidebarItem({required this.icon, required this.label, this.beta = false});
+  const _SidebarItem({
+    required this.icon,
+    required this.label,
+    this.beta = false,
+  });
 }

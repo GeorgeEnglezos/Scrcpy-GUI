@@ -6,7 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
 import '../utils/command_syntax_highlighter.dart';
 
 /// A display panel for scrcpy commands with syntax highlighting and actions.
@@ -68,6 +68,9 @@ class CommandPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final panelColor = context.appCommandSurface;
+    final primaryTextColor = context.appTextPrimary;
+    final secondaryTextColor = context.appTextSecondary;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -75,9 +78,9 @@ class CommandPanel extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.commandGrey,
+          color: panelColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.commandGrey),
+          border: Border.all(color: context.appDivider),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -87,13 +90,16 @@ class CommandPanel extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: AppColors.commandGrey,
+                  color: panelColor,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: RichText(
                   text: TextSpan(
                     children: CommandSyntaxHighlighter.getColorizedSpans(
                       displayCommand ?? command,
+                      commandColor: primaryTextColor,
+                      valueColor: secondaryTextColor,
+                      unknownFlagColor: primaryTextColor,
                     ),
                   ),
                 ),
