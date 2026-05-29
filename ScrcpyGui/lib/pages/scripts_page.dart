@@ -361,10 +361,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   const SizedBox(width: 12),
                   Text(
                     Platform.isWindows ? 'Batch Scripts' : 'Shell Scripts',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.appTextPrimary,
                     ),
                   ),
                   const Spacer(),
@@ -380,10 +380,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    label: const Text(
+                    icon: Icon(Icons.refresh, color: context.appOnPrimary),
+                    label: Text(
                       'Refresh',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.appOnPrimary),
                     ),
                   ),
                 ],
@@ -838,7 +838,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
                 }
               }
             },
-            child: const Text('Save', style: TextStyle(color: Colors.white)),
+            child: Text('Save', style: TextStyle(color: context.appOnPrimary)),
           ),
         ],
       ),
@@ -891,10 +891,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.play_arrow,
                 size: 16,
-                color: Colors.white,
+                color: context.appOnPrimary,
               ),
             ),
           ),
