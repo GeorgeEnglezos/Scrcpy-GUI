@@ -3,7 +3,7 @@
 ; No code signing required. Installs per-user (no admin prompt).
 ;
 ; Compile from the ScrcpyGui/ directory after `flutter build windows --release`:
-;   iscc /DMyAppVersion=1.7.2 installer.iss
+;   iscc /DMyAppVersion=1.7.3 installer.iss
 ; Output: artifacts/windows_installer/scrcpy-gui-setup.exe
 
 #ifndef MyAppVersion
