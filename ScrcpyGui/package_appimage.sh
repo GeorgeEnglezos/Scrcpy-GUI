@@ -78,6 +78,7 @@ fi
 mkdir -p "$OUT_DIR"
 
 # APPIMAGE_EXTRACT_AND_RUN avoids needing FUSE on CI runners.
+# OUTPUT tells the appimage plugin exactly where to write the final file.
 # The gtk plugin copies libgtk-3, theme engines, gdk-pixbuf loaders, and the
 # glib schemas into the AppDir and wires up the matching env vars in AppRun.
 export APPIMAGE_EXTRACT_AND_RUN=1
@@ -90,10 +91,10 @@ PATH="$(pwd):${PATH}" ./"$LD_TOOL" \
   --plugin gtk \
   --output appimage
 
-# linuxdeploy writes the AppImage to the repo root; move it to the artifacts dir.
-GENERATED=$(ls -t Scrcpy_GUI*-x86_64.AppImage *.AppImage 2>/dev/null \
-  | grep -v -E '^(linuxdeploy|appimagetool)' | head -n1)
-mv "$GENERATED" "$OUTPUT"
+if [ ! -f "$OUTPUT" ]; then
+  echo "Error: expected AppImage at $OUTPUT was not produced." >&2
+  exit 1
+fi
 
 echo "AppImage created:"
 ls -lh "$OUTPUT"
