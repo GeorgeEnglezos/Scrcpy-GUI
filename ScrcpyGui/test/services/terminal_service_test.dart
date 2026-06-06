@@ -47,4 +47,38 @@ void main() {
       );
     });
   });
+
+  group('TerminalService.tokenizeCommand', () {
+    test('splits a plain command on spaces', () {
+      expect(
+        TerminalService.tokenizeCommand('scrcpy --serial=ABC123'),
+        equals(['scrcpy', '--serial=ABC123']),
+      );
+    });
+
+    test('keeps a quoted value with spaces as a single token', () {
+      // Regression for issue #24: window titles with spaces must survive
+      // as one argv token instead of splitting at the space.
+      expect(
+        TerminalService.tokenizeCommand(
+          'scrcpy --window-title="A14 Last" --shortcut-mod=lctrl',
+        ),
+        equals(['scrcpy', '--window-title=A14 Last', '--shortcut-mod=lctrl']),
+      );
+    });
+
+    test('preserves backslashes in Windows paths', () {
+      expect(
+        TerminalService.tokenizeCommand(r'scrcpy --record="C:\vids\my clip.mp4"'),
+        equals(['scrcpy', r'--record=C:\vids\my clip.mp4']),
+      );
+    });
+
+    test('treats escaped quote as a literal quote, not a delimiter', () {
+      expect(
+        TerminalService.tokenizeCommand(r'scrcpy --window-title="A \"B\" C"'),
+        equals(['scrcpy', '--window-title=A "B" C']),
+      );
+    });
+  });
 }

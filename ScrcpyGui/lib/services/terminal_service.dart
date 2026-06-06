@@ -453,6 +453,50 @@ class TerminalService {
     }
   }
 
+  /// Splits a command string into argv tokens, respecting double-quoted
+  /// segments so values with spaces stay together.
+  ///
+  /// On Windows we must NOT pass the whole command as a single string to
+  /// `cmd /c "<string>"`: that string is parsed twice (once by cmd, once by
+  /// the target program's own argv parser) which cancels out every form of
+  /// quoting and splits quoted values like `--window-title="A B"` at the
+  /// space. Passing each token as a separate process argument lets Dart
+  /// escape them correctly so the target receives them intact.
+  ///
+  /// Quoting rules:
+  /// - A double quote toggles quoting; the quote characters are removed.
+  /// - `\"` is a literal double quote (does not toggle).
+  /// - Unquoted whitespace separates tokens; all other backslashes (e.g.
+  ///   Windows paths) are preserved verbatim.
+  static List<String> tokenizeCommand(String command) {
+    final tokens = <String>[];
+    final sb = StringBuffer();
+    bool inQuotes = false;
+    bool hasToken = false;
+    for (int i = 0; i < command.length; i++) {
+      final c = command[i];
+      if (c == '\\' && i + 1 < command.length && command[i + 1] == '"') {
+        sb.write('"');
+        hasToken = true;
+        i++;
+      } else if (c == '"') {
+        inQuotes = !inQuotes;
+        hasToken = true;
+      } else if (c == ' ' && !inQuotes) {
+        if (hasToken) {
+          tokens.add(sb.toString());
+          sb.clear();
+          hasToken = false;
+        }
+      } else {
+        sb.write(c);
+        hasToken = true;
+      }
+    }
+    if (hasToken) tokens.add(sb.toString());
+    return tokens;
+  }
+
   /// Runs a command in the same terminal and returns stdout
   ///
   /// Executes a shell command synchronously and waits for completion.
@@ -481,7 +525,9 @@ class TerminalService {
 
       final result = await Process.run(
         Platform.isWindows ? 'cmd' : 'bash',
-        Platform.isWindows ? ['/c', command] : ['-c', command],
+        Platform.isWindows
+            ? ['/c', ...tokenizeCommand(command)]
+            : ['-c', command],
         environment: environment,
       );
       return result.stdout.toString().trim();
@@ -502,7 +548,9 @@ class TerminalService {
 
     final result = await Process.run(
       Platform.isWindows ? 'cmd' : 'bash',
-      Platform.isWindows ? ['/c', command] : ['-c', command],
+      Platform.isWindows
+          ? ['/c', ...tokenizeCommand(command)]
+          : ['-c', command],
       environment: environment,
     );
     return result;
@@ -539,7 +587,7 @@ class TerminalService {
           'start',
           'cmd',
           '/k',
-          command,
+          ...tokenizeCommand(command),
         ]);
       } else if (Platform.isLinux) {
         final launched = await _startLinuxTerminal('$command; exec bash');

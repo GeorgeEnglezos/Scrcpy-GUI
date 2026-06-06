@@ -128,8 +128,9 @@ class _ResourcesPageState extends State<ResourcesPage> {
       {
         'question': 'How do I install Scrcpy?',
         'answer':
-            'You can install Scrcpy using Scoop, Chocolatey on Windows, Brew on macOS, or apt on Linux. '
-            'See the Install / Uninstall section above.',
+            'You can install Scrcpy using Winget, Scoop or Chocolatey on Windows, Brew on macOS, or your '
+            'distro package manager on Linux (apt for Debian/Ubuntu, pacman for Arch, dnf for Fedora, '
+            'zypper for openSUSE, or snap on any distro). See the Install / Uninstall section above.',
       },
       {
         'question': 'Why can’t I see my device?',
@@ -154,42 +155,67 @@ class _ResourcesPageState extends State<ResourcesPage> {
       },
     ];
 
-    // Install / Uninstall commands for Scrcpy
+    // Install / Uninstall commands for Scrcpy.
+    // 'label' identifies the OS / Linux distro so users can pick the right one;
+    // 'command' is the actual command that gets run / copied.
     final scrcpyCommands = [
-      // Winget (Windows)
-      'winget install Genymobile.scrcpy',
-      'winget uninstall Genymobile.scrcpy',
-      // Scoop (Windows)
-      'scoop install scrcpy',
-      'scoop uninstall scrcpy',
-      // Chocolatey (Windows)
-      'choco install scrcpy',
-      'choco uninstall scrcpy',
-      // Homebrew (macOS)
-      'brew install scrcpy',
-      'brew uninstall scrcpy',
-      // APT (Linux)
-      'sudo apt install scrcpy',
-      'sudo apt remove scrcpy',
+      // Windows
+      {'label': 'Winget', 'command': 'winget install Genymobile.scrcpy'},
+      {'label': 'Winget', 'command': 'winget uninstall Genymobile.scrcpy'},
+      {'label': 'Scoop', 'command': 'scoop install scrcpy'},
+      {'label': 'Scoop', 'command': 'scoop uninstall scrcpy'},
+      {'label': 'Chocolatey', 'command': 'choco install scrcpy'},
+      {'label': 'Chocolatey', 'command': 'choco uninstall scrcpy'},
+      // macOS
+      {'label': 'Homebrew', 'command': 'brew install scrcpy'},
+      {'label': 'Homebrew', 'command': 'brew uninstall scrcpy'},
+      // Linux - Debian / Ubuntu (apt)
+      {'label': 'Debian/Ubuntu', 'command': 'sudo apt install scrcpy'},
+      {'label': 'Debian/Ubuntu', 'command': 'sudo apt remove scrcpy'},
+      // Linux - Arch (pacman)
+      {'label': 'Arch', 'command': 'sudo pacman -S scrcpy'},
+      {'label': 'Arch', 'command': 'sudo pacman -R scrcpy'},
+      // Linux - Fedora (dnf)
+      {'label': 'Fedora', 'command': 'sudo dnf install scrcpy'},
+      {'label': 'Fedora', 'command': 'sudo dnf remove scrcpy'},
+      // Linux - openSUSE (zypper)
+      {'label': 'openSUSE', 'command': 'sudo zypper install scrcpy'},
+      {'label': 'openSUSE', 'command': 'sudo zypper remove scrcpy'},
+      // Linux - universal (snap)
+      {'label': 'Snap (any)', 'command': 'sudo snap install scrcpy'},
+      {'label': 'Snap (any)', 'command': 'sudo snap remove scrcpy'},
     ];
 
-    // Install / Uninstall commands for ADB
+    // Install / Uninstall commands for ADB (Android platform tools).
     final adbCommands = [
-      // Winget (Windows)
-      'winget install Google.PlatformTools',
-      'winget uninstall Google.PlatformTools',
-      // Scoop (Windows)
-      'scoop install adb',
-      'scoop uninstall adb',
-      // Chocolatey (Windows)
-      'choco install adb',
-      'choco uninstall adb',
-      // Homebrew (macOS)
-      'brew install --cask android-platform-tools',
-      'brew uninstall --cask android-platform-tools',
-      // APT (Linux)
-      'sudo apt install adb',
-      'sudo apt remove adb',
+      // Windows
+      {'label': 'Winget', 'command': 'winget install Google.PlatformTools'},
+      {'label': 'Winget', 'command': 'winget uninstall Google.PlatformTools'},
+      {'label': 'Scoop', 'command': 'scoop install adb'},
+      {'label': 'Scoop', 'command': 'scoop uninstall adb'},
+      {'label': 'Chocolatey', 'command': 'choco install adb'},
+      {'label': 'Chocolatey', 'command': 'choco uninstall adb'},
+      // macOS
+      {
+        'label': 'Homebrew',
+        'command': 'brew install --cask android-platform-tools',
+      },
+      {
+        'label': 'Homebrew',
+        'command': 'brew uninstall --cask android-platform-tools',
+      },
+      // Linux - Debian / Ubuntu (apt)
+      {'label': 'Debian/Ubuntu', 'command': 'sudo apt install adb'},
+      {'label': 'Debian/Ubuntu', 'command': 'sudo apt remove adb'},
+      // Linux - Arch (pacman)
+      {'label': 'Arch', 'command': 'sudo pacman -S android-tools'},
+      {'label': 'Arch', 'command': 'sudo pacman -R android-tools'},
+      // Linux - Fedora (dnf)
+      {'label': 'Fedora', 'command': 'sudo dnf install android-tools'},
+      {'label': 'Fedora', 'command': 'sudo dnf remove android-tools'},
+      // Linux - openSUSE (zypper)
+      {'label': 'openSUSE', 'command': 'sudo zypper install android-tools'},
+      {'label': 'openSUSE', 'command': 'sudo zypper remove android-tools'},
     ];
 
     // Helpful troubleshooting commands
@@ -200,6 +226,30 @@ class _ResourcesPageState extends State<ResourcesPage> {
       'scrcpy --version',
       'scrcpy --help',
     ];
+
+    // Small badge shown before a command, naming the OS / Linux distro it
+    // applies to (e.g. "Arch", "Fedora") so users can find the right one.
+    Widget labelChip(String text) {
+      return Container(
+        width: 104,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: context.appPrimary.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: context.appPrimary,
+          ),
+        ),
+      );
+    }
 
     Widget buildCategory(String title, List<Map<String, String>> links) {
       final cardColor = context.appCommandSurface;
@@ -467,9 +517,11 @@ class _ResourcesPageState extends State<ResourcesPage> {
                               showButton: false,
                               contentPadding: const EdgeInsets.all(12),
                               child: Column(
-                                children: scrcpyCommands.map((cmd) {
+                                children: scrcpyCommands.map((entry) {
+                                  final cmd = entry['command']!;
                                   return CommandPanel(
                                     command: cmd,
+                                    leading: labelChip(entry['label']!),
                                     showDelete: false,
                                     onTap: () async {
                                       await TerminalService.runCommandInNewTerminal(
@@ -491,9 +543,11 @@ class _ResourcesPageState extends State<ResourcesPage> {
                               showButton: false,
                               contentPadding: const EdgeInsets.all(12),
                               child: Column(
-                                children: adbCommands.map((cmd) {
+                                children: adbCommands.map((entry) {
+                                  final cmd = entry['command']!;
                                   return CommandPanel(
                                     command: cmd,
+                                    leading: labelChip(entry['label']!),
                                     showDelete: false,
                                     onTap: () async {
                                       await TerminalService.runCommandInNewTerminal(

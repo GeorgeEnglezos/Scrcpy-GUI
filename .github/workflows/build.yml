@@ -144,11 +144,25 @@ jobs:
       - name: Build Windows
         run: flutter build windows --release
 
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          $raw = (Select-String -Path pubspec.yaml -Pattern '^version:\s*(.+)$').Matches[0].Groups[1].Value.Trim()
+          $version = ($raw -split '\+')[0] -split '-' | Select-Object -First 1
+          Write-Host "Building installer for version $version"
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" installer.iss
+
       - name: Archive Windows build
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
           path: ScrcpyGui/build/windows/x64/runner/Release/
+
+      - name: Archive Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: ScrcpyGui/artifacts/windows_installer/
 
   build-linux:
     needs: [detect-nightly-changes]
@@ -169,7 +183,8 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y ninja-build pkg-config libgtk-3-dev liblzma-dev
+          sudo apt-get install -y ninja-build pkg-config libgtk-3-dev liblzma-dev \
+            librsvg2-common libglib2.0-bin
 
       - name: Install dependencies
         run: flutter pub get
@@ -180,11 +195,20 @@ jobs:
       - name: Create Linux installation package
         run: bash package_linux.sh
 
+      - name: Create Linux AppImage
+        run: bash package_appimage.sh
+
       - name: Archive Linux build
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
           path: ScrcpyGui/artifacts/linux_package/
+
+      - name: Archive Linux AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: ScrcpyGui/artifacts/appimage/
 
   build-macos:
     needs: [detect-nightly-changes]
@@ -413,8 +437,16 @@ jobs:
           # Windows build
           zip -r ../scrcpy-gui-windows-v${VERSION}.zip windows-build/
 
+          # Windows installer - single setup.exe; ship as-is
+          cp windows-installer/scrcpy-gui-setup.exe \
+            "../scrcpy-gui-setup-v${VERSION}.exe"
+
           # Linux build
           zip -r ../scrcpy-gui-linux-v${VERSION}.zip linux-build/
+
+          # Linux AppImage - single-file, runs on any distro; ship as-is
+          cp linux-appimage/Scrcpy_GUI-x86_64.AppImage \
+            "../Scrcpy_GUI-v${VERSION}-x86_64.AppImage"
 
           # macOS build - create ZIP with DMG, install script, and README
           cd macos-build
@@ -426,7 +458,9 @@ jobs:
         with:
           files: |
             scrcpy-gui-windows-v*.zip
+            scrcpy-gui-setup-v*.exe
             scrcpy-gui-linux-v*.zip
+            Scrcpy_GUI-v*-x86_64.AppImage
             scrcpy-gui-macos-v*.zip
           draft: false
           prerelease: false
@@ -459,7 +493,11 @@ jobs:
         run: |
           cd artifacts
           zip -r ../scrcpy-gui-windows-v${NIGHTLY_VERSION}.zip windows-build/
+          cp windows-installer/scrcpy-gui-setup.exe \
+            "../scrcpy-gui-setup-v${NIGHTLY_VERSION}.exe"
           zip -r ../scrcpy-gui-linux-v${NIGHTLY_VERSION}.zip linux-build/
+          cp linux-appimage/Scrcpy_GUI-x86_64.AppImage \
+            "../Scrcpy_GUI-v${NIGHTLY_VERSION}-x86_64.AppImage"
           cd macos-build
           zip -r ../../scrcpy-gui-macos-v${NIGHTLY_VERSION}.zip .
 
@@ -485,7 +523,10 @@ jobs:
           # scrcpy-gui-<platform>-v<version>.zip
           mapfile -t EXISTING_VERSIONS < <(
             gh release view nightly --json assets --jq '.assets[].name' \
-            | sed -nE 's/^scrcpy-gui-(windows|linux|macos)-v(.+)\.zip$/\2/p' \
+            | sed -nE \
+                -e 's/^scrcpy-gui-(windows|linux|macos)-v(.+)\.zip$/\2/p' \
+                -e 's/^scrcpy-gui-setup-v(.+)\.exe$/\1/p' \
+                -e 's/^Scrcpy_GUI-v(.+)-x86_64\.AppImage$/\1/p' \
             | sort -Vu
           )
 
@@ -506,8 +547,15 @@ jobs:
           # Remove any nightly asset that is neither current nor previous
           mapfile -t EXISTING_ASSETS < <(gh release view nightly --json assets --jq '.assets[].name')
           for asset in "${EXISTING_ASSETS[@]}"; do
+            asset_version=""
             if [[ "$asset" =~ ^scrcpy-gui-(windows|linux|macos)-v(.+)\.zip$ ]]; then
               asset_version="${BASH_REMATCH[2]}"
+            elif [[ "$asset" =~ ^scrcpy-gui-setup-v(.+)\.exe$ ]]; then
+              asset_version="${BASH_REMATCH[1]}"
+            elif [[ "$asset" =~ ^Scrcpy_GUI-v(.+)-x86_64\.AppImage$ ]]; then
+              asset_version="${BASH_REMATCH[1]}"
+            fi
+            if [[ -n "$asset_version" ]]; then
               if [[ "$asset_version" != "$NIGHTLY_VERSION" && "$asset_version" != "$PREVIOUS_VERSION" ]]; then
                 if [[ "${NIGHTLY_DRY_RUN}" == "true" ]]; then
                   echo "[DRY RUN] Would delete asset: $asset"
@@ -521,11 +569,15 @@ jobs:
           # Upload current nightly assets (idempotent for same-day reruns)
           if [[ "${NIGHTLY_DRY_RUN}" == "true" ]]; then
             echo "[DRY RUN] Would upload: scrcpy-gui-windows-v${NIGHTLY_VERSION}.zip"
+            echo "[DRY RUN] Would upload: scrcpy-gui-setup-v${NIGHTLY_VERSION}.exe"
             echo "[DRY RUN] Would upload: scrcpy-gui-linux-v${NIGHTLY_VERSION}.zip"
+            echo "[DRY RUN] Would upload: Scrcpy_GUI-v${NIGHTLY_VERSION}-x86_64.AppImage"
             echo "[DRY RUN] Would upload: scrcpy-gui-macos-v${NIGHTLY_VERSION}.zip"
           else
             gh release upload nightly "scrcpy-gui-windows-v${NIGHTLY_VERSION}.zip" --clobber
+            gh release upload nightly "scrcpy-gui-setup-v${NIGHTLY_VERSION}.exe" --clobber
             gh release upload nightly "scrcpy-gui-linux-v${NIGHTLY_VERSION}.zip" --clobber
+            gh release upload nightly "Scrcpy_GUI-v${NIGHTLY_VERSION}-x86_64.AppImage" --clobber
             gh release upload nightly "scrcpy-gui-macos-v${NIGHTLY_VERSION}.zip" --clobber
           fi
 
