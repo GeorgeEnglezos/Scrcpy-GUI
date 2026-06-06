@@ -467,6 +467,41 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  publish-winget:
+    needs: [create-release]
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Submit installer update to winget
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v',''
+
+          # Only publish clean semantic versions; skip test/pre tags
+          # like "1.7.3-Test-Builds" that winget will not accept.
+          if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+            Write-Host "Skipping winget: '$version' is not a clean semver release."
+            exit 0
+          }
+
+          # Requires a one-time manual first submission and a PAT secret.
+          if (-not $env:WINGET_TOKEN) {
+            Write-Host "WINGET_TOKEN secret not set; skipping winget submission."
+            exit 0
+          }
+
+          $installerUrl = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/scrcpy-gui-setup-v$version.exe"
+          Write-Host "Submitting winget update for $version -> $installerUrl"
+
+          Invoke-WebRequest -Uri "https://aka.ms/wingetcreate/latest" -OutFile wingetcreate.exe
+          .\wingetcreate.exe update GeorgeEnglezos.ScrcpyGUI `
+            --version $version `
+            --urls $installerUrl `
+            --token $env:WINGET_TOKEN `
+            --submit
+
   update-nightly-release:
     needs: [detect-nightly-changes, build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
