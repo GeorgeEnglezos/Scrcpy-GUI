@@ -44,7 +44,7 @@ class CommandSyntaxHighlighter {
     required Color valueColor,
     Color? unknownFlagColor,
   }) {
-    final parts = command.split(' ');
+    final parts = _splitPreservingQuotes(command);
     return parts.map((part) {
       return TextSpan(
         text: "$part ",
@@ -61,6 +61,39 @@ class CommandSyntaxHighlighter {
         ),
       );
     }).toList();
+  }
+
+  /// Splits a command into parts on spaces that are outside double quotes.
+  ///
+  /// Keeps quoted values (e.g. `--window-title="A14 Last"`) as a single part
+  /// so the whole flag and its value share one color, instead of the text
+  /// after the space falling through to the default value color. Quote
+  /// characters are preserved in the returned parts so the preview still
+  /// shows the command exactly as it will run.
+  static List<String> _splitPreservingQuotes(String command) {
+    final parts = <String>[];
+    final sb = StringBuffer();
+    bool inQuotes = false;
+    bool hasPart = false;
+    for (int i = 0; i < command.length; i++) {
+      final c = command[i];
+      if (c == '"') {
+        inQuotes = !inQuotes;
+        sb.write(c);
+        hasPart = true;
+      } else if (c == ' ' && !inQuotes) {
+        if (hasPart) {
+          parts.add(sb.toString());
+          sb.clear();
+          hasPart = false;
+        }
+      } else {
+        sb.write(c);
+        hasPart = true;
+      }
+    }
+    if (hasPart) parts.add(sb.toString());
+    return parts;
   }
 
   /// Maps a command part to its appropriate color based on content.
