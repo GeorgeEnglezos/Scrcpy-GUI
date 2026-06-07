@@ -9,6 +9,30 @@ on:
     - cron: '0 21 1,5,9,13,17,21,25,29 * *'
   workflow_dispatch:
     inputs:
+      build_windows:
+        description: 'Build the Windows job'
+        required: false
+        type: boolean
+        default: true
+      build_linux:
+        description: 'Build the Linux job (AppImage + Flatpak)'
+        required: false
+        type: boolean
+        default: true
+      build_macos:
+        description: 'Build the macOS job'
+        required: false
+        type: boolean
+        default: true
+      target:
+        description: 'Manual runs: upload the rebuilt platforms onto an existing release'
+        required: false
+        type: choice
+        options:
+          - none
+          - latest-release
+          - nightly
+        default: none
       nightly_dry_run:
         description: 'Nightly: preview retention/upload actions without changing the release'
         required: false
@@ -124,7 +148,9 @@ jobs:
 
   build-windows:
     needs: [detect-nightly-changes]
-    if: needs.detect-nightly-changes.outputs.run_builds == 'true'
+    if: |
+      (github.event_name != 'workflow_dispatch' && needs.detect-nightly-changes.outputs.run_builds == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.build_windows)
     runs-on: windows-latest
     defaults:
       run:
@@ -157,16 +183,20 @@ jobs:
         with:
           name: windows-build
           path: ScrcpyGui/build/windows/x64/runner/Release/
+          retention-days: 1
 
       - name: Archive Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
           path: ScrcpyGui/artifacts/windows_installer/
+          retention-days: 1
 
   build-linux:
     needs: [detect-nightly-changes]
-    if: needs.detect-nightly-changes.outputs.run_builds == 'true'
+    if: |
+      (github.event_name != 'workflow_dispatch' && needs.detect-nightly-changes.outputs.run_builds == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.build_linux)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -213,22 +243,27 @@ jobs:
         with:
           name: linux-flatpak
           path: ScrcpyGui/artifacts/flatpak/
+          retention-days: 1
 
       - name: Archive Linux build
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
           path: ScrcpyGui/artifacts/linux_package/
+          retention-days: 1
 
       - name: Archive Linux AppImage
         uses: actions/upload-artifact@v4
         with:
           name: linux-appimage
           path: ScrcpyGui/artifacts/appimage/
+          retention-days: 1
 
   build-macos:
     needs: [detect-nightly-changes]
-    if: needs.detect-nightly-changes.outputs.run_builds == 'true'
+    if: |
+      (github.event_name != 'workflow_dispatch' && needs.detect-nightly-changes.outputs.run_builds == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.build_macos)
     runs-on: macos-latest
     defaults:
       run:
@@ -433,6 +468,7 @@ jobs:
         with:
           name: macos-build
           path: ScrcpyGui/artifacts/macos_package/
+          retention-days: 1
 
   create-release:
     needs: [build-windows, build-linux, build-macos]
@@ -526,7 +562,7 @@ jobs:
   update-nightly-release:
     needs: [detect-nightly-changes, build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
-    if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')) && needs.detect-nightly-changes.outputs.has_changes == 'true'
+    if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.target == 'none')) && needs.detect-nightly-changes.outputs.has_changes == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -658,4 +694,96 @@ jobs:
             gh release edit nightly \
               --title "Nightly Builds (v${NIGHTLY_VERSION})" \
               --notes "$RELEASE_NOTES"
+
+  patch-release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    # Manual-only: upload whichever platforms were built onto an existing
+    # release. always() lets it run even when some build jobs were skipped.
+    if: always() && github.event_name == 'workflow_dispatch' && inputs.target != 'none'
+    steps:
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Resolve target release and version
+        id: target
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ inputs.target }}" == "nightly" ]]; then
+            TAG="nightly"
+            # Reuse the version embedded in the existing nightly assets so we
+            # clobber in place instead of creating a new-named asset.
+            VERSION=$(
+              gh release view nightly --json assets --jq '.assets[].name' \
+              | sed -nE 's/^scrcpy-gui-(windows|linux|macos)-v(.+)\.zip$/\2/p' \
+              | sort -Vu | tail -n1
+            )
+            if [[ -z "$VERSION" ]]; then
+              echo "No existing nightly assets found to derive a version from." >&2
+              exit 1
+            fi
+          else
+            # github's "latest" release excludes drafts and pre-releases.
+            TAG=$(gh release view --json tagName --jq '.tagName')
+            VERSION="${TAG#v}"
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Targeting release '$TAG' (version $VERSION)"
+
+      - name: Package and upload built platforms
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.target.outputs.tag }}
+          VERSION: ${{ steps.target.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd artifacts
+          uploaded=0
+
+          if [[ -d windows-build ]]; then
+            zip -r "../scrcpy-gui-windows-v${VERSION}.zip" windows-build/
+            gh release upload "$TAG" "../scrcpy-gui-windows-v${VERSION}.zip" --clobber
+            uploaded=1
+          fi
+          if [[ -d windows-installer ]]; then
+            cp windows-installer/scrcpy-gui-setup.exe "../scrcpy-gui-setup-v${VERSION}.exe"
+            gh release upload "$TAG" "../scrcpy-gui-setup-v${VERSION}.exe" --clobber
+            uploaded=1
+          fi
+          if [[ -d linux-build ]]; then
+            zip -r "../scrcpy-gui-linux-v${VERSION}.zip" linux-build/
+            gh release upload "$TAG" "../scrcpy-gui-linux-v${VERSION}.zip" --clobber
+            uploaded=1
+          fi
+          if [[ -d linux-appimage ]]; then
+            cp linux-appimage/Scrcpy_GUI-x86_64.AppImage "../Scrcpy_GUI-v${VERSION}-x86_64.AppImage"
+            gh release upload "$TAG" "../Scrcpy_GUI-v${VERSION}-x86_64.AppImage" --clobber
+            uploaded=1
+          fi
+          if [[ -d linux-flatpak ]]; then
+            cp linux-flatpak/Scrcpy_GUI-x86_64.flatpak "../Scrcpy_GUI-v${VERSION}-x86_64.flatpak"
+            gh release upload "$TAG" "../Scrcpy_GUI-v${VERSION}-x86_64.flatpak" --clobber
+            uploaded=1
+          fi
+          if [[ -d macos-build ]]; then
+            ( cd macos-build && zip -r "../../scrcpy-gui-macos-v${VERSION}.zip" . )
+            gh release upload "$TAG" "../scrcpy-gui-macos-v${VERSION}.zip" --clobber
+            uploaded=1
+          fi
+
+          if [[ "$uploaded" -eq 0 ]]; then
+            echo "No build artifacts were produced to upload." >&2
+            exit 1
+          fi
+
+          echo "Uploaded rebuilt platforms to release '$TAG'."
           fi
