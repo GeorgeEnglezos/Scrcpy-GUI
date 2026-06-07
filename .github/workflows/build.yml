@@ -537,7 +537,7 @@ jobs:
           $version = "${{ github.ref_name }}" -replace '^v',''
 
           # Only publish clean semantic versions; skip test/pre tags
-          # like "1.7.3-Test-Builds" that winget will not accept.
+          # like "1.7.4-Test-Builds" that winget will not accept.
           if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
             Write-Host "Skipping winget: '$version' is not a clean semver release."
             exit 0
