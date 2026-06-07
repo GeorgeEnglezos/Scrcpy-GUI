@@ -694,6 +694,7 @@ jobs:
             gh release edit nightly \
               --title "Nightly Builds (v${NIGHTLY_VERSION})" \
               --notes "$RELEASE_NOTES"
+          fi
 
   patch-release:
     needs: [build-windows, build-linux, build-macos]
@@ -786,4 +787,3 @@ jobs:
           fi
 
           echo "Uploaded rebuilt platforms to release '$TAG'."
-          fi
