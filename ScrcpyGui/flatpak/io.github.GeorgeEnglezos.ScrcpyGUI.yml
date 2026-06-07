@@ -22,6 +22,12 @@ finish-args:
   # host access, which is why Flathub would reject this manifest. Fine for
   # a flatpak you distribute yourself.
   - --talk-name=org.freedesktop.Flatpak
+  # Share /tmp so that `flatpak-spawn --host adb pull ... /tmp/...` writes to
+  # the same /tmp the container reads from.
+  - --filesystem=/tmp
+  # Share home so the settings directory (~/ScrcpyGui) is accessible inside
+  # the container and writable by host processes spawned via flatpak-spawn.
+  - --filesystem=home
 
 modules:
   - name: scrcpy-gui
