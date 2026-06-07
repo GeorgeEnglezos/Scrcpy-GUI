@@ -48,6 +48,9 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   // Session-state checkbox options (not persisted)
   bool _helperApkAutoInstall = false;
 
+  // Active custom context-menu overlay (right-click / three-dot button).
+  OverlayEntry? _ctxMenuEntry;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +70,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
   @override
   void dispose() {
+    _dismissOverlayMenu();
     _deviceManager?.selectedDeviceNotifier.removeListener(_onDeviceChanged);
     _deviceManager?.packagesReloadedTick.removeListener(_onPackagesReloaded);
     _cmdController.dispose();
@@ -444,126 +448,45 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     final isFav = controller.isFavorite(pkg);
     final currentGroupIndex = controller.groupIndexOf(pkg);
 
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy,
-        position.dx,
-        position.dy,
+    _showOverlayMenu(position, [
+      _CtxMenuItem(
+        icon: isFav ? Icons.favorite : Icons.favorite_border,
+        iconColor: isFav ? Colors.pinkAccent : null,
+        label: isFav ? 'Remove from Favorites' : 'Add to Favorites',
+        onTap: () => controller.toggleFavorite(pkg),
       ),
-      color: context.appSurface,
-      items: [
-        PopupMenuItem(
-          onTap: () => controller.toggleFavorite(pkg),
-          child: Row(
-            children: [
-              Icon(
-                isFav ? Icons.favorite : Icons.favorite_border,
-                size: 18,
-                color: isFav ? Colors.pinkAccent : context.appTextSecondary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isFav ? 'Remove from Favorites' : 'Add to Favorites',
-                style: TextStyle(color: context.appTextPrimary, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          onTap: () {
-            Clipboard.setData(ClipboardData(text: pkg));
-            ScaffoldMessenger.of(this.context).showSnackBar(
-              SnackBar(
-                content: Text('Copied: $pkg'),
-                duration: const Duration(seconds: 1),
-              ),
-            );
-          },
-          child: Row(
-            children: [
-              Icon(Icons.copy, size: 18, color: context.appTextSecondary),
-              const SizedBox(width: 8),
-              Text(
-                'Copy Package Name',
-                style: TextStyle(color: context.appTextPrimary, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          onTap: () {
-            Future.delayed(const Duration(milliseconds: 100), () {
-              if (!mounted) return;
-              _showMoveToGroupMenu(position, pkg, controller);
-            });
-          },
-          child: Row(
-            children: [
-              Icon(
-                Icons.drive_file_move_outline,
-                size: 18,
-                color: context.appTextSecondary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Move to Group',
-                  style: TextStyle(color: context.appTextPrimary, fontSize: 13),
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: context.appTextSecondary,
-              ),
-            ],
-          ),
-        ),
-        if (currentGroupIndex >= 0)
-          PopupMenuItem(
-            onTap: () => controller.removeFromGroup(pkg),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.remove_circle_outline,
-                  size: 18,
-                  color: context.appTextSecondary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Remove from Group',
-                  style: TextStyle(color: context.appTextPrimary, fontSize: 13),
-                ),
-              ],
+      _CtxMenuItem(
+        icon: Icons.copy,
+        label: 'Copy Package Name',
+        onTap: () {
+          Clipboard.setData(ClipboardData(text: pkg));
+          ScaffoldMessenger.of(this.context).showSnackBar(
+            SnackBar(
+              content: Text('Copied: $pkg'),
+              duration: const Duration(seconds: 1),
             ),
-          ),
-        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-          PopupMenuItem(
-            onTap: () {
-              Future.delayed(const Duration(milliseconds: 100), () {
-                if (!mounted) return;
-                _createDesktopShortcut(pkg, controller);
-              });
-            },
-            child: Row(
-              children: [
-                Icon(
-                  Icons.desktop_windows_outlined,
-                  size: 18,
-                  color: context.appTextSecondary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Create Desktop Shortcut',
-                  style: TextStyle(color: context.appTextPrimary, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
+          );
+        },
+      ),
+      _CtxMenuItem(
+        icon: Icons.drive_file_move_outline,
+        label: 'Move to Group',
+        showChevron: true,
+        onTap: () => _showMoveToGroupMenu(position, pkg, controller),
+      ),
+      if (currentGroupIndex >= 0)
+        _CtxMenuItem(
+          icon: Icons.remove_circle_outline,
+          label: 'Remove from Group',
+          onTap: () => controller.removeFromGroup(pkg),
+        ),
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+        _CtxMenuItem(
+          icon: Icons.desktop_windows_outlined,
+          label: 'Create Desktop Shortcut',
+          onTap: () => _createDesktopShortcut(pkg, controller),
+        ),
+    ]);
   }
 
   void _showMoveToGroupMenu(
@@ -573,54 +496,129 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   ) {
     final groups = controller.appDrawerSettings.groups;
 
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx + 10,
-        position.dy,
-        position.dx + 10,
-        position.dy,
+    _showOverlayMenu(position + const Offset(12, 0), [
+      for (var i = 0; i < groups.length; i++)
+        _CtxMenuItem(
+          icon: Icons.folder_outlined,
+          iconColor: context.appPrimary,
+          label: groups[i].name,
+          onTap: () => controller.moveToGroup(pkg, i),
+        ),
+      _CtxMenuItem(
+        icon: Icons.create_new_folder_outlined,
+        iconColor: context.appPrimary,
+        label: 'New Group...',
+        onTap: () => _showCreateGroupDialog(pkg, controller),
       ),
-      color: context.appSurface,
-      items: [
-        for (var i = 0; i < groups.length; i++)
-          PopupMenuItem(
-            onTap: () => controller.moveToGroup(pkg, i),
-            child: Row(
-              children: [
-                Icon(Icons.folder_outlined, size: 18, color: context.appPrimary),
-                const SizedBox(width: 8),
-                Text(
-                  groups[i].name,
-                  style: TextStyle(color: context.appTextPrimary, fontSize: 13),
-                ),
-              ],
+    ]);
+  }
+
+  /// Dismisses the custom context-menu overlay if one is showing.
+  void _dismissOverlayMenu() {
+    _ctxMenuEntry?.remove();
+    _ctxMenuEntry = null;
+  }
+
+  /// Draws a context menu directly into the root [Overlay].
+  ///
+  /// We do not use [showMenu]/[PopupRoute] here: on the Linux/Flatpak build
+  /// that route never paints (the menu is "reached" but nothing appears).
+  /// A self-managed [OverlayEntry] with a dismiss barrier works reliably.
+  void _showOverlayMenu(Offset position, List<_CtxMenuItem> items) {
+    _dismissOverlayMenu();
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final screen = MediaQuery.sizeOf(context);
+
+    const menuWidth = 240.0;
+    final estHeight = items.length * 42.0 + 8;
+    var left = position.dx;
+    var top = position.dy;
+    if (left + menuWidth > screen.width - 8) left = screen.width - menuWidth - 8;
+    if (top + estHeight > screen.height - 8) top = screen.height - estHeight - 8;
+    if (left < 8) left = 8;
+    if (top < 8) top = 8;
+
+    _ctxMenuEntry = OverlayEntry(
+      builder: (_) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _dismissOverlayMenu,
+              onSecondaryTap: _dismissOverlayMenu,
             ),
           ),
-        PopupMenuItem(
-          onTap: () {
-            Future.delayed(const Duration(milliseconds: 100), () {
-              if (!mounted) return;
-              _showCreateGroupDialog(pkg, controller);
-            });
-          },
-          child: Row(
-            children: [
-              Icon(
-                Icons.create_new_folder_outlined,
-                size: 18,
-                color: context.appPrimary,
+          Positioned(
+            left: left,
+            top: top,
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: menuWidth,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                decoration: BoxDecoration(
+                  color: context.appSurface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: context.appDivider),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final item in items)
+                      InkWell(
+                        onTap: () {
+                          _dismissOverlayMenu();
+                          item.onTap();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                item.icon,
+                                size: 18,
+                                color:
+                                    item.iconColor ?? context.appTextSecondary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  item.label,
+                                  style: TextStyle(
+                                    color: context.appTextPrimary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                              if (item.showChevron)
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: context.appTextSecondary,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                'New Group...',
-                style: TextStyle(color: context.appTextPrimary, fontSize: 13),
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+    overlay.insert(_ctxMenuEntry!);
   }
 
   Future<void> _showCreateGroupDialog(
@@ -977,6 +975,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             children: [
               _buildHeader(hasDevice, controller, packages.length),
               if (hasDevice) _buildCommandBar(),
+              if (controller.isLoading) _buildLoadingBanner(controller),
               if (!hasDevice)
                 _buildNoDevice()
               else if (controller.labels.isEmpty && !controller.isLoading)
@@ -1781,13 +1780,6 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     : null,
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              controller.total > 0
-                  ? '${controller.progress} / ${controller.total}'
-                  : 'Loading...',
-              style: TextStyle(color: context.appTextSecondary, fontSize: 12),
-            ),
             const SizedBox(width: 12),
           ],
 
@@ -1868,6 +1860,56 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 splashRadius: 18,
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingBanner(AppIconController controller) {
+    final hasProgress = controller.total > 0;
+    final status = controller.progressStatus;
+    return Container(
+      color: context.appSurface,
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: hasProgress
+                        ? (controller.progress / controller.total).clamp(0.0, 1.0)
+                        : null,
+                    minHeight: 6,
+                    backgroundColor: context.appDivider,
+                    valueColor: AlwaysStoppedAnimation(context.appPrimary),
+                  ),
+                ),
+              ),
+              if (hasProgress) ...[
+                const SizedBox(width: 12),
+                Text(
+                  '${controller.progress} / ${controller.total}',
+                  style: TextStyle(
+                    color: context.appTextSecondary,
+                    fontSize: 12,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (status.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              status,
+              style: TextStyle(color: context.appTextSecondary, fontSize: 11),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );
@@ -2681,4 +2723,21 @@ class _ScriptGroup {
   final List<File> files;
 
   _ScriptGroup({required this.name, required this.isRoot, required this.files});
+}
+
+/// A single row in the custom overlay context menu.
+class _CtxMenuItem {
+  final IconData icon;
+  final Color? iconColor;
+  final String label;
+  final bool showChevron;
+  final VoidCallback onTap;
+
+  _CtxMenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.iconColor,
+    this.showChevron = false,
+  });
 }

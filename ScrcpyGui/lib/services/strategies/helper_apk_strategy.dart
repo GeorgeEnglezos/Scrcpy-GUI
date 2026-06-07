@@ -29,7 +29,7 @@ class HelperApkStrategy implements IconFetchStrategy {
   // Helper app exports to shared external storage (accessible by ADB)
   static const String _exportDir = '/sdcard/Android/data/com.george.iconhelper/files/iconhelper';
   static const Duration _pollInterval = Duration(milliseconds: 500);
-  static const Duration _pollTimeout = Duration(seconds: 120);
+  static const Duration _pollTimeout = Duration(seconds: 300);
 
   String _adbFor(String deviceId) =>
       '${TerminalService.adbExecutable} -s $deviceId';
@@ -51,12 +51,15 @@ class HelperApkStrategy implements IconFetchStrategy {
   }) async {
     try {
       LogService.info('HelperApkStrategy', 'Starting fetch for device=${LogService.sanitizeDevice(deviceId)} packages=${packages.length}');
+      final n = packages.length;
 
       // Step 1: Check APK is installed; auto-install if requested
+      onProgress?.call(0, n, 'Checking helper APK...');
       final isInstalled = await _isApkInstalled(deviceId);
       if (!isInstalled) {
         if (autoInstall) {
           LogService.info('HelperApkStrategy', 'APK not installed — installing via ADB on device=${LogService.sanitizeDevice(deviceId)}');
+          onProgress?.call(0, n, 'Installing helper APK...');
           await _installApk(deviceId);
           LogService.info('HelperApkStrategy', 'APK installed successfully on device=${LogService.sanitizeDevice(deviceId)}');
         } else {
@@ -69,24 +72,60 @@ class HelperApkStrategy implements IconFetchStrategy {
         LogService.debug('HelperApkStrategy', 'APK already installed on device=${LogService.sanitizeDevice(deviceId)}');
       }
 
-      // Step 2: Trigger export on device
-      LogService.info('HelperApkStrategy', 'Triggering export on device=${LogService.sanitizeDevice(deviceId)}');
-      await _triggerExport(deviceId);
+      // Step 2: Check if an export is already mid-flight (dir exists but no
+      // labels.json yet). If so, just poll — don't re-trigger and interrupt it.
+      // Otherwise always trigger a fresh export so the desktop never relies on
+      // stale on-device files.
+      onProgress?.call(0, n, 'Checking export state...');
+      final labelsCheck = await TerminalService.runCommand(
+        '${_adbFor(deviceId)} shell test -f $_exportDir/labels.json && echo "DONE" || echo "NOPE"',
+      );
+      final labelsDone = labelsCheck.trim() == 'DONE';
 
-      // Step 3: Wait for export to complete (poll for labels.json)
-      final success = await _pollForExportCompletion(deviceId);
-      if (!success) {
-        LogService.error('HelperApkStrategy', 'Export timed out after ${_pollTimeout.inSeconds}s on device=${LogService.sanitizeDevice(deviceId)}');
-        throw Exception('Export timed out after ${_pollTimeout.inSeconds}s');
+      bool exportInProgress = false;
+      if (!labelsDone) {
+        final dirCheck = await TerminalService.runCommand(
+          '${_adbFor(deviceId)} shell test -d $_exportDir && echo "EXISTS" || echo "NOPE"',
+        );
+        exportInProgress = dirCheck.trim() == 'EXISTS';
       }
-      LogService.info('HelperApkStrategy', 'Export completed on device=${LogService.sanitizeDevice(deviceId)}');
+
+      if (exportInProgress) {
+        // Another fetch is already running — don't interrupt it, just wait.
+        LogService.info('HelperApkStrategy',
+            'Export already in progress on device=${LogService.sanitizeDevice(deviceId)} — skipping trigger');
+        onProgress?.call(0, n, 'Waiting for mobile app to finish exporting icons...');
+        final success = await _pollForExportCompletion(deviceId);
+        if (!success) {
+          LogService.error('HelperApkStrategy', 'Export timed out after ${_pollTimeout.inSeconds}s on device=${LogService.sanitizeDevice(deviceId)}');
+          throw Exception('Export timed out after ${_pollTimeout.inSeconds}s');
+        }
+        LogService.info('HelperApkStrategy', 'Export completed on device=${LogService.sanitizeDevice(deviceId)}');
+      } else {
+        // Step 3: Trigger a fresh export.
+        // Force-stop first so am start always goes through onCreate regardless
+        // of whether the Activity is already alive in the foreground/background.
+        onProgress?.call(0, n, 'Launching helper app on device...');
+        LogService.info('HelperApkStrategy', 'Triggering export on device=${LogService.sanitizeDevice(deviceId)}');
+        await _triggerExport(deviceId);
+
+        onProgress?.call(0, n, 'Waiting for mobile app to export icons...');
+        final success = await _pollForExportCompletion(deviceId);
+        if (!success) {
+          LogService.error('HelperApkStrategy', 'Export timed out after ${_pollTimeout.inSeconds}s on device=${LogService.sanitizeDevice(deviceId)}');
+          throw Exception('Export timed out after ${_pollTimeout.inSeconds}s');
+        }
+        LogService.info('HelperApkStrategy', 'Export completed on device=${LogService.sanitizeDevice(deviceId)}');
+      }
 
       // Step 4: Pull files from device
+      onProgress?.call(0, n, 'Pulling icons from mobile to desktop...');
       LogService.info('HelperApkStrategy', 'Pulling export files from device=${LogService.sanitizeDevice(deviceId)}');
       final tempDir = await _createTempDirectory();
       await _pullExportFiles(deviceId, tempDir);
 
       // Step 5: Parse labels.json
+      onProgress?.call(0, n, 'Processing app data...');
       final labelsJson = await _parseLabelsJson(tempDir);
       LogService.info('HelperApkStrategy', 'Parsed ${labelsJson.length} labels from device=${LogService.sanitizeDevice(deviceId)}');
       for (final entry in labelsJson.entries) {
@@ -101,7 +140,7 @@ class HelperApkStrategy implements IconFetchStrategy {
       }
 
       // Step 5b: Parse categories.json (if present)
-      final categoriesFile = File('${tempDir.path}/iconhelper/categories.json');
+      final categoriesFile = File('${tempDir.path}/categories.json');
       if (await categoriesFile.exists()) {
         try {
           final catContent = await categoriesFile.readAsString();
@@ -114,10 +153,11 @@ class HelperApkStrategy implements IconFetchStrategy {
       }
 
       // Step 6: Load icons in batches
-      final iconDir = Directory('${tempDir.path}/iconhelper/icons');
+      final iconDir = Directory('${tempDir.path}/icons');
       if (await iconDir.exists()) {
         final iconFiles = await iconDir.list().toList();
         LogService.info('HelperApkStrategy', 'Loading ${iconFiles.length} icons from device=${LogService.sanitizeDevice(deviceId)}');
+        var loaded = 0;
 
         for (var i = 0; i < iconFiles.length; i += batchSize) {
           if (isCancelled()) {
@@ -136,11 +176,13 @@ class HelperApkStrategy implements IconFetchStrategy {
                 final cacheFile = await AppIconCache.cacheFile(pkg);
                 await file.copy(cacheFile.path);
                 batchResults[pkg] = cacheFile;
+                loaded++;
               }
             }
           }
 
           onBatchDone(batchResults);
+          onProgress?.call(loaded, iconFiles.length, 'Loading icons...');
         }
       }
 
@@ -172,9 +214,7 @@ class HelperApkStrategy implements IconFetchStrategy {
     );
     await tempFile.writeAsBytes(data.buffer.asUint8List(), flush: true);
     try {
-      // Use Process.run with explicit args to avoid shell quoting issues on Windows.
-      final adbExe = TerminalService.adbExecutable;
-      final result = await Process.run(adbExe, ['-s', deviceId, 'install', tempFile.path]);
+      final result = await TerminalService.runAdbProcess(['-s', deviceId, 'install', tempFile.path]);
       final out = result.stdout.toString();
       final err = result.stderr.toString();
       // adb install prints "Success" on success; any non-zero exit or stderr indicates failure.
@@ -189,6 +229,11 @@ class HelperApkStrategy implements IconFetchStrategy {
   }
 
   Future<void> _triggerExport(String deviceId) async {
+    // Force-stop first so am start always hits onCreate even if the Activity
+    // is currently alive in the foreground or background.
+    await TerminalService.runCommand(
+      '${_adbFor(deviceId)} shell am force-stop $_apkPackage',
+    );
     await TerminalService.runCommand(
       '${_adbFor(deviceId)} shell am start -n $_apkPackage/.MainActivity --ez auto_export true',
     );
@@ -239,27 +284,48 @@ class HelperApkStrategy implements IconFetchStrategy {
   }
 
   Future<Directory> _createTempDirectory() async {
-    final tempDir = Directory.systemTemp.createTempSync('iconhelper_');
+    // In a Flatpak sandbox /tmp is a private container tmpfs. Host processes
+    // spawned via flatpak-spawn --host write to the HOST /tmp, which is a
+    // different namespace, so adb pull fails to find the destination dir.
+    // XDG_CACHE_HOME resolves to a real on-disk path (~/.var/app/<id>/cache)
+    // that is visible at the same absolute path from both container and host.
+    final xdgCache = Platform.environment['XDG_CACHE_HOME'];
+    final base = (xdgCache != null && xdgCache.isNotEmpty)
+        ? Directory(xdgCache)
+        : Directory.systemTemp;
+    if (!base.existsSync()) await base.create(recursive: true);
+    final tempDir = base.createTempSync('iconhelper_');
     return tempDir;
   }
 
   Future<void> _pullExportFiles(String deviceId, Directory tempDir) async {
-    await TerminalService.runCommand(
-      '${_adbFor(deviceId)} pull $_exportDir ${tempDir.path}/',
-    );
+    // Pull each item by explicit name so we get a flat layout in tempDir
+    // regardless of how different adb versions handle directory pulls.
+    for (final item in ['labels.json', 'categories.json', 'icons']) {
+      final r = await TerminalService.runCommandWithResult(
+        '${_adbFor(deviceId)} pull $_exportDir/$item ${tempDir.path}/$item',
+      );
+      LogService.debug(
+        'HelperApkStrategy',
+        'pull $item exitCode=${r.exitCode} '
+        'stderr="${r.stderr.toString().trim()}"',
+      );
+    }
   }
 
   Future<Map<String, String>> _parseLabelsJson(Directory tempDir) async {
     try {
-      final labelsFile = File('${tempDir.path}/iconhelper/labels.json');
+      final labelsFile = File('${tempDir.path}/labels.json');
       if (!await labelsFile.exists()) {
+        LogService.debug('HelperApkStrategy', 'labels.json not found at ${labelsFile.path}');
         return {};
       }
-
       final content = await labelsFile.readAsString();
+      LogService.debug('HelperApkStrategy', 'labels.json ${content.length} chars');
       final json = jsonDecode(content) as Map<String, dynamic>;
       return json.cast<String, String>();
-    } catch (_) {
+    } catch (e) {
+      LogService.error('HelperApkStrategy', 'Failed to parse labels.json: $e');
       return {};
     }
   }

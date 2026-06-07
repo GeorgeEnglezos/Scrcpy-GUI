@@ -133,9 +133,20 @@ class TerminalService {
   /// Returns true if scrcpy is resolvable on the system PATH.
   static Future<bool> isScrcpyOnPath() async {
     try {
-      final result = Platform.isWindows
-          ? await Process.run('cmd', ['/c', 'where', 'scrcpy'])
-          : await Process.run('which', ['scrcpy']);
+      if (Platform.isWindows) {
+        final result = await Process.run('cmd', ['/c', 'where', 'scrcpy']);
+        return result.exitCode == 0;
+      }
+      if (_canSpawnHostProcesses) {
+        final result = await Process.run('flatpak-spawn', ['--host', 'scrcpy', '--version']);
+        return result.exitCode == 0;
+      }
+      final env = {
+        ...Platform.environment,
+        'PATH':
+            '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
+      };
+      final result = await Process.run('scrcpy', ['--version'], environment: env);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -514,22 +525,21 @@ class TerminalService {
   /// ```
   static Future<String> runCommand(String command) async {
     try {
-      // On macOS/Linux, we need to ensure the PATH includes common binary locations
-      // where adb and scrcpy might be installed (Homebrew, user installations, etc.)
-      final environment = Platform.isWindows
-          ? null
-          : {
-              'PATH':
-                  '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
-            };
-
-      final result = await Process.run(
-        Platform.isWindows ? 'cmd' : 'bash',
-        Platform.isWindows
-            ? ['/c', ...tokenizeCommand(command)]
-            : ['-c', command],
-        environment: environment,
-      );
+      final ProcessResult result;
+      if (Platform.isWindows) {
+        result = await Process.run('cmd', ['/c', ...tokenizeCommand(command)]);
+      } else if (_canSpawnHostProcesses) {
+        result = await Process.run('flatpak-spawn', ['--host', 'bash', '-c', command]);
+      } else {
+        result = await Process.run(
+          'bash',
+          ['-c', command],
+          environment: {
+            'PATH':
+                '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
+          },
+        );
+      }
       return result.stdout.toString().trim();
     } catch (e) {
       LogService.error('TerminalService/runCommand', 'Error running command: $e');
@@ -539,21 +549,29 @@ class TerminalService {
 
   /// Like [runCommand] but returns the full [ProcessResult] (stdout, stderr, exitCode).
   static Future<ProcessResult> runCommandWithResult(String command) async {
-    final environment = Platform.isWindows
-        ? null
-        : {
-            'PATH':
-                '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
-          };
-
-    final result = await Process.run(
-      Platform.isWindows ? 'cmd' : 'bash',
-      Platform.isWindows
-          ? ['/c', ...tokenizeCommand(command)]
-          : ['-c', command],
-      environment: environment,
+    if (Platform.isWindows) {
+      return Process.run('cmd', ['/c', ...tokenizeCommand(command)]);
+    }
+    if (_canSpawnHostProcesses) {
+      return Process.run('flatpak-spawn', ['--host', 'bash', '-c', command]);
+    }
+    return Process.run(
+      'bash',
+      ['-c', command],
+      environment: {
+        'PATH':
+            '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
+      },
     );
-    return result;
+  }
+
+  /// Runs adb with an explicit argument list (no shell), with Flatpak routing.
+  static Future<ProcessResult> runAdbProcess(List<String> args) {
+    final exe = adbExecutable;
+    if (_canSpawnHostProcesses) {
+      return Process.run('flatpak-spawn', ['--host', exe, ...args]);
+    }
+    return Process.run(exe, args);
   }
 
   /// Runs a command in a new terminal window (cross-platform)
@@ -926,7 +944,7 @@ class TerminalService {
   ];
 
   static bool get _canSpawnHostProcesses =>
-      Platform.isLinux && File('/run/host/usr/bin/flatpak-spawn').existsSync();
+      Platform.isLinux && File('/.flatpak-info').existsSync();
 
   static String _shellQuote(String value) =>
       "'${value.replaceAll("'", "'\"'\"'")}'";
@@ -1183,7 +1201,12 @@ class TerminalService {
   /// ```
   static Future<String> enableTcpip(String deviceId, int port) async {
     final command = '$adbExecutable -s $deviceId tcpip $port';
-    return await runCommand(command);
+    // adb tcpip writes its confirmation to stderr on modern adb versions.
+    // Check exit code instead of stdout content.
+    final result = await runCommandWithResult(command);
+    if (result.exitCode != 0) return '';
+    final combined = '${result.stdout}${result.stderr}'.trim();
+    return combined.isEmpty ? 'ok' : combined;
   }
 
   /// Get device IP address from wlan0 interface
