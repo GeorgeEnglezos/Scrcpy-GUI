@@ -1,0 +1,39 @@
+# Flatpak manifest for Scrcpy GUI.
+#
+# This packages the PREBUILT Flutter Linux bundle (not a from-source build).
+# Run `flutter build linux --release` first, then `bash package_flatpak.sh`,
+# which stages the bundle next to this manifest and invokes flatpak-builder.
+#
+# GTK3 comes from the GNOME runtime, so we don't bundle it ourselves.
+app-id: io.github.GeorgeEnglezos.ScrcpyGUI
+runtime: org.gnome.Platform
+runtime-version: '47'
+sdk: org.gnome.Sdk
+command: scrcpy_gui_prod
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=fallback-x11   # X11, or fall back to it under XWayland
+  - --socket=wayland
+  - --device=dri            # GPU access for the Flutter UI
+  # This is the whole point of the "easy" flatpak: it lets the app call
+  # `flatpak-spawn --host` to run scrcpy/adb on the host. It grants broad
+  # host access, which is why Flathub would reject this manifest. Fine for
+  # a flatpak you distribute yourself.
+  - --talk-name=org.freedesktop.Flatpak
+
+modules:
+  - name: scrcpy-gui
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/bin
+      - cp -r bundle/. /app/bin/
+      - chmod +x /app/bin/scrcpy_gui_prod
+      - install -Dm644 bundle/data/flutter_assets/icon.png
+          /app/share/icons/hicolor/512x512/apps/io.github.GeorgeEnglezos.ScrcpyGUI.png
+      - install -Dm644 io.github.GeorgeEnglezos.ScrcpyGUI.desktop
+          /app/share/applications/io.github.GeorgeEnglezos.ScrcpyGUI.desktop
+    sources:
+      - type: dir
+        path: .

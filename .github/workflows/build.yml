@@ -198,6 +198,22 @@ jobs:
       - name: Create Linux AppImage
         run: bash package_appimage.sh
 
+      - name: Install Flatpak tooling
+        run: |
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub \
+            https://flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y flathub org.gnome.Platform//47 org.gnome.Sdk//47
+
+      - name: Create Linux Flatpak
+        run: bash package_flatpak.sh
+
+      - name: Archive Linux Flatpak
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-flatpak
+          path: ScrcpyGui/artifacts/flatpak/
+
       - name: Archive Linux build
         uses: actions/upload-artifact@v4
         with:
@@ -448,6 +464,10 @@ jobs:
           cp linux-appimage/Scrcpy_GUI-x86_64.AppImage \
             "../Scrcpy_GUI-v${VERSION}-x86_64.AppImage"
 
+          # Linux Flatpak - single-file bundle; needs scrcpy/adb on the host
+          cp linux-flatpak/Scrcpy_GUI-x86_64.flatpak \
+            "../Scrcpy_GUI-v${VERSION}-x86_64.flatpak"
+
           # macOS build - create ZIP with DMG, install script, and README
           cd macos-build
           zip -r ../../scrcpy-gui-macos-v${VERSION}.zip .
@@ -461,6 +481,7 @@ jobs:
             scrcpy-gui-setup-v*.exe
             scrcpy-gui-linux-v*.zip
             Scrcpy_GUI-v*-x86_64.AppImage
+            Scrcpy_GUI-v*-x86_64.flatpak
             scrcpy-gui-macos-v*.zip
           draft: false
           prerelease: false
