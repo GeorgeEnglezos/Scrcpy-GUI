@@ -133,9 +133,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
   }) async {
     File? tempApk;
     try {
-      final adbExe = TerminalService.adbExecutable;
-      final pmResult = await Process.run(
-        adbExe,
+      final pmResult = await TerminalService.runAdbProcess(
         ['-s', deviceId, 'shell', 'pm', 'path', pkg],
       );
       final pmOutput = pmResult.stdout.toString().trim();
@@ -164,8 +162,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
       if (pendingIcon.contains(pkg)) {
         // Phase A: heuristic zip scan
         for (final apkPath in allApkPaths) {
-          final pullResult = await Process.run(
-            adbExe,
+          final pullResult = await TerminalService.runAdbProcess(
             ['-s', deviceId, 'pull', apkPath, tempApk.path],
           );
           if (pullResult.exitCode != 0) continue;
@@ -190,7 +187,6 @@ class AdbScrapeStrategy implements IconFetchStrategy {
             pkg: pkg,
             deviceId: deviceId,
             allApkPaths: allApkPaths,
-            adbExe: adbExe,
             tempApk: tempApk,
           );
           if (iconFile != null) pendingIcon.remove(pkg);
@@ -211,7 +207,6 @@ class AdbScrapeStrategy implements IconFetchStrategy {
     required String pkg,
     required String deviceId,
     required List<String> allApkPaths,
-    required String adbExe,
     required File tempApk,
   }) async {
     final basePath = allApkPaths.firstWhere(
@@ -220,8 +215,8 @@ class AdbScrapeStrategy implements IconFetchStrategy {
     );
 
     try {
-      final pullResult = await Process.run(
-        adbExe, ['-s', deviceId, 'pull', basePath, tempApk.path],
+      final pullResult = await TerminalService.runAdbProcess(
+        ['-s', deviceId, 'pull', basePath, tempApk.path],
       );
       if (pullResult.exitCode != 0) return null;
 
@@ -250,8 +245,8 @@ class AdbScrapeStrategy implements IconFetchStrategy {
         final iconResId = outResId.first!;
         for (final splitPath in allApkPaths) {
           if (splitPath.endsWith('base.apk')) continue;
-          final splitPull = await Process.run(
-            adbExe, ['-s', deviceId, 'pull', splitPath, tempApk.path],
+          final splitPull = await TerminalService.runAdbProcess(
+            ['-s', deviceId, 'pull', splitPath, tempApk.path],
           );
           if (splitPull.exitCode != 0) continue;
           try {
@@ -288,8 +283,8 @@ class AdbScrapeStrategy implements IconFetchStrategy {
 
       // Search all splits for the resolved paths
       for (final apkPath in allApkPaths) {
-        final pullRes = await Process.run(
-          adbExe, ['-s', deviceId, 'pull', apkPath, tempApk.path],
+        final pullRes = await TerminalService.runAdbProcess(
+          ['-s', deviceId, 'pull', apkPath, tempApk.path],
         );
         if (pullRes.exitCode != 0) continue;
         try {
