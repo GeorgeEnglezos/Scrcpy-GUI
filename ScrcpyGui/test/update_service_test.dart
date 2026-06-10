@@ -54,5 +54,13 @@ void main() {
     test('Stable vs same version Nightly: 1.6.1 > 1.6.1-nightly.20260301.1 should be true', () {
       expect(UpdateService.isVersionGreater('1.6.1', '1.6.1-nightly.20260301.1'), isTrue);
     });
+
+    test('4-part tag vs 3-part app: 1.7.4.1 > 1.7.4 should be false', () {
+      expect(UpdateService.isVersionGreater('1.7.4.1', '1.7.4'), isFalse);
+    });
+
+    test('Newer release vs 4-part tag: 1.7.5 > 1.7.4.1 should be true', () {
+      expect(UpdateService.isVersionGreater('1.7.5', '1.7.4.1'), isTrue);
+    });
   });
 }

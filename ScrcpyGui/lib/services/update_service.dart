@@ -196,8 +196,11 @@ class UpdateService {
   /// because the dates are zero-padded. Stable releases always sort above any
   /// pre-release of the same base version (e.g. 1.6.0 > 1.6.0-rc.1).
   static bool isVersionGreater(String latest, String current) {
-    final latestParts = latest.split('-')[0].split('.');
-    final currentParts = current.split('-')[0].split('.');
+    // Flutter app versions are always 3-part (major.minor.patch). Some release
+    // tags accidentally carry a 4th segment (e.g. 1.7.4.1); cap to 3 segments so
+    // that extra part can never be read as a newer version than the app's 1.7.4.
+    final latestParts = latest.split('-')[0].split('.').take(3).toList();
+    final currentParts = current.split('-')[0].split('.').take(3).toList();
 
     for (int i = 0; i < latestParts.length && i < currentParts.length; i++) {
       final latestVal = int.tryParse(latestParts[i]) ?? 0;
