@@ -37,9 +37,14 @@ foreach ($dll in 'msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
 
 # 3. Build the Inno Setup installer
 Write-Host '==> Building Inno Setup installer' -ForegroundColor Cyan
-$iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-if (-not (Test-Path $iscc)) {
-    Write-Warning "Inno Setup not found at $iscc"
+$isccCandidates = @(
+    "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",   # default machine-wide install
+    "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+    "${env:LOCALAPPDATA}\Programs\Inno Setup 6\ISCC.exe" # winget per-user install
+)
+$iscc = $isccCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $iscc) {
+    Write-Warning "Inno Setup (ISCC.exe) not found in: $($isccCandidates -join '; ')"
     Write-Warning 'Install it (winget install JRSoftware.InnoSetup) to produce setup.exe.'
     Write-Host 'DLLs are bundled in the Release folder; the installer step was skipped.' -ForegroundColor Yellow
     exit 0
