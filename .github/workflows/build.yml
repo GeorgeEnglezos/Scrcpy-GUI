@@ -170,6 +170,25 @@ jobs:
       - name: Build Windows
         run: flutter build windows --release
 
+      - name: Bundle Visual C++ runtime DLLs
+        shell: pwsh
+        run: |
+          # Flutter release exes dynamically link the MSVC runtime. Ship the
+          # DLLs app-local so the app launches on machines without VC++ redist
+          # (e.g. the winget validation VM -> STATUS_DLL_NOT_FOUND / 0xC0000135).
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $crtDir = Get-ChildItem -Path (Join-Path $vsPath 'VC\Redist\MSVC') -Recurse -Directory -Filter 'Microsoft.VC*.CRT' |
+            Where-Object { $_.FullName -like '*\x64\*' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $crtDir) { throw "Could not locate the VC++ x64 CRT redist folder under $vsPath" }
+          Write-Host "Using CRT redist: $($crtDir.FullName)"
+          $dest = 'build\windows\x64\runner\Release'
+          foreach ($dll in 'msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
+            Copy-Item (Join-Path $crtDir.FullName $dll) (Join-Path $dest $dll) -Force
+            Write-Host "Bundled $dll"
+          }
+
       - name: Build Windows installer
         shell: pwsh
         run: |
