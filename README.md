@@ -1,6 +1,7 @@
 # Scrcpy GUI
 
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)]()
+[![winget](https://img.shields.io/winget/v/GeorgeEnglezos.ScrcpyGUI)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/g/GeorgeEnglezos/ScrcpyGUI)
 
 A modern, cross-platform graphical user interface for [scrcpy](https://github.com/Genymobile/scrcpy) - the powerful Android screen mirroring and control tool.
 
@@ -45,7 +46,13 @@ Scrcpy GUI transforms the command-line scrcpy experience into an intuitive graph
 
 ### Installation
 
-Download the latest release for your platform from the [Releases](https://github.com/GeorgeEnglezos/Scrcpy-GUI/releases) page:
+**Windows (winget)** - the easiest way to install and stay up to date:
+
+```
+winget install GeorgeEnglezos.ScrcpyGUI
+```
+
+**Manual download** - grab the latest release for your platform from the [Releases](https://github.com/GeorgeEnglezos/Scrcpy-GUI/releases) page:
 
 - **Windows**: `scrcpy-gui-windows-vX.X.X.zip`
 - **macOS**: `scrcpy-gui-macos-vX.X.X.zip`
