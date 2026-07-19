@@ -27,8 +27,8 @@ class LogEntry {
 /// File logging is a secondary toggle — also off by default.
 ///
 /// Usage:
-///   LogService.info('TerminalService/executeCommand', 'Running: $cmd');
-///   LogService.error('TerminalService/executeCommand', 'exitCode=$code — $err');
+///   LogService.info('CommandExecutor/executeCommand', 'Running: $cmd');
+///   LogService.error('CommandExecutor/executeCommand', 'exitCode=$code — $err');
 class LogService extends ChangeNotifier {
   LogService._();
 

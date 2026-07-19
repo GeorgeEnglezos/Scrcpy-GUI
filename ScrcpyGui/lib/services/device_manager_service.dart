@@ -17,7 +17,7 @@ import '../models/phone_info_model.dart';
 import '../services/app_icon_cache.dart';
 import '../services/log_service.dart';
 import '../services/settings_service.dart';
-import '../services/terminal_service.dart';
+import 'adb_service.dart';
 
 /// Service for managing Android device connections and information
 ///
@@ -106,7 +106,7 @@ class DeviceManagerService extends ChangeNotifier {
   /// If devices are found and no device is selected, automatically
   /// selects the first device.
   Future<void> _loadDevicesOnce() async {
-    final devices = await TerminalService.adbDevices();
+    final devices = await AdbService.adbDevices();
 
     for (var deviceId in devices) {
       await _loadDeviceData(deviceId);
@@ -135,7 +135,7 @@ class DeviceManagerService extends ChangeNotifier {
   ///
   /// Always calls [notifyListeners] at the end to update UI.
   Future<void> _checkDeviceChanges() async {
-    final devices = await TerminalService.adbDevices();
+    final devices = await AdbService.adbDevices();
 
     final newDevices = devices.where((d) => !_lastConnectedDevices.contains(d)).toList();
     final removedDevices = _lastConnectedDevices.where((d) => !devices.contains(d)).toList();
@@ -175,7 +175,7 @@ class DeviceManagerService extends ChangeNotifier {
   Future<void> _loadDeviceData(String deviceId) async {
     final includeSystemApps =
         SettingsService.currentAppDrawerSettings?.includeSystemApps ?? false;
-    final packages = await TerminalService.listPackages(
+    final packages = await AdbService.listPackages(
       deviceId: deviceId,
       includeSystemApps: includeSystemApps,
     );
@@ -191,9 +191,9 @@ class DeviceManagerService extends ChangeNotifier {
         pkg: (cachedLabels[pkg]?.isNotEmpty == true) ? cachedLabels[pkg]! : pkg,
     };
 
-    final rawEncoders = await TerminalService.loadScrcpyEncoders(deviceId: deviceId);
-    final videoCodecsEncoders = TerminalService.parseVideoEncoders(rawEncoders);
-    final audioCodecsEncoders = TerminalService.parseAudioEncoders(rawEncoders);
+    final rawEncoders = await AdbService.loadScrcpyEncoders(deviceId: deviceId);
+    final videoCodecsEncoders = AdbService.parseVideoEncoders(rawEncoders);
+    final audioCodecsEncoders = AdbService.parseAudioEncoders(rawEncoders);
 
     devicesInfo[deviceId] = PhoneInfoModel(
       deviceId: deviceId,

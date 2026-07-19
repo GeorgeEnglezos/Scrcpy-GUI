@@ -63,5 +63,5 @@ class ColorPreset {
       Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
 
   static String _toHex(Color color) =>
-      '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+      '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
 }

@@ -91,14 +91,6 @@ class CustomDropdown extends StatelessWidget {
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         labelStyle: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w500),
         floatingLabelStyle: TextStyle(color: context.appPrimary, fontSize: 12, fontWeight: FontWeight.w500),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: textColor.withValues(alpha: 0.3)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: context.appPrimary),
-        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,

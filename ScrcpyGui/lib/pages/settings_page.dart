@@ -2,11 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import '../widgets/app_snackbar.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
 import '../models/settings_model.dart';
 import '../services/log_service.dart';
 import '../services/settings_service.dart';
+import '../services/shell_runner.dart';
 import '../services/color_theme_notifier.dart';
 import '../theme/app_theme_colors.dart';
 import '../widgets/surrounding_panel.dart';
@@ -47,6 +49,12 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _shortcutModController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSettings() async {
@@ -120,7 +128,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Cross-platform open-folder helper for Windows, macOS, and Linux.
   Future<void> _openFolder(String path) async {
     if (path.isEmpty) return;
 
@@ -128,21 +135,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (!await directory.exists()) return;
 
     try {
-      if (Platform.isWindows) {
-        final normalized = directory.path.replaceAll('/', '\\');
-
-        // DO NOT add quotes around the path.
-        await Process.run('cmd', [
-          '/c',
-          'start',
-          '',
-          normalized,
-        ], runInShell: true);
-      } else if (Platform.isMacOS) {
-        await Process.run('open', [directory.path]);
-      } else if (Platform.isLinux) {
-        await Process.run('xdg-open', [directory.path]);
-      }
+      await ShellRunner.openFolder(directory.path);
     } catch (e) {
       LogService.error(
         'SettingsPage/openFolder',
@@ -150,11 +143,10 @@ class _SettingsPageState extends State<SettingsPage> {
         err: e,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to open folder: $e'),
-            backgroundColor: Colors.red.shade700,
-          ),
+        showAppSnackBar(
+          context,
+          'Failed to open folder: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
@@ -294,13 +286,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -311,13 +296,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
                     ),
                   ),
                 ],
@@ -495,7 +473,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 _settings = _settings.copyWith(loggingEnabled: value);
               });
               await LogService.setLoggingEnabled(value);
-              _saveSettings();
+              await _saveSettings();
             },
           ),
           const SizedBox(height: 16),
@@ -627,11 +605,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     if (confirmed == true && mounted) {
                       await context.read<AppIconController>().clearCache();
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('App icon and label cache cleared.'),
-                            backgroundColor: Colors.orange,
-                          ),
+                        showAppSnackBar(
+                          context,
+                          'App icon and label cache cleared.',
+                          type: AppSnackBarType.warning,
                         );
                       }
                     }
@@ -641,13 +618,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange.shade700,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -963,16 +933,7 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () => _openFolder(path),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                 child: const Text(
                   'Open',
                   style: TextStyle(color: Colors.white),
@@ -984,16 +945,6 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: onBrowse,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.appPrimary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
                 child: Text(
                   'Browse...',
                   style: TextStyle(color: context.appOnPrimary),
@@ -1005,16 +956,8 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: onClear,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade700,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
+                style:
+                    ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
                 child: const Text(
                   'Clear',
                   style: TextStyle(color: Colors.white),

@@ -83,7 +83,7 @@ class LinuxShortcutService {
     return buffer.toString();
   }
 
-  /// Copies the PNG icon to ~/.local/share/ScrcpyGui/shortcuts/<package>.png.
+  /// Copies the PNG icon to `~/.local/share/ScrcpyGui/shortcuts/<package>.png`.
   /// Returns the path to the copied file.
   static Future<String> _copyIcon(File pngFile, String packageName) async {
     final home = Platform.environment['HOME'] ?? '.';

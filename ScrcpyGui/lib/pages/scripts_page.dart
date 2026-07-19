@@ -2,24 +2,15 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
+import '../widgets/app_snackbar.dart';
 import 'package:desktop_drop/desktop_drop.dart';
-import '../services/app_icon_cache.dart';
 import '../services/log_service.dart';
+import '../services/script_repository.dart';
 import '../services/settings_service.dart';
-import '../services/terminal_service.dart';
+import '../services/shell_runner.dart';
+import '../utils/command_executor.dart';
 import '../theme/app_theme_colors.dart';
-
-class ScriptFileGroup {
-  final String groupName;
-  final List<FileSystemEntity> files;
-  final bool isRoot;
-
-  ScriptFileGroup({
-    required this.groupName,
-    required this.files,
-    this.isRoot = false,
-  });
-}
+import '../widgets/package_icon.dart';
 
 class ScriptsPage extends StatefulWidget {
   const ScriptsPage({super.key});
@@ -29,36 +20,15 @@ class ScriptsPage extends StatefulWidget {
 }
 
 class _ScriptsPageState extends State<ScriptsPage> {
-  static final RegExp _startAppArgPattern = RegExp(
-    r'''(?:^|\s)-{1,2}start-app=(?:"([^"]+)"|'([^']+)'|([^\s]+))''',
-    caseSensitive: false,
-  );
-
   final SettingsService _settingsService = SettingsService();
   bool _isLoading = true;
-  List<ScriptFileGroup> _batFileGroups = [];
+  List<ScriptGroup> _batFileGroups = [];
   String _currentDirectory = '';
   bool _isDragging = false;
   final Map<String, String?> _scriptPackageByPath = {};
   final Map<String, File?> _scriptIconByPackage = {};
 
-  // Get platform-specific script extensions
-  List<String> get _scriptExtensions {
-    if (Platform.isWindows) {
-      return ['.bat', '.cmd'];
-    } else if (Platform.isMacOS) {
-      return ['.sh', '.command'];
-    } else {
-      // Linux
-      return ['.sh'];
-    }
-  }
-
-  // Check if a file is a script file
-  bool _isScriptFile(String filePath) {
-    final lowerPath = filePath.toLowerCase();
-    return _scriptExtensions.any((ext) => lowerPath.endsWith(ext));
-  }
+  List<String> get _scriptExtensions => ScriptRepository.scriptExtensions;
 
   // Handle dropped files
   Future<void> _handleDroppedFiles(List<String> filePaths) async {
@@ -71,7 +41,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
     for (final filePath in filePaths) {
       try {
         // Check if it's a valid script file
-        if (!_isScriptFile(filePath)) {
+        if (!ScriptRepository.isScriptFile(filePath)) {
           skippedCount++;
           continue;
         }
@@ -121,12 +91,12 @@ class _ScriptsPageState extends State<ScriptsPage> {
         message += errors.join('\n');
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 4),
-          backgroundColor: errors.isNotEmpty ? Colors.orange : Colors.green,
-        ),
+      showAppSnackBar(
+        context,
+        message,
+        type: errors.isNotEmpty
+            ? AppSnackBarType.warning
+            : AppSnackBarType.success,
       );
 
       // Refresh the file list
@@ -160,66 +130,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
     }
 
     try {
-      final entities = await directory.list().toList();
-
-      // Separate files in root and subdirectories
-      final rootFiles = <FileSystemEntity>[];
-      final subDirectories = <Directory>[];
-
-      for (final entity in entities) {
-        if (entity is File && _isScriptFile(entity.path)) {
-          rootFiles.add(entity);
-        } else if (entity is Directory) {
-          subDirectories.add(entity);
-        }
-      }
-
-      // Create groups
-      final groups = <ScriptFileGroup>[];
-
-      // Add root group if there are files in the main directory
-      if (rootFiles.isNotEmpty) {
-        rootFiles.sort((a, b) {
-          final aName = path.basename(a.path).toLowerCase();
-          final bName = path.basename(b.path).toLowerCase();
-          return aName.compareTo(bName);
-        });
-        groups.add(
-          ScriptFileGroup(groupName: 'Root', files: rootFiles, isRoot: true),
-        );
-      }
-
-      // Add groups for each subdirectory
-      for (final subDir in subDirectories) {
-        final subDirFiles = await subDir
-            .list()
-            .where((entity) => entity is File && _isScriptFile(entity.path))
-            .toList();
-
-        if (subDirFiles.isNotEmpty) {
-          subDirFiles.sort((a, b) {
-            final aName = path.basename(a.path).toLowerCase();
-            final bName = path.basename(b.path).toLowerCase();
-            return aName.compareTo(bName);
-          });
-
-          groups.add(
-            ScriptFileGroup(
-              groupName: path.basename(subDir.path),
-              files: subDirFiles,
-              isRoot: false,
-            ),
-          );
-        }
-      }
-
-      // Sort groups by name (root first, then alphabetically)
-      groups.sort((a, b) {
-        if (a.isRoot) return -1;
-        if (b.isRoot) return 1;
-        return a.groupName.toLowerCase().compareTo(b.groupName.toLowerCase());
-      });
-
+      final groups = await ScriptRepository.loadGroups(_currentDirectory);
       setState(() {
         _batFileGroups = groups;
       });
@@ -231,11 +142,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
         err: e,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading script files: $e'),
-            backgroundColor: Colors.red.shade700,
-          ),
+        showAppSnackBar(
+          context,
+          'Error loading script files: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
@@ -243,20 +153,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
 
   Future<void> _openFileLocation(String filePath) async {
     try {
-      final directory = path.dirname(filePath);
-      if (Platform.isWindows) {
-        final normalized = directory.replaceAll('/', '\\');
-        await Process.run('cmd', [
-          '/c',
-          'start',
-          '',
-          normalized,
-        ], runInShell: true);
-      } else if (Platform.isMacOS) {
-        await Process.run('open', [directory]);
-      } else if (Platform.isLinux) {
-        await Process.run('xdg-open', [directory]);
-      }
+      await ShellRunner.openFolder(path.dirname(filePath));
     } catch (e) {
       LogService.error(
         'ScriptsPage/openFileLocation',
@@ -264,43 +161,23 @@ class _ScriptsPageState extends State<ScriptsPage> {
         err: e,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to open file location: $e'),
-            backgroundColor: Colors.red.shade700,
-          ),
+        showAppSnackBar(
+          context,
+          'Failed to open file location: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
   }
 
-  String? _extractStartAppPackage(String scriptText) {
-    final match = _startAppArgPattern.firstMatch(scriptText);
-    if (match == null) return null;
-    return match.group(1) ?? match.group(2) ?? match.group(3);
-  }
+  String? _extractScriptPackage(File file) =>
+      ScriptRepository.packageForScript(file, _scriptPackageByPath);
 
-  String? _extractScriptPackage(FileSystemEntity entity) {
-    if (entity is! File) return null;
-    if (_scriptPackageByPath.containsKey(entity.path)) {
-      return _scriptPackageByPath[entity.path];
-    }
-    try {
-      final contents = entity.readAsStringSync();
-      final packageName = _extractStartAppPackage(contents);
-      _scriptPackageByPath[entity.path] = packageName;
-      return packageName;
-    } catch (_) {
-      _scriptPackageByPath[entity.path] = null;
-      return null;
-    }
-  }
-
-  Future<void> _hydrateScriptIcons(List<ScriptFileGroup> groups) async {
+  Future<void> _hydrateScriptIcons(List<ScriptGroup> groups) async {
     final packages = <String>{};
     for (final group in groups) {
-      for (final entity in group.files) {
-        final packageName = _extractScriptPackage(entity);
+      for (final file in group.files) {
+        final packageName = _extractScriptPackage(file);
         if (packageName != null) {
           packages.add(packageName);
         }
@@ -308,14 +185,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
     }
     if (packages.isEmpty) return;
 
-    var changed = false;
-    for (final packageName in packages) {
-      if (_scriptIconByPackage.containsKey(packageName)) continue;
-      _scriptIconByPackage[packageName] =
-          await AppIconCache.getCachedIconIfExists(packageName);
-      changed = true;
-    }
-
+    final changed = await ScriptRepository.hydrateCachedIcons(
+      packages,
+      _scriptIconByPackage,
+    );
     if (changed && mounted) {
       setState(() {});
     }
@@ -370,16 +243,6 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   const Spacer(),
                   ElevatedButton.icon(
                     onPressed: _loadBatFiles,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.appPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
                     icon: Icon(Icons.refresh, color: context.appOnPrimary),
                     label: Text(
                       'Refresh',
@@ -583,36 +446,11 @@ class _ScriptsPageState extends State<ScriptsPage> {
     );
   }
 
-  Widget _buildGroupPanel(ScriptFileGroup group) {
+  Widget _buildGroupPanel(ScriptGroup group) {
     return _buildFileList(group);
   }
 
-  Widget _buildScriptIcon(File? iconFile) {
-    if (iconFile != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: Image.file(
-          iconFile,
-          width: 18,
-          height: 18,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => Icon(
-            Icons.insert_drive_file,
-            size: 18,
-            color: context.appTextSecondary,
-          ),
-        ),
-      );
-    }
-
-    return Icon(
-      Icons.insert_drive_file,
-      size: 18,
-      color: context.appTextSecondary,
-    );
-  }
-
-  Widget _buildFileList(ScriptFileGroup group) {
+  Widget _buildFileList(ScriptGroup group) {
     final textColor = context.appTextSecondary;
     return Container(
       decoration: BoxDecoration(
@@ -641,7 +479,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    group.groupName,
+                    group.name,
                     style: TextStyle(
                       color: context.appPrimary,
                       fontWeight: FontWeight.bold,
@@ -659,20 +497,17 @@ class _ScriptsPageState extends State<ScriptsPage> {
     );
   }
 
-  Future<void> _openEditDialog(FileSystemEntity file) async {
-    if (file is! File) return;
-
+  Future<void> _openEditDialog(File file) async {
     String content;
     try {
       content = await file.readAsString();
     } catch (e) {
       LogService.error('ScriptsPage/editScript', 'Failed to read file', err: e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to read file: $e'),
-            backgroundColor: Colors.red.shade700,
-          ),
+        showAppSnackBar(
+          context,
+          'Failed to read file: $e',
+          type: AppSnackBarType.error,
         );
       }
       return;
@@ -714,22 +549,6 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   suffixStyle: TextStyle(color: context.appTextSecondary),
                   filled: true,
                   fillColor: context.appInputFill,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(
-                      color: context.appTextSecondary.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(
-                      color: context.appTextSecondary.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: context.appPrimary),
-                  ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 10,
@@ -756,22 +575,6 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: context.appInputFill,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(
-                        color: context.appTextSecondary.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(
-                        color: context.appTextSecondary.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(color: context.appPrimary),
-                    ),
                     contentPadding: const EdgeInsets.all(12),
                   ),
                 ),
@@ -788,7 +591,6 @@ class _ScriptsPageState extends State<ScriptsPage> {
             ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: context.appPrimary),
             onPressed: () async {
               final newName = nameController.text.trim();
               final newContent = contentController.text;
@@ -815,11 +617,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
                 await _loadBatFiles();
 
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Script saved successfully'),
-                      backgroundColor: Colors.green,
-                    ),
+                  showAppSnackBar(
+                    context,
+                    'Script saved successfully',
+                    type: AppSnackBarType.success,
                   );
                 }
               } catch (e) {
@@ -829,11 +630,10 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   err: e,
                 );
                 if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to save: $e'),
-                      backgroundColor: Colors.red.shade700,
-                    ),
+                  showAppSnackBar(
+                    ctx,
+                    'Failed to save: $e',
+                    type: AppSnackBarType.error,
                   );
                 }
               }
@@ -848,7 +648,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
     contentController.dispose();
   }
 
-  Widget _buildFileRow(FileSystemEntity file) {
+  Widget _buildFileRow(File file) {
     final fileName = path.basename(file.path);
     final packageName = _extractScriptPackage(file);
     final iconFile = packageName != null
@@ -865,7 +665,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
       ),
       child: Row(
         children: [
-          _buildScriptIcon(iconFile),
+          PackageIcon(iconFile: iconFile, fallbackIcon: Icons.insert_drive_file),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -878,7 +678,7 @@ class _ScriptsPageState extends State<ScriptsPage> {
           Tooltip(
             message: 'Run script',
             child: ElevatedButton(
-              onPressed: () => TerminalService.executeScriptFile(
+              onPressed: () => CommandExecutor.executeScriptFile(
                 context,
                 file.path,
                 source: 'Scripts/RunScript',

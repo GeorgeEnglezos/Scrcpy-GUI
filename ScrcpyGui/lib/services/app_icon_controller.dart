@@ -36,7 +36,11 @@ class AppIconController extends ChangeNotifier {
 
   static final File _sentinel = File('');
 
-  bool _cancelled = false;
+  /// Incremented to cancel whatever strategy run is in flight: each run
+  /// captures the token at start and treats any change as a cancel signal.
+  /// A plain bool can't do this — resetting it for a new run would
+  /// un-cancel the old one (two runs would then mutate [icons] together).
+  int _runToken = 0;
   bool _isRunning = false;
 
   AppIconController({AppDrawerSettings? appDrawerSettings})
@@ -52,13 +56,9 @@ class AppIconController extends ChangeNotifier {
 
   /// Loads icons and labels for [packages] on [deviceId].
   Future<void> loadForDevice(String deviceId, List<String> packages) async {
-    // If a strategy is in-flight, cancel it and reset the running flag so a
-    // fresh fetch can start after this load completes.
-    if (_isRunning) {
-      _cancelled = true;
-      _isRunning = false;
-    }
-    _cancelled = false;
+    // Cancel any in-flight strategy; it exits at its next isCancelled check
+    // and resets _isRunning in its finally block.
+    _runToken++;
     currentDeviceId = deviceId;
     total = packages.length;
     progress = 0;
@@ -126,7 +126,6 @@ class AppIconController extends ChangeNotifier {
     void Function(String message)? onError,
   }) async {
     if (currentDeviceId == null || labels.isEmpty) return;
-    _cancelled = false;
     final packages = labels.keys.toList();
     await _runStrategy(
       packages,
@@ -145,7 +144,6 @@ class AppIconController extends ChangeNotifier {
     void Function(String message)? onError,
   }) async {
     if (currentDeviceId == null || labels.isEmpty) return;
-    _cancelled = false;
 
     final missing = labels.keys.where((pkg) {
       final hasIcon = icons[pkg] != null && icons[pkg]!.path.isNotEmpty;
@@ -164,14 +162,14 @@ class AppIconController extends ChangeNotifier {
 
   /// Clears disk cache and resets in-memory icon/label state.
   Future<void> clearCache() async {
-    _cancelled = true;
+    _runToken++;
     await AppIconCache.clearCache();
     _resetMemoryState();
   }
 
   /// Resets in-memory state without touching disk cache.
   void resetState() {
-    _cancelled = true;
+    _runToken++;
     _resetMemoryState();
   }
 
@@ -187,7 +185,7 @@ class AppIconController extends ChangeNotifier {
 
   /// Cancel any in-flight strategy run.
   void cancel() {
-    _cancelled = true;
+    _runToken++;
   }
 
   /// Looks up [packageName] in the local hardcoded dictionary.
@@ -360,6 +358,7 @@ class AppIconController extends ChangeNotifier {
 
     _isRunning = true;
     isLoading = true;
+    final myToken = _runToken;
     notifyListeners();
 
     try {
@@ -371,7 +370,7 @@ class AppIconController extends ChangeNotifier {
         labels: labels,
         batchSize: 5,
         forceUpdate: forceUpdate,
-        isCancelled: () => _cancelled,
+        isCancelled: () => _runToken != myToken,
         onLabelDiscovered: (pkg, label) {
           labels[pkg] = label;
           notifyListeners();

@@ -46,8 +46,25 @@ class UpdateService {
     this.stableInfo,
   });
 
+  static Future<UpdateService>? _sessionCheck;
+
   /// Fetches releases from GitHub and compares them with the local version.
+  ///
+  /// The result is cached for the app session so the startup check and the
+  /// Resources page share one request instead of each hitting the
+  /// rate-limited GitHub API. A failed check is not cached, so a later call
+  /// can retry.
   static Future<UpdateService> checkForUpdate() async {
+    final cached = _sessionCheck;
+    if (cached != null) return cached;
+    final future = _checkForUpdate();
+    _sessionCheck = future;
+    final result = await future;
+    if (result.stableInfo == null) _sessionCheck = null;
+    return result;
+  }
+
+  static Future<UpdateService> _checkForUpdate() async {
     // Resolve current version once, before any network work.
     String currentVersion;
     try {

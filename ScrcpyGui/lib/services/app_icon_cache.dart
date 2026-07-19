@@ -58,12 +58,6 @@ class AppIconCache {
     } catch (_) {}
   }
 
-  /// Returns true if the label cache file exists on disk.
-  static Future<bool> hasLabelsCache() async {
-    final file = await _labelCacheFile();
-    return file.exists();
-  }
-
   /// Deletes the contents of the app_icons/ directory (icons + labels) but keeps the folder.
   static Future<void> clearCache() async {
     final dir = await cacheDir();
@@ -71,12 +65,5 @@ class AppIconCache {
     for (final entity in dir.listSync()) {
       await entity.delete(recursive: true);
     }
-  }
-
-  /// Returns the number of cached PNG icon files.
-  static Future<int> cachedIconCount() async {
-    final dir = await cacheDir();
-    if (!await dir.exists()) return 0;
-    return dir.listSync().whereType<File>().where((f) => f.path.endsWith('.png')).length;
   }
 }

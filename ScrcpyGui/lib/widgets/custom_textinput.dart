@@ -102,14 +102,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
             fontSize: kLabelFontSize - 1,
             fontWeight: FontWeight.w500,
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: textColor.withValues(alpha: 0.3)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: context.appPrimary),
-          ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: kRowHorizontalPadding,
             vertical: kRowVerticalPadding / 2,

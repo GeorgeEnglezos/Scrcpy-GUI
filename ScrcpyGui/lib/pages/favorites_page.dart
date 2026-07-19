@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import '../widgets/app_snackbar.dart';
 import 'package:scrcpy_gui_prod/widgets/command_panel.dart';
+import 'package:scrcpy_gui_prod/widgets/package_icon.dart';
 import 'package:scrcpy_gui_prod/widgets/surrounding_panel.dart';
-import '../services/app_icon_cache.dart';
 import '../services/commands_service.dart';
 import '../services/log_service.dart';
-import '../services/terminal_service.dart';
+import '../services/script_repository.dart';
+import '../services/adb_service.dart';
+import '../utils/command_executor.dart';
 import '../theme/app_theme_colors.dart';
 
-String _display(String cmd) => TerminalService.toDisplayCommand(cmd);
+String _display(String cmd) => AdbService.toDisplayCommand(cmd);
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -18,11 +21,6 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
-  static final RegExp _startAppArgPattern = RegExp(
-    r'''(?:^|\s)-{1,2}start-app(?:=|\s+)(?:"([^"]+)"|'([^']+)'|([^\s]+))''',
-    caseSensitive: false,
-  );
-
   final CommandsService _commandsService = CommandsService();
   final Map<String, File?> _iconByPackage = {};
 
@@ -58,20 +56,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
       LogService.error('FavoritesPage/loadData', 'Failed to load', err: e);
       setState(() => isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading data: $e'),
-            backgroundColor: Colors.red.shade700,
-          ),
+        showAppSnackBar(
+          context,
+          'Error loading data: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
-  }
-
-  String? _extractStartAppPackage(String command) {
-    final match = _startAppArgPattern.firstMatch(command);
-    if (match == null) return null;
-    return match.group(1) ?? match.group(2) ?? match.group(3);
   }
 
   bool _hasFlag(String command, String flagName) {
@@ -89,43 +80,18 @@ class _FavoritesPageState extends State<FavoritesPage> {
   Future<void> _hydrateCommandIcons(Set<String> commands) async {
     final packages = <String>{};
     for (final command in commands) {
-      final packageName = _extractStartAppPackage(command);
+      final packageName = ScriptRepository.extractStartAppPackage(command);
       if (packageName != null && packageName.isNotEmpty) {
         packages.add(packageName);
       }
     }
     if (packages.isEmpty) return;
 
-    var changed = false;
-    for (final packageName in packages) {
-      if (_iconByPackage.containsKey(packageName)) continue;
-      _iconByPackage[packageName] = await AppIconCache.getCachedIconIfExists(
-        packageName,
-      );
-      changed = true;
-    }
-
+    final changed =
+        await ScriptRepository.hydrateCachedIcons(packages, _iconByPackage);
     if (changed && mounted) {
       setState(() {});
     }
-  }
-
-  Widget _buildPackageIcon(File? iconFile) {
-    if (iconFile != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: Image.file(
-          iconFile,
-          width: 18,
-          height: 18,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) =>
-              Icon(Icons.apps, size: 18, color: context.appTextSecondary),
-        ),
-      );
-    }
-
-    return Icon(Icons.apps, size: 18, color: context.appTextSecondary);
   }
 
   Widget _buildFlagIcon(IconData icon, String tooltip) {
@@ -136,13 +102,16 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   Widget? _buildCommandLeadingIcons(String command) {
-    final packageName = _extractStartAppPackage(command);
+    final packageName = ScriptRepository.extractStartAppPackage(command);
     final items = <Widget>[];
 
     if (packageName != null && packageName.isNotEmpty) {
       final iconFile = _iconByPackage[packageName];
       items.add(
-        Tooltip(message: packageName, child: _buildPackageIcon(iconFile)),
+        Tooltip(
+          message: packageName,
+          child: PackageIcon(iconFile: iconFile),
+        ),
       );
     }
 
@@ -200,7 +169,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       leading: _buildCommandLeadingIcons(lastCommand),
                       showDelete: false,
                       onTap: () async {
-                        await TerminalService.executeCommand(
+                        await CommandExecutor.executeCommand(
                           context,
                           lastCommand,
                           source: 'Favorites/LastCommand',
@@ -208,7 +177,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         await _loadData();
                       },
                       onDownload: () =>
-                          TerminalService.generateScript(context, lastCommand),
+                          CommandExecutor.generateScript(context, lastCommand),
                     ),
             ),
 
@@ -232,14 +201,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           displayCommand: _display(favorites[index]),
                           leading: _buildCommandLeadingIcons(favorites[index]),
                           onTap: () async {
-                            await TerminalService.executeCommand(
+                            await CommandExecutor.executeCommand(
                               context,
                               favorites[index],
                               source: 'Favorites/Favorites',
                             );
                             await _loadData();
                           },
-                          onDownload: () => TerminalService.generateScript(
+                          onDownload: () => CommandExecutor.generateScript(
                             context,
                             favorites[index],
                           ),
@@ -270,14 +239,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           leading: _buildCommandLeadingIcons(mostUsed[index]),
                           showDelete: false,
                           onTap: () async {
-                            await TerminalService.executeCommand(
+                            await CommandExecutor.executeCommand(
                               context,
                               mostUsed[index],
                               source: 'Favorites/MostUsed',
                             );
                             await _loadData();
                           },
-                          onDownload: () => TerminalService.generateScript(
+                          onDownload: () => CommandExecutor.generateScript(
                             context,
                             mostUsed[index],
                           ),

@@ -4,19 +4,27 @@ library;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../widgets/app_snackbar.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
+import '../models/app_drawer_settings_model.dart';
 import '../services/app_icon_cache.dart';
 import '../services/app_icon_controller.dart';
 import '../services/device_manager_service.dart';
 import '../services/log_service.dart';
 import '../services/icon_fetch_strategy.dart';
+import '../services/script_repository.dart';
 import '../services/settings_service.dart';
-import '../services/terminal_service.dart';
+import '../services/adb_service.dart';
+import '../services/shell_runner.dart';
+import '../utils/command_executor.dart';
 import '../services/linux_shortcut_service.dart';
 import '../services/macos_shortcut_service.dart';
 import '../services/windows_shortcut_service.dart';
 import '../theme/app_theme_colors.dart';
+import 'app_drawer/app_drawer_dialogs.dart';
+import 'app_drawer/app_drawer_tiles.dart';
+import 'app_drawer/ctx_menu.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _kGridMinTileWidth = 110.0;
@@ -31,11 +39,6 @@ class AppDrawerPage extends StatefulWidget {
 }
 
 class _AppDrawerPageState extends State<AppDrawerPage> {
-  static final RegExp _startAppArgPattern = RegExp(
-    r'''(?:^|\s)-{1,2}start-app=(?:"([^"]+)"|'([^']+)'|([^\s]+))''',
-    caseSensitive: false,
-  );
-
   String _searchQuery = '';
   DeviceManagerService? _deviceManager;
   bool _commandExpanded = false;
@@ -44,12 +47,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   final Map<String, String?> _scriptPackageByPath = {};
   final Map<String, File?> _scriptCachedIcons = {};
   bool _scriptIconRefreshScheduled = false;
+  List<ScriptGroup> _scriptGroups = [];
 
   // Session-state checkbox options (not persisted)
   bool _helperApkAutoInstall = false;
 
-  // Active custom context-menu overlay (right-click / three-dot button).
-  OverlayEntry? _ctxMenuEntry;
+  // Custom context menu (right-click / three-dot button).
+  final CtxMenuController _ctxMenu = CtxMenuController();
 
   @override
   void initState() {
@@ -65,12 +69,13 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       _deviceManager!.selectedDeviceNotifier.addListener(_onDeviceChanged);
       _deviceManager!.packagesReloadedTick.addListener(_onPackagesReloaded);
       _loadPackages();
+      _loadScriptGroups();
     });
   }
 
   @override
   void dispose() {
-    _dismissOverlayMenu();
+    _ctxMenu.dismiss();
     _deviceManager?.selectedDeviceNotifier.removeListener(_onDeviceChanged);
     _deviceManager?.packagesReloadedTick.removeListener(_onPackagesReloaded);
     _cmdController.dispose();
@@ -126,24 +131,24 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       onError: (message) {
         LogService.error('AppDrawer/fetchMissingInfo', message);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 6),
-          ),
+        showAppSnackBar(
+          context,
+          message,
+          type: AppSnackBarType.error,
+          duration: const Duration(seconds: 6),
         );
       },
     );
   }
 
   Future<void> _reload() async {
-    _loadPackages();
+    await _loadPackages();
+    await _loadScriptGroups();
   }
 
   Future<void> _saveCommand() async {
     final controller = context.read<AppIconController>();
-    final normalized = TerminalService.normalizeScrcpyExecutable(
+    final normalized = AdbService.normalizeScrcpyExecutable(
       _cmdController.text.trim(),
     );
     controller.setAppLaunchCommand(normalized);
@@ -160,11 +165,10 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         'No device connected, cannot launch $packageName',
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No device connected'),
-            backgroundColor: Colors.red,
-          ),
+        showAppSnackBar(
+          context,
+          'No device connected',
+          type: AppSnackBarType.error,
         );
       }
       return;
@@ -173,12 +177,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     final controller = context.read<AppIconController>();
 
     var template = controller.appDrawerSettings.appLaunchCommand.trim();
-    if (template.isEmpty) {
-      template =
-          '${TerminalService.scrcpyExecutable} --pause-on-exit=if-error --new-display=1920x1080';
-    } else {
-      template = TerminalService.normalizeScrcpyExecutable(template);
-    }
+    if (template.isEmpty) template = AppDrawerSettings.defaultCommand;
+    template = AdbService.normalizeScrcpyExecutable(template);
 
     final buffer = StringBuffer(template);
 
@@ -191,7 +191,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }
 
     if (!mounted) return;
-    await TerminalService.executeCommand(
+    await CommandExecutor.executeCommand(
       context,
       buffer.toString(),
       source: 'AppDrawer/LaunchApp',
@@ -210,12 +210,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     // (the shortcut should work for any connected device at launch time,
     // or the user can edit it — we omit --serial so it is not device-locked).
     var template = controller.appDrawerSettings.appLaunchCommand.trim();
-    if (template.isEmpty) {
-      template =
-          '${TerminalService.scrcpyExecutable} --pause-on-exit=if-error --new-display=1920x1080';
-    } else {
-      template = TerminalService.normalizeScrcpyExecutable(template);
-    }
+    if (template.isEmpty) template = AppDrawerSettings.defaultCommand;
+    template = AdbService.normalizeScrcpyExecutable(template);
     final buffer = StringBuffer(template);
     buffer.write(' --start-app=$packageName');
     if (!template.contains('--window-title')) {
@@ -256,24 +252,22 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         'AppDrawer/createDesktopShortcut',
         'Created shortcut "$label" for $packageName',
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Shortcut "$label" created on Desktop'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-        ),
+      showAppSnackBar(
+        context,
+        'Shortcut "$label" created on Desktop',
+        type: AppSnackBarType.success,
+        duration: const Duration(seconds: 3),
       );
     } else {
       LogService.error(
         'AppDrawer/createDesktopShortcut',
         'Failed to create shortcut "$label": $error',
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
+      showAppSnackBar(
+        context,
+        error,
+        type: AppSnackBarType.error,
+        duration: const Duration(seconds: 5),
       );
     }
   }
@@ -288,109 +282,43 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }).toList();
   }
 
-  List<_ScriptGroup> _loadScriptGroups() {
-    final settings = SettingsService.currentSettings;
-    if (settings == null) return [];
-    final dir = Directory(settings.batDirectory);
-    if (!dir.existsSync()) return [];
+  /// Scans the scripts directory off the build path — sync disk I/O in
+  /// build() used to hit the disk on every hover/keystroke rebuild.
+  Future<void> _loadScriptGroups() async {
+    final dir = SettingsService.currentSettings?.batDirectory ?? '';
+    final groups = await ScriptRepository.loadGroups(dir);
+    if (mounted) setState(() => _scriptGroups = groups);
+  }
 
-    final extensions = Platform.isWindows
-        ? ['.bat', '.cmd']
-        : Platform.isMacOS
-        ? ['.sh', '.command']
-        : ['.sh'];
-
-    final q = _searchQuery.isEmpty ? null : _searchQuery.toLowerCase();
-    bool isScript(File f) =>
-        extensions.any((ext) => f.path.toLowerCase().endsWith(ext));
-    bool matchesQuery(File f) =>
-        q == null || p.basename(f.path).toLowerCase().contains(q);
-
-    final entities = dir.listSync();
-
-    final rootFiles =
-        entities
-            .whereType<File>()
-            .where((f) => isScript(f) && matchesQuery(f))
-            .toList()
-          ..sort(
-            (a, b) => p
-                .basename(a.path)
-                .toLowerCase()
-                .compareTo(p.basename(b.path).toLowerCase()),
-          );
-
-    final subDirs = entities.whereType<Directory>().toList()
-      ..sort(
-        (a, b) => p
-            .basename(a.path)
-            .toLowerCase()
-            .compareTo(p.basename(b.path).toLowerCase()),
-      );
-
-    final groups = <_ScriptGroup>[];
-
-    if (rootFiles.isNotEmpty) {
-      groups.add(_ScriptGroup(name: 'Root', isRoot: true, files: rootFiles));
-    }
-
-    for (final subDir in subDirs) {
-      final subFiles =
-          subDir
-              .listSync()
-              .whereType<File>()
-              .where((f) => isScript(f) && matchesQuery(f))
-              .toList()
-            ..sort(
-              (a, b) => p
-                  .basename(a.path)
-                  .toLowerCase()
-                  .compareTo(p.basename(b.path).toLowerCase()),
-            );
-
-      if (subFiles.isNotEmpty) {
-        groups.add(
-          _ScriptGroup(
-            name: p.basename(subDir.path),
-            isRoot: false,
-            files: subFiles,
-          ),
+  /// [_scriptGroups] filtered by the current search query (in memory).
+  List<ScriptGroup> _filteredScriptGroups() {
+    if (_searchQuery.isEmpty) return _scriptGroups;
+    final q = _searchQuery.toLowerCase();
+    final result = <ScriptGroup>[];
+    for (final group in _scriptGroups) {
+      final files = group.files
+          .where((f) => p.basename(f.path).toLowerCase().contains(q))
+          .toList();
+      if (files.isNotEmpty) {
+        result.add(
+          ScriptGroup(name: group.name, isRoot: group.isRoot, files: files),
         );
       }
     }
-
-    return groups;
+    return result;
   }
 
   Future<void> _launchScript(File script) async {
     if (!mounted) return;
-    await TerminalService.executeScriptFile(
+    await CommandExecutor.executeScriptFile(
       context,
       script.path,
       source: 'AppDrawer/LaunchScript',
     );
   }
 
-  String? _extractStartAppPackage(String scriptText) {
-    final match = _startAppArgPattern.firstMatch(scriptText);
-    if (match == null) return null;
-    return match.group(1) ?? match.group(2) ?? match.group(3);
-  }
-
-  String? _extractScriptPackage(File script) {
-    if (_scriptPackageByPath.containsKey(script.path)) {
-      return _scriptPackageByPath[script.path];
-    }
-    try {
-      final contents = script.readAsStringSync();
-      final packageName = _extractStartAppPackage(contents);
-      _scriptPackageByPath[script.path] = packageName;
-      return packageName;
-    } catch (_) {
-      _scriptPackageByPath[script.path] = null;
-      return null;
-    }
-  }
+  String? _extractScriptPackage(File script) =>
+      ScriptRepository.packageForScript(script, _scriptPackageByPath);
 
   File? _iconFromController(AppIconController controller, String? packageName) {
     if (packageName == null) return null;
@@ -422,18 +350,11 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }
     if (packages.isEmpty) return;
 
-    final missing = packages.where((pkg) {
-      if (_scriptCachedIcons.containsKey(pkg)) return false;
-      return _iconFromController(controller, pkg) == null;
-    }).toList();
-    if (missing.isEmpty) return;
-
-    var changed = false;
-    for (final packageName in missing) {
-      final cached = await AppIconCache.getCachedIconIfExists(packageName);
-      _scriptCachedIcons[packageName] = cached;
-      changed = true;
-    }
+    // Only look on disk for packages the controller has no icon for.
+    final missing = packages
+        .where((pkg) => _iconFromController(controller, pkg) == null);
+    final changed =
+        await ScriptRepository.hydrateCachedIcons(missing, _scriptCachedIcons);
     if (changed && mounted) {
       setState(() {});
     }
@@ -448,44 +369,43 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     final isFav = controller.isFavorite(pkg);
     final currentGroupIndex = controller.groupIndexOf(pkg);
 
-    _showOverlayMenu(position, [
-      _CtxMenuItem(
+    _ctxMenu.show(context, position, [
+      CtxMenuItem(
         icon: isFav ? Icons.favorite : Icons.favorite_border,
         iconColor: isFav ? Colors.pinkAccent : null,
         label: isFav ? 'Remove from Favorites' : 'Add to Favorites',
         onTap: () => controller.toggleFavorite(pkg),
       ),
-      _CtxMenuItem(
+      CtxMenuItem(
         icon: Icons.copy,
         label: 'Copy Package Name',
         onTap: () {
           Clipboard.setData(ClipboardData(text: pkg));
-          ScaffoldMessenger.of(this.context).showSnackBar(
-            SnackBar(
-              content: Text('Copied: $pkg'),
-              duration: const Duration(seconds: 1),
-            ),
+          showAppSnackBar(
+            this.context,
+            'Copied: $pkg',
+            type: AppSnackBarType.neutral,
+            duration: const Duration(seconds: 1),
           );
         },
       ),
-      _CtxMenuItem(
+      CtxMenuItem(
         icon: Icons.drive_file_move_outline,
         label: 'Move to Group',
         showChevron: true,
         onTap: () => _showMoveToGroupMenu(position, pkg, controller),
       ),
       if (currentGroupIndex >= 0)
-        _CtxMenuItem(
+        CtxMenuItem(
           icon: Icons.remove_circle_outline,
           label: 'Remove from Group',
           onTap: () => controller.removeFromGroup(pkg),
         ),
-      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-        _CtxMenuItem(
-          icon: Icons.desktop_windows_outlined,
-          label: 'Create Desktop Shortcut',
-          onTap: () => _createDesktopShortcut(pkg, controller),
-        ),
+      CtxMenuItem(
+        icon: Icons.desktop_windows_outlined,
+        label: 'Create Desktop Shortcut',
+        onTap: () => _createDesktopShortcut(pkg, controller),
+      ),
     ]);
   }
 
@@ -496,470 +416,22 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   ) {
     final groups = controller.appDrawerSettings.groups;
 
-    _showOverlayMenu(position + const Offset(12, 0), [
+    _ctxMenu.show(context, position + const Offset(12, 0), [
       for (var i = 0; i < groups.length; i++)
-        _CtxMenuItem(
+        CtxMenuItem(
           icon: Icons.folder_outlined,
           iconColor: context.appPrimary,
           label: groups[i].name,
           onTap: () => controller.moveToGroup(pkg, i),
         ),
-      _CtxMenuItem(
+      CtxMenuItem(
         icon: Icons.create_new_folder_outlined,
         iconColor: context.appPrimary,
         label: 'New Group...',
-        onTap: () => _showCreateGroupDialog(pkg, controller),
+        onTap: () =>
+            showCreateGroupDialog(context, controller, movePackage: pkg),
       ),
     ]);
-  }
-
-  /// Dismisses the custom context-menu overlay if one is showing.
-  void _dismissOverlayMenu() {
-    _ctxMenuEntry?.remove();
-    _ctxMenuEntry = null;
-  }
-
-  /// Draws a context menu directly into the root [Overlay].
-  ///
-  /// We do not use [showMenu]/[PopupRoute] here: on the Linux/Flatpak build
-  /// that route never paints (the menu is "reached" but nothing appears).
-  /// A self-managed [OverlayEntry] with a dismiss barrier works reliably.
-  void _showOverlayMenu(Offset position, List<_CtxMenuItem> items) {
-    _dismissOverlayMenu();
-    final overlay = Overlay.of(context, rootOverlay: true);
-    final screen = MediaQuery.sizeOf(context);
-
-    const menuWidth = 240.0;
-    final estHeight = items.length * 42.0 + 8;
-    var left = position.dx;
-    var top = position.dy;
-    if (left + menuWidth > screen.width - 8) left = screen.width - menuWidth - 8;
-    if (top + estHeight > screen.height - 8) top = screen.height - estHeight - 8;
-    if (left < 8) left = 8;
-    if (top < 8) top = 8;
-
-    _ctxMenuEntry = OverlayEntry(
-      builder: (_) => Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: _dismissOverlayMenu,
-              onSecondaryTap: _dismissOverlayMenu,
-            ),
-          ),
-          Positioned(
-            left: left,
-            top: top,
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                width: menuWidth,
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                decoration: BoxDecoration(
-                  color: context.appSurface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: context.appDivider),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final item in items)
-                      InkWell(
-                        onTap: () {
-                          _dismissOverlayMenu();
-                          item.onTap();
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                item.icon,
-                                size: 18,
-                                color:
-                                    item.iconColor ?? context.appTextSecondary,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  item.label,
-                                  style: TextStyle(
-                                    color: context.appTextPrimary,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                              if (item.showChevron)
-                                Icon(
-                                  Icons.chevron_right,
-                                  size: 18,
-                                  color: context.appTextSecondary,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    overlay.insert(_ctxMenuEntry!);
-  }
-
-  Future<void> _showCreateGroupDialog(
-    String? movePackage,
-    AppIconController controller,
-  ) async {
-    final nameController = TextEditingController();
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: ctx.appSurface,
-        title: Text(
-          'New Group',
-          style: TextStyle(color: ctx.appTextPrimary),
-        ),
-        content: TextField(
-          controller: nameController,
-          autofocus: true,
-          style: TextStyle(color: ctx.appTextPrimary),
-          decoration: InputDecoration(
-            hintText: 'Group name',
-            hintStyle: TextStyle(color: ctx.appTextSecondary),
-          ),
-          onSubmitted: (_) {
-            final name = nameController.text.trim();
-            if (name.isNotEmpty) {
-              controller.createGroup(name);
-              if (movePackage != null) {
-                controller.moveToGroup(
-                  movePackage,
-                  controller.appDrawerSettings.groups.length - 1,
-                );
-              }
-              Navigator.pop(ctx);
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: ctx.appTextSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = nameController.text.trim();
-              if (name.isNotEmpty) {
-                controller.createGroup(name);
-                if (movePackage != null) {
-                  controller.moveToGroup(
-                    movePackage,
-                    controller.appDrawerSettings.groups.length - 1,
-                  );
-                }
-                Navigator.pop(ctx);
-              }
-            },
-            child: Text('Create', style: TextStyle(color: context.appPrimary)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showManageGroupsDialog(AppIconController controller) {
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final groups = controller.appDrawerSettings.groups;
-          return AlertDialog(
-            backgroundColor: ctx.appSurface,
-            title: Row(
-              children: [
-                Icon(Icons.folder_outlined, color: context.appPrimary, size: 22),
-                const SizedBox(width: 8),
-                Text(
-                  'Manage Groups',
-                  style: TextStyle(color: ctx.appTextPrimary, fontSize: 18),
-                ),
-              ],
-            ),
-            content: SizedBox(
-              width: 400,
-              height: 400,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: groups.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No groups yet. Create one below.',
-                              style: TextStyle(
-                                color: ctx.appTextSecondary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: groups.length,
-                            itemBuilder: (ctx, index) {
-                              final group = groups[index];
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: ctx.appBackground,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: ctx.appDivider),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.folder,
-                                      size: 20,
-                                      color: context.appPrimary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: InkWell(
-                                        onTap: () => _showRenameGroupDialog(
-                                          controller,
-                                          index,
-                                          setDialogState,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                group.name,
-                                                style: TextStyle(
-                                                  color: ctx.appTextPrimary,
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              '(${group.items.length})',
-                                              style: TextStyle(
-                                                color: ctx.appTextSecondary,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            if (group.isAutoGenerated) ...[
-                                              const SizedBox(width: 4),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 6,
-                                                      vertical: 2,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: context.appPrimary
-                                                      .withValues(alpha: 0.15),
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                ),
-                                                child: Text(
-                                                  'auto',
-                                                  style: TextStyle(
-                                                    color: context.appPrimary,
-                                                    fontSize: 10,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.arrow_upward,
-                                        size: 18,
-                                        color: index > 0
-                                            ? ctx.appTextSecondary
-                                            : ctx.appDivider,
-                                      ),
-                                      onPressed: index > 0
-                                          ? () {
-                                              controller.reorderGroup(
-                                                index,
-                                                index - 1,
-                                              );
-                                              setDialogState(() {});
-                                            }
-                                          : null,
-                                      splashRadius: 16,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(
-                                        minWidth: 32,
-                                        minHeight: 32,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.arrow_downward,
-                                        size: 18,
-                                        color: index < groups.length - 1
-                                            ? ctx.appTextSecondary
-                                            : ctx.appDivider,
-                                      ),
-                                      onPressed: index < groups.length - 1
-                                          ? () {
-                                              controller.reorderGroup(
-                                                index,
-                                                index + 1,
-                                              );
-                                              setDialogState(() {});
-                                            }
-                                          : null,
-                                      splashRadius: 16,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(
-                                        minWidth: 32,
-                                        minHeight: 32,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.delete_outline,
-                                        size: 18,
-                                        color: Colors.red.shade300,
-                                      ),
-                                      onPressed: () {
-                                        controller.deleteGroup(index);
-                                        setDialogState(() {});
-                                      },
-                                      splashRadius: 16,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(
-                                        minWidth: 32,
-                                        minHeight: 32,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _showCreateGroupDialog(
-                        null,
-                        controller,
-                      ).then((_) => setDialogState(() {})),
-                      icon: Icon(Icons.add, size: 18, color: context.appPrimary),
-                      label: Text(
-                        'Add Group',
-                        style: TextStyle(color: context.appPrimary),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: context.appPrimary),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('Done', style: TextStyle(color: context.appPrimary)),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _showRenameGroupDialog(
-    AppIconController controller,
-    int index,
-    void Function(void Function()) setDialogState,
-  ) {
-    final nameController = TextEditingController(
-      text: controller.appDrawerSettings.groups[index].name,
-    );
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: ctx.appSurface,
-        title: Text(
-          'Rename Group',
-          style: TextStyle(color: ctx.appTextPrimary),
-        ),
-        content: TextField(
-          controller: nameController,
-          autofocus: true,
-          style: TextStyle(color: ctx.appTextPrimary),
-          decoration: InputDecoration(
-            hintText: 'Group name',
-            hintStyle: TextStyle(color: ctx.appTextSecondary),
-          ),
-          onSubmitted: (_) {
-            final name = nameController.text.trim();
-            if (name.isNotEmpty) {
-              controller.renameGroup(index, name);
-              setDialogState(() {});
-              Navigator.pop(ctx);
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: ctx.appTextSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = nameController.text.trim();
-              if (name.isNotEmpty) {
-                controller.renameGroup(index, name);
-                setDialogState(() {});
-                Navigator.pop(ctx);
-              }
-            },
-            child: Text('Rename', style: TextStyle(color: context.appPrimary)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -1056,7 +528,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
             ],
             if (controller.appDrawerSettings.showScripts) ...[
               () {
-                final scriptGroups = _loadScriptGroups();
+                final scriptGroups = _filteredScriptGroups();
                 if (scriptGroups.isEmpty) return const SizedBox.shrink();
                 final totalScripts = scriptGroups.fold<int>(
                   0,
@@ -1111,7 +583,8 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                           group,
                         );
                         if (idx >= 0) {
-                          _showRenameGroupDialog(
+                          showRenameGroupDialog(
+                            context,
                             controller,
                             idx,
                             (fn) => setState(fn),
@@ -1197,7 +670,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
   Widget _buildScriptGroupedGrid(
     AppIconController controller,
-    List<_ScriptGroup> groups,
+    List<ScriptGroup> groups,
     int crossAxisCount,
     double spacing,
     double tileWidth,
@@ -1229,7 +702,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
   Widget _buildScriptSubGroupColumn(
     AppIconController controller,
-    _ScriptGroup group,
+    ScriptGroup group,
     int cols,
     double spacing,
     double tileWidth,
@@ -1320,7 +793,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         return SizedBox(
           width: tileWidth,
           height: tileHeight,
-          child: _ScriptTile(
+          child: ScriptTile(
             name: name,
             tileWidth: tileWidth,
             iconFile: iconFile,
@@ -1539,7 +1012,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
         return SizedBox(
           width: tileWidth,
           height: tileHeight,
-          child: _AppTile(
+          child: AppTile(
             packageName: pkg,
             label: (controller.labels[pkg]?.isNotEmpty == true)
                 ? controller.labels[pkg]!
@@ -1554,184 +1027,6 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
           ),
         );
       }).toList(),
-    );
-  }
-
-  Future<void> _showFetchMissingDialog() async {
-    final controller = context.read<AppIconController>();
-
-    final missingCount = controller.labels.keys.where((pkg) {
-      final hasIcon =
-          controller.icons[pkg] != null &&
-          controller.icons[pkg]!.path.isNotEmpty;
-      final hasLabel = controller.labels[pkg] != pkg;
-      return !hasIcon || !hasLabel;
-    }).length;
-
-    var autoInstall = false;
-
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          return AlertDialog(
-            backgroundColor: ctx.appSurface,
-            title: Text(
-              'Fetch Missing Icons & Labels',
-              style: TextStyle(color: ctx.appTextPrimary),
-            ),
-            content: SizedBox(
-              width: 360,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    missingCount > 0
-                        ? '$missingCount app${missingCount == 1 ? '' : 's'} '
-                              'have missing icons or labels.'
-                        : 'All apps are up to date.',
-                    style: TextStyle(
-                      color: ctx.appTextSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Fetch method',
-                    style: TextStyle(
-                      color: ctx.appTextSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    height: 36,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: ctx.appBackground,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: ctx.appDivider),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value:
-                            controller.appDrawerSettings.iconFetchMethod.name,
-                        isDense: true,
-                        isExpanded: true,
-                        style: TextStyle(
-                          color: ctx.appTextPrimary,
-                          fontSize: 13,
-                        ),
-                        dropdownColor: ctx.appSurface,
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'helperApk',
-                            child: Text('Helper APK'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'adbScrape',
-                            child: Text('ADB'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setDialogState(() {
-                              controller.setIconFetchMethod(
-                                iconFetchMethodFromString(value),
-                              );
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                  if (controller.appDrawerSettings.iconFetchMethod ==
-                      IconFetchMethod.helperApk) ...[
-                    const SizedBox(height: 10),
-                    _buildCheckboxRow(
-                      label: 'Auto-install via ADB',
-                      value: autoInstall,
-                      onChanged: (v) =>
-                          setDialogState(() => autoInstall = v ?? false),
-                    ),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: () => launchUrl(
-                        Uri.parse(
-                          'https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.open_in_new,
-                            size: 12,
-                            color: ctx.appTextSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              'Source: github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
-                              style: TextStyle(
-                                color: ctx.appTextSecondary,
-                                fontSize: 11,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(color: ctx.appTextSecondary),
-                ),
-              ),
-              TextButton(
-                onPressed: missingCount > 0
-                    ? () {
-                        Navigator.pop(ctx);
-                        controller.fetchMissingOnly(
-                          helperApkAutoInstall: autoInstall,
-                          onError: (message) {
-                            LogService.error(
-                              'AppDrawer/fetchMissingOnly',
-                              message,
-                            );
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(message),
-                                backgroundColor: Colors.red,
-                                duration: const Duration(seconds: 6),
-                              ),
-                            );
-                          },
-                        );
-                      }
-                    : null,
-                child: Text(
-                  'Continue',
-                  style: TextStyle(
-                    color: missingCount > 0
-                        ? context.appPrimary
-                        : ctx.appTextSecondary,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
     );
   }
 
@@ -1805,18 +1100,6 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                   filled: true,
                   fillColor: context.appInputFill,
                   contentPadding: EdgeInsets.zero,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: context.appDivider),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: context.appDivider),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: context.appPrimary),
-                  ),
                 ),
               ),
             ),
@@ -1830,7 +1113,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 icon: const Icon(Icons.cloud_download, size: 20),
                 color: context.appTextSecondary,
                 hoverColor: context.appHover,
-                onPressed: _showFetchMissingDialog,
+                onPressed: () => showFetchMissingDialog(context),
               ),
             ),
           if (!controller.isLoading && hasDevice && totalCount > 0)
@@ -1844,7 +1127,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                 icon: const Icon(Icons.folder_outlined, size: 20),
                 color: context.appTextSecondary,
                 hoverColor: context.appHover,
-                onPressed: () => _showManageGroupsDialog(controller),
+                onPressed: () => showManageGroupsDialog(context, controller),
               ),
             ),
           if (!controller.isLoading && hasDevice && totalCount > 0)
@@ -1998,7 +1281,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                             'Uses a small helper app on your device to extract icons and labels directly. Best icon quality and results.',
                         badge: 'Recommended',
                         checkboxes: [
-                          _buildCheckboxRow(
+                          CheckboxRow(
                             label: 'Auto-install via ADB',
                             value: _helperApkAutoInstall,
                             onChanged: (v) => setState(
@@ -2168,39 +1451,6 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     );
   }
 
-  Widget _buildCheckboxRow({
-    required String label,
-    required bool value,
-    required void Function(bool?) onChanged,
-  }) {
-    return InkWell(
-      onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: Checkbox(
-              value: value,
-              onChanged: onChanged,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              activeColor: context.appPrimary,
-              side: BorderSide(color: context.appTextSecondary),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(color: context.appTextSecondary, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCachePathInfo() {
     return FutureBuilder<String>(
       future: AppIconCache.cacheDir().then((d) => d.path),
@@ -2266,13 +1516,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                     minWidth: 28,
                     minHeight: 28,
                   ),
-                  onPressed: () async {
-                    if (Platform.isWindows) {
-                      await Process.run('explorer', [path]);
-                    } else if (Platform.isMacOS) {
-                      await Process.run('open', [path]);
-                    }
-                  },
+                  onPressed: () => ShellRunner.openFolder(path),
                 ),
               ),
             ],
@@ -2305,8 +1549,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
   }
 
   Widget _buildCommandBar() {
-    const defaultCmd =
-        'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
+    const defaultCmd = AppDrawerSettings.defaultCommand;
     return AnimatedSize(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeInOut,
@@ -2383,18 +1626,6 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                               horizontal: 12,
                               vertical: 10,
                             ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: context.appDivider),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: context.appDivider),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: context.appPrimary),
-                            ),
                           ),
                         ),
                       ),
@@ -2435,309 +1666,4 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
       ),
     );
   }
-}
-
-class _AppTile extends StatefulWidget {
-  final String packageName;
-  final String label;
-  final File? iconFile;
-  final bool iconLoading;
-  final double tileWidth;
-  final bool isFavorite;
-  final VoidCallback onTap;
-  final void Function(Offset position) onSecondaryTap;
-
-  const _AppTile({
-    required this.packageName,
-    required this.label,
-    required this.iconFile,
-    required this.iconLoading,
-    required this.tileWidth,
-    required this.isFavorite,
-    required this.onTap,
-    required this.onSecondaryTap,
-  });
-
-  @override
-  State<_AppTile> createState() => _AppTileState();
-}
-
-class _AppTileState extends State<_AppTile> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onSecondaryTapUp: (details) =>
-            widget.onSecondaryTap(details.globalPosition),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: _hovered
-                ? context.appPrimary.withValues(alpha: 0.12)
-                : context.appSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _hovered
-                  ? context.appPrimary.withValues(alpha: 0.4)
-                  : context.appDivider,
-            ),
-          ),
-          padding: EdgeInsets.zero,
-          child: Stack(
-            children: [
-              if (widget.isFavorite)
-                Positioned(
-                  top: 0,
-                  left: _hovered ? 0 : null,
-                  right: _hovered ? null : 0,
-                  child: Icon(
-                    Icons.favorite,
-                    size: 14,
-                    color: Colors.pinkAccent,
-                  ),
-                ),
-              if (_hovered)
-                Positioned(
-                  top: -4,
-                  right: -4,
-                  child: GestureDetector(
-                    onTapUp: (details) =>
-                        widget.onSecondaryTap(details.globalPosition),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: context.appSurface,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.more_vert,
-                        size: 16,
-                        color: context.appTextSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              Positioned.fill(bottom: 26, child: Center(child: _buildIcon())),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 26,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: Text(
-                      widget.label,
-                      maxLines: 2,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: context.appTextPrimary,
-                        fontSize: 11,
-                        height: 1.3,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIcon() {
-    final size = (widget.tileWidth * 0.55).clamp(32.0, 96.0);
-
-    if (widget.iconLoading) {
-      return SizedBox(
-        width: size,
-        height: size,
-        child: Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: context.appPrimary.withValues(alpha: 0.5),
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (widget.iconFile != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Image.file(
-          widget.iconFile!,
-          width: size,
-          height: size,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => _placeholder(size),
-        ),
-      );
-    }
-
-    return _placeholder(size);
-  }
-
-  Widget _placeholder(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: context.appPrimary.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(
-        Icons.android,
-        color: context.appPrimary.withValues(alpha: 0.6),
-        size: size * 0.6,
-      ),
-    );
-  }
-}
-
-class _ScriptTile extends StatefulWidget {
-  final String name;
-  final double tileWidth;
-  final File? iconFile;
-  final VoidCallback onTap;
-
-  const _ScriptTile({
-    required this.name,
-    required this.tileWidth,
-    required this.iconFile,
-    required this.onTap,
-  });
-
-  @override
-  State<_ScriptTile> createState() => _ScriptTileState();
-}
-
-class _ScriptTileState extends State<_ScriptTile> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final size = (widget.tileWidth * 0.55).clamp(32.0, 96.0);
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: _hovered
-                ? context.appPrimary.withValues(alpha: 0.12)
-                : context.appSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _hovered
-                  ? context.appPrimary.withValues(alpha: 0.4)
-                  : context.appDivider,
-            ),
-          ),
-          padding: EdgeInsets.zero,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                bottom: 34,
-                child: Center(
-                  child: widget.iconFile != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.file(
-                            widget.iconFile!,
-                            width: size,
-                            height: size,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) =>
-                                _scriptPlaceholder(size),
-                          ),
-                        )
-                      : _scriptPlaceholder(size),
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 26,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: Text(
-                      widget.name,
-                      maxLines: 2,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: context.appTextPrimary,
-                        fontSize: 11,
-                        height: 1.3,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _scriptPlaceholder(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(
-        Icons.description_outlined,
-        color: Colors.blue.withValues(alpha: 0.7),
-        size: size * 0.5,
-      ),
-    );
-  }
-}
-
-class _ScriptGroup {
-  final String name;
-  final bool isRoot;
-  final List<File> files;
-
-  _ScriptGroup({required this.name, required this.isRoot, required this.files});
-}
-
-/// A single row in the custom overlay context menu.
-class _CtxMenuItem {
-  final IconData icon;
-  final Color? iconColor;
-  final String label;
-  final bool showChevron;
-  final VoidCallback onTap;
-
-  _CtxMenuItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.iconColor,
-    this.showChevron = false,
-  });
 }

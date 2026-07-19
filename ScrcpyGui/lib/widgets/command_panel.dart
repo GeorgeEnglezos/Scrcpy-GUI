@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'app_snackbar.dart';
 import '../theme/app_theme_colors.dart';
 import '../utils/command_syntax_highlighter.dart';
 
@@ -116,11 +117,11 @@ class CommandPanel extends StatelessWidget {
                   constraints: const BoxConstraints(),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: command));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Command copied to clipboard'),
-                        duration: Duration(seconds: 1),
-                      ),
+                    showAppSnackBar(
+                      context,
+                      'Command copied to clipboard',
+                      type: AppSnackBarType.neutral,
+                      duration: const Duration(seconds: 1),
                     );
                   },
                 ),

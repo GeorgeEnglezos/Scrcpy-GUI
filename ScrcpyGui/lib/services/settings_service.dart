@@ -21,6 +21,12 @@ class SettingsService {
   static AppDrawerSettings? _cachedAppDrawerSettings;
 
   static AppSettings? get currentSettings => _cachedSettings;
+
+  /// Test-only: injects [settings] as the cached settings so pure helpers
+  /// that read [currentSettings] can be exercised without disk I/O.
+  @visibleForTesting
+  static void debugSetSettings(AppSettings? settings) =>
+      _cachedSettings = settings;
   static AppDrawerSettings? get currentAppDrawerSettings => _cachedAppDrawerSettings;
 
   /// Fires when [AppSettings] is persisted. Subscribe to be notified of
@@ -51,7 +57,7 @@ class SettingsService {
       final loaded = AppSettings.fromJsonString(jsonString);
 
       // Migration: drop deprecated panels and add any newly-introduced ones.
-      final migrated = _migratePanels(loaded);
+      final migrated = migratePanels(loaded);
       _cachedSettings = migrated;
 
       // Persist only if migration actually produced a different list, to
@@ -69,7 +75,8 @@ class SettingsService {
 
   /// Returns a copy of [settings] with deprecated panels removed and any
   /// newly-introduced default panels appended. Pure: never mutates input.
-  AppSettings _migratePanels(AppSettings settings) {
+  @visibleForTesting
+  AppSettings migratePanels(AppSettings settings) {
     const deprecatedPanelIds = {'shortcuts'};
     final defaults = buildDefaultPanels();
 

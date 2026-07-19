@@ -3,6 +3,8 @@
 /// https://github.com/GeorgeEnglezos/Scrcpy-GUI
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:scrcpy_gui_prod/pages/app_drawer_page.dart';
@@ -42,10 +44,10 @@ Future<void> main() async {
     title: "Scrcpy GUI",
   );
 
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
+  unawaited(windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.show();
     await windowManager.focus();
-  });
+  }));
 
   // Load settings
   final settingsService = SettingsService();
@@ -215,7 +217,6 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
   /// - 3: SettingsPage - Application preferences and panel customization
   List<Widget> get pages => [
     HomePage(
-      panelOrder: _currentSettings.panelOrder,
       onNavigateToSettings: () {
         final tabs = _visibleTabLabelsFor(_currentSettings);
         final idx = tabs.indexOf('Settings');
@@ -236,16 +237,9 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
     return MaterialApp(
       title: 'Scrcpy GUI',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme.copyWith(
-        colorScheme: AppTheme.lightTheme.colorScheme.copyWith(
-          primary: context.watch<ColorThemeNotifier>().current.primary,
-        ),
-      ),
-      darkTheme: AppTheme.darkTheme.copyWith(
-        colorScheme: AppTheme.darkTheme.colorScheme.copyWith(
-          primary: context.watch<ColorThemeNotifier>().current.primary,
-        ),
-      ),
+      theme: AppTheme.light(context.watch<ColorThemeNotifier>().current.primary),
+      darkTheme:
+          AppTheme.dark(context.watch<ColorThemeNotifier>().current.primary),
       themeMode: context.watch<ColorThemeNotifier>().current.brightness == 'dark'
           ? ThemeMode.dark
           : ThemeMode.light,
@@ -352,14 +346,6 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
           ElevatedButton(
             onPressed: () =>
                 UpdateService.launchReleasePage(_updateResult?.downloadUrl),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.appPrimary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
             child: const Text('Download Update'),
           ),
           const SizedBox(width: 12),

@@ -17,7 +17,8 @@ import 'package:flutter/services.dart';
 import '../app_icon_cache.dart';
 import '../icon_fetch_strategy.dart';
 import '../log_service.dart';
-import '../terminal_service.dart';
+import '../adb_service.dart';
+import '../shell_runner.dart';
 
 class HelperApkStrategy implements IconFetchStrategy {
   final bool autoInstall;
@@ -31,10 +32,24 @@ class HelperApkStrategy implements IconFetchStrategy {
   static const Duration _pollInterval = Duration(milliseconds: 500);
   static const Duration _pollTimeout = Duration(seconds: 300);
 
-  String _adbFor(String deviceId) =>
-      '${TerminalService.adbExecutable} -s $deviceId';
+  /// Runs a command in the device shell via `adb -s <id> shell <args>`.
+  /// argv all the way — the local shell is never involved.
+  Future<String> _deviceShell(String deviceId, List<String> deviceArgs) =>
+      ShellRunner.runOut(
+        AdbService.adbExecutable,
+        ['-s', deviceId, 'shell', ...deviceArgs],
+      );
 
-  void _ignoreError() {}
+  /// Runs `test [testArgs]` on the device and returns true if it passed.
+  /// The pipeline is passed as one argument so it executes in the device
+  /// shell — never in the local one (stock Windows has no `test`).
+  Future<bool> _deviceTest(String deviceId, String testArgs) async {
+    final result = await _deviceShell(
+      deviceId,
+      ['test $testArgs && echo OK || echo MISSING'],
+    );
+    return result.trim() == 'OK';
+  }
 
   @override
   Future<void> fetchAll({
@@ -49,158 +64,151 @@ class HelperApkStrategy implements IconFetchStrategy {
     void Function(Map<String, String> categories)? onCategoriesLoaded,
     void Function(int current, int total, String status)? onProgress,
   }) async {
-    try {
-      LogService.info('HelperApkStrategy', 'Starting fetch for device=${LogService.sanitizeDevice(deviceId)} packages=${packages.length}');
-      final n = packages.length;
+    LogService.info('HelperApkStrategy', 'Starting fetch for device=${LogService.sanitizeDevice(deviceId)} packages=${packages.length}');
+    final n = packages.length;
 
-      // Step 1: Check APK is installed; auto-install if requested
-      onProgress?.call(0, n, 'Checking helper APK...');
-      final isInstalled = await _isApkInstalled(deviceId);
-      if (!isInstalled) {
-        if (autoInstall) {
-          LogService.info('HelperApkStrategy', 'APK not installed — installing via ADB on device=${LogService.sanitizeDevice(deviceId)}');
-          onProgress?.call(0, n, 'Installing helper APK...');
-          await _installApk(deviceId);
-          LogService.info('HelperApkStrategy', 'APK installed successfully on device=${LogService.sanitizeDevice(deviceId)}');
-        } else {
-          LogService.warning('HelperApkStrategy', 'APK not installed on device=${LogService.sanitizeDevice(deviceId)} and auto-install is off');
-          throw Exception(
-            'Helper APK is not installed on device $deviceId. Enable "Auto-install via ADB" to install it automatically.',
-          );
-        }
+    // Step 1: Check APK is installed; auto-install if requested
+    onProgress?.call(0, n, 'Checking helper APK...');
+    final isInstalled = await _isApkInstalled(deviceId);
+    if (!isInstalled) {
+      if (autoInstall) {
+        LogService.info('HelperApkStrategy', 'APK not installed — installing via ADB on device=${LogService.sanitizeDevice(deviceId)}');
+        onProgress?.call(0, n, 'Installing helper APK...');
+        await _installApk(deviceId);
+        LogService.info('HelperApkStrategy', 'APK installed successfully on device=${LogService.sanitizeDevice(deviceId)}');
       } else {
-        LogService.debug('HelperApkStrategy', 'APK already installed on device=${LogService.sanitizeDevice(deviceId)}');
-      }
-
-      // Step 2: Check if an export is already mid-flight (dir exists but no
-      // labels.json yet). If so, just poll — don't re-trigger and interrupt it.
-      // Otherwise always trigger a fresh export so the desktop never relies on
-      // stale on-device files.
-      onProgress?.call(0, n, 'Checking export state...');
-      final labelsCheck = await TerminalService.runCommand(
-        '${_adbFor(deviceId)} shell test -f $_exportDir/labels.json && echo "DONE" || echo "NOPE"',
-      );
-      final labelsDone = labelsCheck.trim() == 'DONE';
-
-      bool exportInProgress = false;
-      if (!labelsDone) {
-        final dirCheck = await TerminalService.runCommand(
-          '${_adbFor(deviceId)} shell test -d $_exportDir && echo "EXISTS" || echo "NOPE"',
+        LogService.warning('HelperApkStrategy', 'APK not installed on device=${LogService.sanitizeDevice(deviceId)} and auto-install is off');
+        throw Exception(
+          'Helper APK is not installed on device $deviceId. Enable "Auto-install via ADB" to install it automatically.',
         );
-        exportInProgress = dirCheck.trim() == 'EXISTS';
       }
+    } else {
+      LogService.debug('HelperApkStrategy', 'APK already installed on device=${LogService.sanitizeDevice(deviceId)}');
+    }
 
-      if (exportInProgress) {
-        // Another fetch is already running — don't interrupt it, just wait.
-        LogService.info('HelperApkStrategy',
-            'Export already in progress on device=${LogService.sanitizeDevice(deviceId)} — skipping trigger');
-        onProgress?.call(0, n, 'Waiting for mobile app to finish exporting icons...');
-        final success = await _pollForExportCompletion(deviceId);
-        if (!success) {
-          LogService.error('HelperApkStrategy', 'Export timed out after ${_pollTimeout.inSeconds}s on device=${LogService.sanitizeDevice(deviceId)}');
-          throw Exception('Export timed out after ${_pollTimeout.inSeconds}s');
-        }
-        LogService.info('HelperApkStrategy', 'Export completed on device=${LogService.sanitizeDevice(deviceId)}');
-      } else {
-        // Step 3: Trigger a fresh export.
-        // Force-stop first so am start always goes through onCreate regardless
-        // of whether the Activity is already alive in the foreground/background.
-        onProgress?.call(0, n, 'Launching helper app on device...');
-        LogService.info('HelperApkStrategy', 'Triggering export on device=${LogService.sanitizeDevice(deviceId)}');
-        await _triggerExport(deviceId);
+    // Step 2: Check if an export is already mid-flight (dir exists but no
+    // labels.json yet). If so, just poll — don't re-trigger and interrupt it.
+    // Otherwise always trigger a fresh export so the desktop never relies on
+    // stale on-device files.
+    onProgress?.call(0, n, 'Checking export state...');
+    final labelsDone = await _deviceTest(deviceId, '-f $_exportDir/labels.json');
 
-        onProgress?.call(0, n, 'Waiting for mobile app to export icons...');
-        final success = await _pollForExportCompletion(deviceId);
-        if (!success) {
-          LogService.error('HelperApkStrategy', 'Export timed out after ${_pollTimeout.inSeconds}s on device=${LogService.sanitizeDevice(deviceId)}');
-          throw Exception('Export timed out after ${_pollTimeout.inSeconds}s');
-        }
-        LogService.info('HelperApkStrategy', 'Export completed on device=${LogService.sanitizeDevice(deviceId)}');
+    bool exportInProgress = false;
+    if (!labelsDone) {
+      exportInProgress = await _deviceTest(deviceId, '-d $_exportDir');
+    }
+
+    if (exportInProgress) {
+      // Another fetch is already running — don't interrupt it, just wait.
+      LogService.info('HelperApkStrategy',
+          'Export already in progress on device=${LogService.sanitizeDevice(deviceId)} — skipping trigger');
+      onProgress?.call(0, n, 'Waiting for mobile app to finish exporting icons...');
+      final success = await _pollForExportCompletion(deviceId);
+      if (!success) {
+        LogService.error('HelperApkStrategy', 'Export timed out after ${_pollTimeout.inSeconds}s on device=${LogService.sanitizeDevice(deviceId)}');
+        throw Exception('Export timed out after ${_pollTimeout.inSeconds}s');
       }
+      LogService.info('HelperApkStrategy', 'Export completed on device=${LogService.sanitizeDevice(deviceId)}');
+    } else {
+      // Step 3: Trigger a fresh export.
+      // Force-stop first so am start always goes through onCreate regardless
+      // of whether the Activity is already alive in the foreground/background.
+      onProgress?.call(0, n, 'Launching helper app on device...');
+      LogService.info('HelperApkStrategy', 'Triggering export on device=${LogService.sanitizeDevice(deviceId)}');
+      await _triggerExport(deviceId);
 
-      // Step 4: Pull files from device
-      onProgress?.call(0, n, 'Pulling icons from mobile to desktop...');
-      LogService.info('HelperApkStrategy', 'Pulling export files from device=${LogService.sanitizeDevice(deviceId)}');
-      final tempDir = await _createTempDirectory();
-      await _pullExportFiles(deviceId, tempDir);
-
-      // Step 5: Parse labels.json
-      onProgress?.call(0, n, 'Processing app data...');
-      final labelsJson = await _parseLabelsJson(tempDir);
-      LogService.info('HelperApkStrategy', 'Parsed ${labelsJson.length} labels from device=${LogService.sanitizeDevice(deviceId)}');
-      for (final entry in labelsJson.entries) {
-        final pkg = entry.key;
-        final label = entry.value;
-        // Only update packages that are in our ADB package list
-        if (labels.containsKey(pkg) &&
-            (labels[pkg] == null || labels[pkg] == pkg)) {
-          labels[pkg] = label;
-          onLabelDiscovered(pkg, label);
-        }
+      onProgress?.call(0, n, 'Waiting for mobile app to export icons...');
+      final success = await _pollForExportCompletion(deviceId);
+      if (!success) {
+        LogService.error('HelperApkStrategy', 'Export timed out after ${_pollTimeout.inSeconds}s on device=${LogService.sanitizeDevice(deviceId)}');
+        throw Exception('Export timed out after ${_pollTimeout.inSeconds}s');
       }
+      LogService.info('HelperApkStrategy', 'Export completed on device=${LogService.sanitizeDevice(deviceId)}');
+    }
 
-      // Step 5b: Parse categories.json (if present)
-      final categoriesFile = File('${tempDir.path}/categories.json');
-      if (await categoriesFile.exists()) {
-        try {
-          final catContent = await categoriesFile.readAsString();
-          final catJson = jsonDecode(catContent) as Map<String, dynamic>;
-          final categories = catJson.cast<String, String>();
-          onCategoriesLoaded?.call(categories);
-        } catch (_) {
-          _ignoreError();
-        }
+    // Step 4: Pull files from device
+    onProgress?.call(0, n, 'Pulling icons from mobile to desktop...');
+    LogService.info('HelperApkStrategy', 'Pulling export files from device=${LogService.sanitizeDevice(deviceId)}');
+    final tempDir = await _createTempDirectory();
+    await _pullExportFiles(deviceId, tempDir);
+
+    // Step 5: Parse labels.json
+    onProgress?.call(0, n, 'Processing app data...');
+    final labelsJson = await _parseLabelsJson(tempDir);
+    LogService.info('HelperApkStrategy', 'Parsed ${labelsJson.length} labels from device=${LogService.sanitizeDevice(deviceId)}');
+    for (final entry in labelsJson.entries) {
+      final pkg = entry.key;
+      final label = entry.value;
+      // Only update packages that are in our ADB package list
+      if (labels.containsKey(pkg) &&
+          (labels[pkg] == null || labels[pkg] == pkg)) {
+        labels[pkg] = label;
+        onLabelDiscovered(pkg, label);
       }
+    }
 
-      // Step 6: Load icons in batches
-      final iconDir = Directory('${tempDir.path}/icons');
-      if (await iconDir.exists()) {
-        final iconFiles = await iconDir.list().toList();
-        LogService.info('HelperApkStrategy', 'Loading ${iconFiles.length} icons from device=${LogService.sanitizeDevice(deviceId)}');
-        var loaded = 0;
+    // Step 5b: Parse categories.json (if present)
+    final categoriesFile = File('${tempDir.path}/categories.json');
+    if (await categoriesFile.exists()) {
+      try {
+        final catContent = await categoriesFile.readAsString();
+        final catJson = jsonDecode(catContent) as Map<String, dynamic>;
+        final categories = catJson.cast<String, String>();
+        onCategoriesLoaded?.call(categories);
+      } catch (e) {
+        LogService.debug('HelperApkStrategy', 'Failed to parse categories.json: $e');
+      }
+    }
 
-        for (var i = 0; i < iconFiles.length; i += batchSize) {
-          if (isCancelled()) {
-            break;
-          }
+    // Step 6: Load icons in batches
+    final iconDir = Directory('${tempDir.path}/icons');
+    if (await iconDir.exists()) {
+      final iconFiles = await iconDir.list().toList();
+      LogService.info('HelperApkStrategy', 'Loading ${iconFiles.length} icons from device=${LogService.sanitizeDevice(deviceId)}');
+      var loaded = 0;
 
-          final batch = iconFiles.skip(i).take(batchSize).toList();
-          final batchResults = <String, File?>{};
+      for (var i = 0; i < iconFiles.length; i += batchSize) {
+        if (isCancelled()) {
+          break;
+        }
 
-          for (final file in batch) {
-            if (file is File) {
-              final fileName = file.path.split(Platform.pathSeparator).last;
-              final pkg = fileName.replaceAll('.png', '');
+        final batch = iconFiles.skip(i).take(batchSize).toList();
+        final batchResults = <String, File?>{};
 
-              if (labels.containsKey(pkg)) {
-                final cacheFile = await AppIconCache.cacheFile(pkg);
-                await file.copy(cacheFile.path);
-                batchResults[pkg] = cacheFile;
-                loaded++;
-              }
+        for (final file in batch) {
+          if (file is File) {
+            final fileName = file.path.split(Platform.pathSeparator).last;
+            final pkg = fileName.replaceAll('.png', '');
+
+            if (labels.containsKey(pkg)) {
+              final cacheFile = await AppIconCache.cacheFile(pkg);
+              await file.copy(cacheFile.path);
+              batchResults[pkg] = cacheFile;
+              loaded++;
             }
           }
-
-          onBatchDone(batchResults);
-          onProgress?.call(loaded, iconFiles.length, 'Loading icons...');
         }
-      }
 
-      // Step 7: Clean up device and temp directory
-      await _cleanupExportDirectory(deviceId);
-      await tempDir.delete(recursive: true);
-      LogService.info('HelperApkStrategy', 'Fetch complete for device=${LogService.sanitizeDevice(deviceId)}');
-    } catch (_) {
-      rethrow;
+        onBatchDone(batchResults);
+        onProgress?.call(loaded, iconFiles.length, 'Loading icons...');
+      }
     }
+
+    // Step 7: Clean up device and temp directory
+    await _cleanupExportDirectory(deviceId);
+    await tempDir.delete(recursive: true);
+    LogService.info('HelperApkStrategy', 'Fetch complete for device=${LogService.sanitizeDevice(deviceId)}');
   }
 
   Future<bool> _isApkInstalled(String deviceId) async {
     try {
-      final result = await TerminalService.runCommand(
-        '${_adbFor(deviceId)} shell pm list packages | grep $_apkPackage',
+      // Filter in Dart — piping to grep would run in the LOCAL shell,
+      // which doesn't exist on stock Windows.
+      final result = await _deviceShell(
+        deviceId,
+        ['pm', 'list', 'packages', _apkPackage],
       );
-      return result.isNotEmpty;
+      return result.contains(_apkPackage);
     } catch (e) {
       return false;
     }
@@ -214,7 +222,7 @@ class HelperApkStrategy implements IconFetchStrategy {
     );
     await tempFile.writeAsBytes(data.buffer.asUint8List(), flush: true);
     try {
-      final result = await TerminalService.runAdbProcess(['-s', deviceId, 'install', tempFile.path]);
+      final result = await AdbService.runAdbProcess(['-s', deviceId, 'install', tempFile.path]);
       final out = result.stdout.toString();
       final err = result.stderr.toString();
       // adb install prints "Success" on success; any non-zero exit or stderr indicates failure.
@@ -231,12 +239,16 @@ class HelperApkStrategy implements IconFetchStrategy {
   Future<void> _triggerExport(String deviceId) async {
     // Force-stop first so am start always hits onCreate even if the Activity
     // is currently alive in the foreground or background.
-    await TerminalService.runCommand(
-      '${_adbFor(deviceId)} shell am force-stop $_apkPackage',
-    );
-    await TerminalService.runCommand(
-      '${_adbFor(deviceId)} shell am start -n $_apkPackage/.MainActivity --ez auto_export true',
-    );
+    await _deviceShell(deviceId, ['am', 'force-stop', _apkPackage]);
+    await _deviceShell(deviceId, [
+      'am',
+      'start',
+      '-n',
+      '$_apkPackage/.MainActivity',
+      '--ez',
+      'auto_export',
+      'true',
+    ]);
     // Give the app a moment to launch and start exporting
     await Future.delayed(const Duration(seconds: 2));
   }
@@ -244,37 +256,13 @@ class HelperApkStrategy implements IconFetchStrategy {
   Future<bool> _pollForExportCompletion(String deviceId) async {
     final stopwatch = Stopwatch()..start();
 
-    // Check if app is running (best-effort).
-    try {
-      await TerminalService.runCommand(
-        '${_adbFor(deviceId)} shell ps | grep com.george.iconhelper',
-      );
-    } catch (_) {
-      _ignoreError();
-    }
-
     while (stopwatch.elapsed < _pollTimeout) {
       try {
-        // Method 1: Check if labels.json exists
-        final result1 = await TerminalService.runCommand(
-          '${_adbFor(deviceId)} shell test -f $_exportDir/labels.json && echo "FOUND" || echo "NOT_FOUND"',
-        );
-        final trimmedResult = result1.trim();
-
-        // Check for exact match, not substring (NOT_FOUND contains FOUND)
-        if (trimmedResult.contains('FOUND') &&
-            !trimmedResult.contains('NOT_FOUND')) {
+        if (await _deviceTest(deviceId, '-f $_exportDir/labels.json')) {
           return true;
         }
-
-        // Method 2: Try to list the directory to see if it exists
-        if (stopwatch.elapsed.inSeconds % 10 == 0) {
-          await TerminalService.runCommand(
-            '${_adbFor(deviceId)} shell ls -la $_exportDir 2>&1',
-          );
-        }
-      } catch (_) {
-        _ignoreError();
+      } catch (e) {
+        LogService.debug('HelperApkStrategy', 'Export poll failed: $e');
       }
 
       await Future.delayed(_pollInterval);
@@ -302,9 +290,13 @@ class HelperApkStrategy implements IconFetchStrategy {
     // Pull each item by explicit name so we get a flat layout in tempDir
     // regardless of how different adb versions handle directory pulls.
     for (final item in ['labels.json', 'categories.json', 'icons']) {
-      final r = await TerminalService.runCommandWithResult(
-        '${_adbFor(deviceId)} pull $_exportDir/$item ${tempDir.path}/$item',
-      );
+      final r = await AdbService.runAdbProcess([
+        '-s',
+        deviceId,
+        'pull',
+        '$_exportDir/$item',
+        '${tempDir.path}/$item',
+      ]);
       LogService.debug(
         'HelperApkStrategy',
         'pull $item exitCode=${r.exitCode} '
@@ -332,11 +324,9 @@ class HelperApkStrategy implements IconFetchStrategy {
 
   Future<void> _cleanupExportDirectory(String deviceId) async {
     try {
-      await TerminalService.runCommand(
-        '${_adbFor(deviceId)} shell rm -rf $_exportDir',
-      );
-    } catch (_) {
-      _ignoreError();
+      await _deviceShell(deviceId, ['rm', '-rf', _exportDir]);
+    } catch (e) {
+      LogService.debug('HelperApkStrategy', 'Export dir cleanup failed: $e');
     }
   }
 }

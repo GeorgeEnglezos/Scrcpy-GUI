@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models/scrcpy_instance_model.dart';
-import '../../services/settings_service.dart';
-import '../../services/terminal_service.dart';
+import '../../services/scrcpy_process_service.dart';
+import '../../utils/command_executor.dart';
 import '../../theme/app_theme_colors.dart';
 import '../../widgets/surrounding_panel.dart';
 
@@ -23,7 +23,6 @@ class _InstancesPanelState extends State<InstancesPanel> {
   void initState() {
     super.initState();
     _refreshInstances();
-    // Auto-refresh every 5 seconds (reduced from 2 for better performance)
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _refreshInstances();
     });
@@ -39,7 +38,7 @@ class _InstancesPanelState extends State<InstancesPanel> {
     if (!mounted) return;
 
     try {
-      final processes = await TerminalService.getScrcpyProcesses();
+      final processes = await ScrcpyProcessService.getScrcpyProcesses();
       if (!mounted) return;
 
       setState(() {
@@ -99,7 +98,7 @@ class _InstancesPanelState extends State<InstancesPanel> {
 
   void _killInstance(int pid) async {
     if (!mounted) return;
-    await TerminalService.killProcess(pid);
+    await ScrcpyProcessService.killProcess(pid);
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
       _refreshInstances();
@@ -109,7 +108,7 @@ class _InstancesPanelState extends State<InstancesPanel> {
   Future<void> _killAllInstances() async {
     if (!mounted) return;
     for (final pid in _selectedPids) {
-      await TerminalService.killProcess(pid);
+      await ScrcpyProcessService.killProcess(pid);
     }
     _selectedPids.clear();
     await Future.delayed(const Duration(milliseconds: 500));
@@ -124,7 +123,7 @@ class _InstancesPanelState extends State<InstancesPanel> {
       // Kill all instances
       for (final instance in _instances) {
         if (!mounted) return;
-        await TerminalService.killProcess(instance.pid);
+        await ScrcpyProcessService.killProcess(instance.pid);
       }
     } else {
       // Kill selected instances
@@ -139,13 +138,11 @@ class _InstancesPanelState extends State<InstancesPanel> {
   void _rerunCommand(ScrcpyInstance instance) async {
     if (!mounted) return;
     if (instance.fullCommand != null) {
-      final openCmdWindows =
-          SettingsService.currentSettings?.openCmdWindows ?? false;
-      if (openCmdWindows) {
-        await TerminalService.runCommandInNewTerminal(instance.fullCommand!);
-      } else {
-        await TerminalService.runCommand(instance.fullCommand!);
-      }
+      await CommandExecutor.executeCommand(
+        context,
+        instance.fullCommand!,
+        source: 'Instances/Rerun',
+      );
       // Give it a moment to start, then refresh
       await Future.delayed(const Duration(milliseconds: 1000));
       if (mounted) {

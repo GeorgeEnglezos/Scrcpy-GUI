@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../services/settings_service.dart';
-import '../services/terminal_service.dart';
+import '../services/adb_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme_colors.dart';
 import '../models/settings_model.dart';
@@ -24,9 +24,8 @@ import 'home_panels/advanced_panel.dart';
 import 'home_panels/otg_mode_panel.dart';
 
 class HomePage extends StatefulWidget {
-  final List<dynamic>? panelOrder; // Accept dynamic (JSON) from settings
   final VoidCallback? onNavigateToSettings;
-  const HomePage({super.key, this.panelOrder, this.onNavigateToSettings});
+  const HomePage({super.key, this.onNavigateToSettings});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -84,7 +83,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _checkScrcpy() async {
-    final onPath = await TerminalService.isScrcpyOnPath();
+    final onPath = await AdbService.isScrcpyOnPath();
     if (!mounted) return;
 
     // If scrcpy is on PATH, it works regardless of any configured directory.
@@ -103,7 +102,7 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    final exe = TerminalService.scrcpyExecutable;
+    final exe = AdbService.scrcpyExecutable;
     final exists = await File(exe).exists();
     if (!mounted) return;
     setState(
@@ -117,62 +116,9 @@ class _HomePageState extends State<HomePage> {
   /// Re-derives [panelOrder] from the latest settings. Pure — does not call
   /// setState. Callers wrap in setState if a rebuild is needed.
   void _loadPanelOrder() {
-    final fromService = SettingsService.currentSettings?.panelOrder;
-    final source = fromService ?? widget.panelOrder;
-
-    if (source != null) {
-      panelOrder = source
-          .map(
-            (e) => e is PanelSettings
-                ? e
-                : PanelSettings.fromJson(Map<String, dynamic>.from(e)),
-          )
-          .toList();
-    } else {
-      panelOrder = allPanels.keys
-          .map(
-            (id) => PanelSettings(
-              id: id,
-              displayName: _getPanelDisplayName(id),
-              visible: true,
-              isFullWidth: false,
-            ),
-          )
-          .toList();
-    }
-  }
-
-  String _getPanelDisplayName(String id) {
-    switch (id) {
-      case 'actions':
-        return 'Command Actions';
-      case 'package':
-        return 'Package Commands';
-      case 'common':
-        return 'Common Commands';
-      case 'audio':
-        return 'Audio Commands';
-      case 'camera':
-        return 'Camera Commands';
-      case 'input':
-        return 'Input Control';
-      case 'display':
-        return 'Display/Window';
-      case 'network':
-        return 'Network/Connection';
-      case 'virtual':
-        return 'Virtual Display Commands';
-      case 'recording':
-        return 'Recording Commands';
-      case 'advanced':
-        return 'Advanced/Developer';
-      case 'otg':
-        return 'OTG Mode';
-      case 'running':
-        return 'Running Instances';
-      default:
-        return id;
-    }
+    // buildDefaultPanels() is the single source of panel ids/display names.
+    panelOrder =
+        SettingsService.currentSettings?.panelOrder ?? buildDefaultPanels();
   }
 
   @override
