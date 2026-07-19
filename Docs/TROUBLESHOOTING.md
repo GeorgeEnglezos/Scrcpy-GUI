@@ -51,7 +51,6 @@
 **Symptom**: scrcpy window opens but shows a black screen.
 
 - Some apps block screen capture (banking apps, Netflix, etc.) — this is a device restriction
-- Try disabling **Secure Flag** in Advanced settings if the target app allows it
 - Check if the device screen is on and unlocked
 - Try lowering the video bitrate or resolution in Common Commands panel
 
@@ -74,9 +73,9 @@
 
 - Check the logs file if file logging is enabled (Settings → Enable File Logging)
 - Delete the settings file and restart to reset to defaults:
-  - Windows: `%APPDATA%\scrcpy_gui\settings.json`
-  - macOS: `~/Library/Application Support/scrcpy_gui/settings.json`
-  - Linux: `~/.config/scrcpy_gui/settings.json`
+  - Windows: `%APPDATA%\ScrcpyGui\scrcpy_gui_settings.json`
+  - macOS: `~/Library/Application Support/ScrcpyGui/scrcpy_gui_settings.json`
+  - Linux: `~/ScrcpyGui/scrcpy_gui_settings.json`
 
 ---
 
