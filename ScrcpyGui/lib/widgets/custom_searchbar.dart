@@ -250,7 +250,12 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                           fontSize: kLabelFontSize,
                           fontWeight: FontWeight.w500,
                         ),
+                        // The container draws the border; suppress the
+                        // theme-level input borders too, border: alone isn't enough.
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: kRowVerticalPadding / 2,
