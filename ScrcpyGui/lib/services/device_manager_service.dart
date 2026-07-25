@@ -19,13 +19,9 @@ import '../services/log_service.dart';
 import '../services/settings_service.dart';
 import 'adb_service.dart';
 
-/// Service for managing Android device connections and information
-///
-/// This service uses Provider's ChangeNotifier to broadcast state changes
-/// to the UI when devices are connected, disconnected, or selected.
-///
-/// The service starts automatic polling in [initialize] and maintains
-/// a global registry of device information in [devicesInfo].
+/// Manages Android device connections and information. Starts automatic
+/// polling in [initialize] and keeps a registry of device info in
+/// [devicesInfo]; notifies the UI on connect/disconnect/select.
 class DeviceManagerService extends ChangeNotifier {
   /// Global device information registry
   ///

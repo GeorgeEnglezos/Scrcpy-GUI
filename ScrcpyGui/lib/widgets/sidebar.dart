@@ -1,7 +1,4 @@
-/// Navigation sidebar widget for the application.
-///
-/// This widget provides the main navigation menu with icons and labels
-/// for different sections of the application (Home, Favorites, Scripts, etc.).
+/// Main navigation sidebar (Home, Favorites, Scripts, etc.).
 library;
 
 import 'package:flutter/material.dart';

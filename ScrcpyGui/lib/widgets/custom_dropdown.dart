@@ -1,8 +1,5 @@
-/// A custom dropdown widget that provides a consistent UI across the application.
-///
-/// This widget wraps Flutter's DropdownButtonFormField with custom styling
-/// to match the application's design system. It supports labels, hints,
-/// and automatic value validation.
+/// Styled DropdownButtonFormField with label, hint, and automatic value
+/// validation.
 library;
 
 import 'package:flutter/material.dart';

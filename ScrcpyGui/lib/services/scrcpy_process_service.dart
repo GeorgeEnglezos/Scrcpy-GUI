@@ -31,9 +31,8 @@ class ScrcpyProcessService {
     }
   }
 
-  /// One Get-CimInstance call per refresh replaces the old
-  /// tasklist + 3-WMIC-spawns-per-process approach (WMIC is removed from
-  /// recent Windows 11 builds).
+  /// Single Get-CimInstance call per refresh — WMIC is removed from recent
+  /// Windows 11 builds, and per-process spawns are too slow.
   static Future<List<Map<String, String>>> _getWindowsProcesses() async {
     const psScript =
         'Get-CimInstance Win32_Process -Filter "Name=\'scrcpy.exe\'" | '

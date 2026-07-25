@@ -1,7 +1,5 @@
-/// Widget for displaying scrcpy commands with syntax highlighting and actions.
-///
-/// This widget shows command strings with color-coded syntax highlighting
-/// and provides actions like copy, delete, and download.
+/// Displays a scrcpy command with syntax highlighting and copy/delete/download
+/// actions.
 library;
 
 import 'package:flutter/material.dart';

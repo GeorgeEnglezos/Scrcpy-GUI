@@ -1,7 +1,6 @@
 /// Shared script/icon logic for the Scripts page, App Drawer, and Favorites:
 /// script-directory scanning, `--start-app` package extraction, and
-/// cached-icon hydration. One home for code that previously existed in
-/// three drifting copies.
+/// cached-icon hydration.
 library;
 
 import 'dart:io';

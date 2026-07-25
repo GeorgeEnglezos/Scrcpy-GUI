@@ -1,7 +1,5 @@
-/// A custom text field widget that provides a consistent UI across the application.
-///
-/// This widget wraps Flutter's TextField with custom styling and automatic
-/// controller management. It supports labels, tooltips, and value synchronization.
+/// Styled TextField with automatic controller management, label, tooltip,
+/// and external value synchronization.
 library;
 
 import 'package:flutter/material.dart';
@@ -52,14 +50,7 @@ class CustomTextField extends StatefulWidget {
   State<CustomTextField> createState() => _CustomTextFieldState();
 }
 
-/// State class for [CustomTextField] that manages the text controller lifecycle.
-///
-/// This class handles:
-/// - Text controller initialization and disposal
-/// - Synchronization between external value changes and internal state
-/// - Building the styled text field UI
 class _CustomTextFieldState extends State<CustomTextField> {
-  /// Internal text editing controller
   late TextEditingController _controller;
 
   @override
