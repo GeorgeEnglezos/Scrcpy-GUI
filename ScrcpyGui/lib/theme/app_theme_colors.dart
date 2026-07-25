@@ -33,9 +33,6 @@ extension AppThemeColors on BuildContext {
   Color get appHover =>
       watch<ColorThemeNotifier>().current.hover;
 
-  Color get appFocus =>
-      watch<ColorThemeNotifier>().current.focus;
-
   Color get appCommandSurface =>
       watch<ColorThemeNotifier>().current.commandSurface;
 

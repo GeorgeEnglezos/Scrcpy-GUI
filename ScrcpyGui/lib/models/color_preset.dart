@@ -11,7 +11,6 @@ class ColorPreset {
   final Color textPrimary;
   final Color textSecondary;
   final Color hover;
-  final Color focus;
   final Color commandSurface;
 
   const ColorPreset({
@@ -25,7 +24,6 @@ class ColorPreset {
     required this.textPrimary,
     required this.textSecondary,
     required this.hover,
-    required this.focus,
     required this.commandSurface,
   });
 
@@ -40,7 +38,6 @@ class ColorPreset {
     textPrimary: _hex(json['textPrimary'] as String? ?? '#FFFFFF'),
     textSecondary: _hex(json['textSecondary'] as String? ?? '#B3B3B3'),
     hover: _hex(json['hover'] as String? ?? '#2A2A2A'),
-    focus: _hex(json['focus'] as String? ?? '#3B3B3B'),
     commandSurface: _hex(json['commandSurface'] as String? ?? '#1F1F1F'),
   );
 
@@ -55,7 +52,6 @@ class ColorPreset {
     'textPrimary': _toHex(textPrimary),
     'textSecondary': _toHex(textSecondary),
     'hover': _toHex(hover),
-    'focus': _toHex(focus),
     'commandSurface': _toHex(commandSurface),
   };
 
