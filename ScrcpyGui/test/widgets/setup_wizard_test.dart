@@ -31,6 +31,45 @@ class _FakeFilePicker extends FilePicker {
 void main() {
   final preset = ColorPreset.fromJson({'name': 'Dark', 'brightness': 'dark'});
 
+  // These commands are quoted from Official-docs/{windows,macos,linux}.md.
+  // The point of pinning them is that the obvious guesses are wrong: upstream
+  // marks the Debian/Ubuntu apt package and the snap as obsolete, and WinGet
+  // takes --exact rather than --id.
+  group('scrcpyInstallHint', () {
+    test('every platform offers at least one command and a note', () {
+      for (final os in HostOs.values) {
+        final hint = scrcpyInstallHint(os);
+        expect(hint.commands, isNotEmpty, reason: '$os has no command');
+        expect(hint.note, isNotEmpty, reason: '$os has no note');
+      }
+    });
+
+    test('Windows uses the documented WinGet invocation', () {
+      expect(
+        scrcpyInstallHint(HostOs.windows).commands,
+        ['winget install --exact Genymobile.scrcpy'],
+      );
+    });
+
+    test('macOS installs adb alongside scrcpy', () {
+      final hint = scrcpyInstallHint(HostOs.macos);
+      expect(hint.commands.first, 'brew install scrcpy');
+      expect(hint.copyText, contains('android-platform-tools'));
+    });
+
+    test('Linux never suggests the obsolete apt or snap packages', () {
+      final text = scrcpyInstallHint(HostOs.linux).copyText;
+      expect(text, isNot(contains('apt install scrcpy')));
+      expect(text, isNot(contains('snap install scrcpy')));
+      expect(text, contains('pacman -S scrcpy'));
+    });
+
+    test('copyText joins multiple commands one per line', () {
+      final hint = scrcpyInstallHint(HostOs.macos);
+      expect(hint.copyText.split('\n').length, hint.commands.length);
+    });
+  });
+
   AppSettings? saved;
 
   setUp(() {
@@ -178,6 +217,11 @@ void main() {
       );
       // Someone with no scrcpy at all needs a way to go get it.
       expect(find.text('Get scrcpy'), findsOneWidget);
+      // ... and the commands to do it from a terminal instead.
+      final hint = scrcpyInstallHint(currentHostOs);
+      expect(find.text('Install it with a package manager:'), findsOneWidget);
+      expect(find.text(hint.copyText), findsOneWidget);
+      expect(find.text(hint.note), findsOneWidget);
     },
   );
 
@@ -196,9 +240,10 @@ void main() {
         find.widgetWithText(DirectoryRow, 'Scrcpy Directory'),
         findsNothing,
       );
-      // The download link would be noise on a step the user should pass
-      // straight through.
+      // The download link and install commands would both be noise on a step
+      // the user should pass straight through.
       expect(find.text('Get scrcpy'), findsNothing);
+      expect(find.text('Install it with a package manager:'), findsNothing);
     },
   );
 

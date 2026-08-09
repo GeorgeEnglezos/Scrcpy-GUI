@@ -9,6 +9,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/settings_model.dart';
@@ -18,6 +19,7 @@ import '../services/update_service.dart';
 import '../services/settings_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme_colors.dart';
+import 'app_snackbar.dart';
 import 'custom_dropdown.dart';
 import 'directory_row.dart';
 
@@ -25,6 +27,61 @@ import 'directory_row.dart';
 /// this never needs updating when scrcpy releases.
 const kScrcpyReleasesUrl =
     'https://github.com/Genymobile/scrcpy/releases/latest';
+
+/// The host platform, as far as the install hint is concerned.
+enum HostOs { windows, macos, linux }
+
+HostOs get currentHostOs => Platform.isWindows
+    ? HostOs.windows
+    : Platform.isMacOS
+        ? HostOs.macos
+        : HostOs.linux;
+
+/// Package-manager commands that install scrcpy, plus a caveat to show under
+/// them.
+class ScrcpyInstallHint {
+  /// Shell lines, shown in a copyable block in the order given.
+  final List<String> commands;
+
+  /// Caveat shown beneath the block.
+  final String note;
+
+  const ScrcpyInstallHint({required this.commands, required this.note});
+
+  String get copyText => commands.join('\n');
+}
+
+/// Install commands for [os], copied verbatim from `Official-docs/`.
+///
+/// Taken from the docs rather than from memory, which matters here: upstream
+/// strikes through both the Debian/Ubuntu apt package and the snap as obsolete
+/// versions, so neither is offered. WinGet's flag is `--exact`, not `--id`.
+ScrcpyInstallHint scrcpyInstallHint(HostOs os) {
+  switch (os) {
+    case HostOs.windows:
+      return const ScrcpyInstallHint(
+        commands: ['winget install --exact Genymobile.scrcpy'],
+        note: 'WinGet installs adb alongside scrcpy.',
+      );
+    case HostOs.macos:
+      return const ScrcpyInstallHint(
+        commands: [
+          'brew install scrcpy',
+          'brew install --cask android-platform-tools',
+        ],
+        note: 'The second line installs adb, which scrcpy needs on PATH.',
+      );
+    case HostOs.linux:
+      return const ScrcpyInstallHint(
+        commands: [
+          'pacman -S scrcpy',
+          'dnf copr enable zeno/scrcpy && dnf install scrcpy',
+        ],
+        note: 'Arch first, then Fedora. On Debian and Ubuntu the apt package '
+            'is obsolete upstream, so use the release download instead.',
+      );
+  }
+}
 
 class SetupWizardDialog extends StatefulWidget {
   /// Settings the wizard starts from, with directory defaults already applied
@@ -165,7 +222,13 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
           ),
         ],
       ),
-      content: SizedBox(width: 520, child: _buildStepBody()),
+      // Scrollable because step 1 grows: with scrcpy missing it gains the
+      // install block, the download button and the Browse row, which overflows
+      // a short window.
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(child: _buildStepBody()),
+      ),
       actions: [
         // Skips this step only, never the wizard. Hidden on the last step,
         // where skipping and finishing would be the same action.
@@ -229,6 +292,8 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
             'scrcpy is not on your system PATH. Download it, or choose the '
             'folder holding a copy you already have.',
           ),
+          const SizedBox(height: 16),
+          _buildInstallHint(),
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerLeft,
@@ -265,6 +330,60 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
           adbReachable ? AppColors.runGreen : context.appTextSecondary,
           _adbStatusLabel,
         ),
+      ],
+    );
+  }
+
+  /// The platform's install commands in a copyable block.
+  Widget _buildInstallHint() {
+    final hint = scrcpyInstallHint(currentHostOs);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _hint('Install it with a package manager:'),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+          decoration: BoxDecoration(
+            color: context.appCommandSurface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: context.appDivider),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: SelectableText(
+                  hint.copyText,
+                  style: TextStyle(
+                    color: context.appTextPrimary,
+                    fontFamily: 'monospace',
+                    fontSize: 12.5,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 18),
+                color: context.appTextSecondary,
+                tooltip: 'Copy',
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: hint.copyText));
+                  showAppSnackBar(
+                    context,
+                    'Install command copied',
+                    type: AppSnackBarType.neutral,
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        _hint(hint.note),
       ],
     );
   }
