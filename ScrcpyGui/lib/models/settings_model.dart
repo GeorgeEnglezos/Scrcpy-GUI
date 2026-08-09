@@ -100,7 +100,54 @@ List<PanelSettings> buildDefaultPanels() => [
   ),
 ];
 
-/// App-wide settings. Immutable — use [copyWith] to derive a new instance.
+/// Last known position and size of the app window, in logical pixels.
+class WindowState {
+  final double x;
+  final double y;
+  final double width;
+  final double height;
+  final bool maximized;
+
+  const WindowState({
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    this.maximized = false,
+  });
+
+  /// Returns null for a missing or malformed map. A half-written settings file
+  /// must cost the window geometry, not the launch: this is parsed inside
+  /// main() before the first frame, so a throw here means the app never opens.
+  static WindowState? fromJson(Map<String, dynamic>? json) {
+    final x = json?['x'];
+    final y = json?['y'];
+    final width = json?['width'];
+    final height = json?['height'];
+
+    if (x is! num || y is! num || width is! num || height is! num) return null;
+
+    return WindowState(
+      x: x.toDouble(),
+      y: y.toDouble(),
+      width: width.toDouble(),
+      height: height.toDouble(),
+      maximized: json?['maximized'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'x': x,
+      'y': y,
+      'width': width,
+      'height': height,
+      'maximized': maximized,
+    };
+  }
+}
+
+/// App-wide settings. Immutable, use [copyWith] to derive a new instance.
 class AppSettings {
   final List<PanelSettings> panelOrder;
   final String scrcpyDirectory;
@@ -120,6 +167,7 @@ class AppSettings {
   final bool loggingEnabled;
   final bool fileLoggingEnabled;
   final ScrcpyCommand? defaultPreset;
+  final WindowState? windowState;
 
   AppSettings({
     required List<PanelSettings> panelOrder,
@@ -139,6 +187,7 @@ class AppSettings {
     this.loggingEnabled = false,
     this.fileLoggingEnabled = false,
     this.defaultPreset,
+    this.windowState,
   }) : panelOrder = List.unmodifiable(panelOrder),
        shortcutMod = List.unmodifiable(shortcutMod);
 
@@ -163,6 +212,7 @@ class AppSettings {
     bool? fileLoggingEnabled,
     ScrcpyCommand? defaultPreset,
     bool clearDefaultPreset = false,
+    WindowState? windowState,
   }) {
     return AppSettings(
       panelOrder: panelOrder ?? this.panelOrder,
@@ -185,6 +235,7 @@ class AppSettings {
       defaultPreset: clearDefaultPreset
           ? null
           : (defaultPreset ?? this.defaultPreset),
+      windowState: windowState ?? this.windowState,
     );
   }
 
@@ -237,6 +288,9 @@ class AppSettings {
               json['defaultPreset'] as Map<String, dynamic>,
             )
           : null,
+      windowState: WindowState.fromJson(
+        json['windowState'] as Map<String, dynamic>?,
+      ),
     );
   }
 
@@ -258,6 +312,7 @@ class AppSettings {
       'loggingEnabled': loggingEnabled,
       'fileLoggingEnabled': fileLoggingEnabled,
       if (defaultPreset != null) 'defaultPreset': defaultPreset!.toJson(),
+      if (windowState != null) 'windowState': windowState!.toJson(),
     };
   }
 

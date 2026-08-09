@@ -3,8 +3,6 @@
 /// https://github.com/GeorgeEnglezos/Scrcpy-GUI
 library;
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:scrcpy_gui_prod/pages/app_drawer_page.dart';
@@ -25,6 +23,7 @@ import 'services/log_service.dart';
 import 'services/command_notifier.dart';
 import 'services/device_manager_service.dart';
 import 'services/settings_service.dart';
+import 'services/window_state_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_theme_colors.dart';
 import 'widgets/sidebar.dart';
@@ -36,23 +35,18 @@ Future<void> main() async {
   // Initialize window manager for desktop
   await windowManager.ensureInitialized();
 
-  // Configure window options
-  const windowOptions = WindowOptions(
-    size: Size(1200, 900),
-    minimumSize: Size(900, 700),
-    center: true,
-    title: "Scrcpy GUI",
-  );
-
-  unawaited(windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  }));
-
-  // Load settings
+  // Load settings before showing the window, which restores its saved geometry
   final settingsService = SettingsService();
   final settings = await settingsService.loadSettings();
   final appDrawerSettings = await settingsService.loadAppDrawerSettings();
+
+  // Initialize logging (must be after loadSettings, depends on currentSettings
+  // being populated, and before anything that logs)
+  await LogService.init();
+
+  final windowStateService = WindowStateService(settingsService);
+  await windowStateService.showWindow();
+  windowStateService.startTracking();
 
   // Load color presets and resolve the active preset
   final colorPresets = await ColorThemeService.loadPresets();
@@ -60,9 +54,6 @@ Future<void> main() async {
     presets: colorPresets,
     selectedName: settings.colorPreset,
   );
-
-  // Initialize logging (must be after loadSettings — depends on currentSettings being populated)
-  await LogService.init();
 
   // Initialize the DeviceManagerService before the app starts
   final deviceManager = DeviceManagerService();

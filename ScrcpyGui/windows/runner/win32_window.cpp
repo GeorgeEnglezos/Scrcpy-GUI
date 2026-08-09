@@ -154,7 +154,10 @@ bool Win32Window::Create(const std::wstring& title,
 }
 
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNORMAL);
+  // SW_SHOW, not SW_SHOWNORMAL: this runs on the first frame, after Dart has
+  // already restored the saved geometry, and SW_SHOWNORMAL would undo a
+  // maximized window.
+  return ShowWindow(window_handle_, SW_SHOW);
 }
 
 // static
