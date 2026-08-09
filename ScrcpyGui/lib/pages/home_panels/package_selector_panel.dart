@@ -54,7 +54,7 @@ class _PackageSelectorPanelState extends State<PackageSelectorPanel> {
         reverseLabels = {};
         _packageIconByName.clear();
       });
-      // Don't clear selectedPackage here — there's simply no device to
+      // Don't clear selectedPackage here; there's simply no device to
       // validate against. A real device switch will hit the path below.
       return;
     }

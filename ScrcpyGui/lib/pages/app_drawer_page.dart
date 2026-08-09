@@ -208,7 +208,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
 
     // Build the same command as _launchApp, but without --serial
     // (the shortcut should work for any connected device at launch time,
-    // or the user can edit it — we omit --serial so it is not device-locked).
+    // or the user can edit it, we omit --serial so it is not device-locked).
     var template = controller.appDrawerSettings.appLaunchCommand.trim();
     if (template.isEmpty) template = AppDrawerSettings.defaultCommand;
     template = AdbService.normalizeScrcpyExecutable(template);
@@ -282,7 +282,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
     }).toList();
   }
 
-  /// Scans the scripts directory off the build path — sync disk I/O in
+  /// Scans the scripts directory off the build path; sync disk I/O in
   /// build() used to hit the disk on every hover/keystroke rebuild.
   Future<void> _loadScriptGroups() async {
     final dir = SettingsService.currentSettings?.batDirectory ?? '';
@@ -1327,7 +1327,7 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                         icon: Icons.terminal,
                         title: 'ADB',
                         description:
-                            'Pulls each APK from the device via ADB and extracts the launcher icon by scanning the zip for density-specific PNG/WebP files. Falls back to parsing resources.arsc for apps with obfuscated icon paths. Results may vary — for better coverage, try the Helper APK method.',
+                            'Pulls each APK from the device via ADB and extracts the launcher icon by scanning the zip for density-specific PNG/WebP files. Falls back to parsing resources.arsc for apps with obfuscated icon paths. Results may vary; for better coverage, try the Helper APK method.',
                         checkboxes: const [],
                       ),
                     ),

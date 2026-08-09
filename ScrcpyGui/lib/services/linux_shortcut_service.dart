@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 /// Creates Linux desktop shortcuts (.desktop files) for scrcpy app launches.
-/// Uses the XDG Desktop Entry specification — PNG icons are supported natively.
+/// Uses the XDG Desktop Entry specification; PNG icons are supported natively.
 class LinuxShortcutService {
   /// Creates a desktop shortcut for [packageName] with the given [label].
   ///
@@ -49,7 +49,7 @@ class LinuxShortcutService {
       await Process.run('chmod', ['+x', desktopFilePath]);
 
       // On GNOME, mark as trusted to suppress the "untrusted" banner
-      // Silently ignore errors — not all DEs support gio
+      // Silently ignore errors, not all DEs support gio
       await Process.run('gio', [
         'set',
         desktopFilePath,

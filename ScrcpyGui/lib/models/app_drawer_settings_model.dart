@@ -1,7 +1,7 @@
 import 'dart:convert';
 import '../services/icon_fetch_strategy.dart';
 
-/// A user-defined or auto-generated grouping of apps. Immutable — use
+/// A user-defined or auto-generated grouping of apps. Immutable, use
 /// [copyWith] to derive a new instance.
 class AppGroup {
   final String name;
@@ -44,7 +44,7 @@ class AppGroup {
       };
 }
 
-/// App Drawer settings. Immutable — use [copyWith] to derive a new instance.
+/// App Drawer settings. Immutable, use [copyWith] to derive a new instance.
 class AppDrawerSettings {
   final String appLaunchCommand;
   final IconFetchMethod iconFetchMethod;

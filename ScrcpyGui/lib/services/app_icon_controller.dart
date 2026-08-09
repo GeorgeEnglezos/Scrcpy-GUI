@@ -38,7 +38,7 @@ class AppIconController extends ChangeNotifier {
 
   /// Incremented to cancel whatever strategy run is in flight: each run
   /// captures the token at start and treats any change as a cancel signal.
-  /// A plain bool can't do this — resetting it for a new run would
+  /// A plain bool can't do this; resetting it for a new run would
   /// un-cancel the old one (two runs would then mutate [icons] together).
   int _runToken = 0;
   bool _isRunning = false;
@@ -113,7 +113,7 @@ class AppIconController extends ChangeNotifier {
       return;
     }
 
-    // Step 4: No cached icons found — leave icons as null and let the UI
+    // Step 4: No cached icons found, leave icons as null and let the UI
     // prompt the user to choose a fetch method manually.
     isLoading = false;
     notifyListeners();

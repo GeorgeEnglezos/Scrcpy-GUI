@@ -111,7 +111,7 @@ void main() {
   });
 
   group('WindowState', () {
-    // Persisted inside scrcpy_gui_settings.json — the key names are a contract
+    // Persisted inside scrcpy_gui_settings.json, the key names are a contract
     // with every settings file already on disk.
     test('survives a json round-trip', () {
       const state = WindowState(

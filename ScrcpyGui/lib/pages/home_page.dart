@@ -113,7 +113,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Re-derives [panelOrder] from the latest settings. Pure — does not call
+  /// Re-derives [panelOrder] from the latest settings. Pure, does not call
   /// setState. Callers wrap in setState if a rebuild is needed.
   void _loadPanelOrder() {
     // buildDefaultPanels() is the single source of panel ids/display names.

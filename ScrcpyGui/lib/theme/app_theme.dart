@@ -22,7 +22,7 @@ class AppTheme {
   /// Builds the dark theme with [primary] as the accent color.
   ///
   /// Themes are functions of the primary color (not statics) because
-  /// component themes (buttons, inputs) capture colors at construction —
+  /// component themes (buttons, inputs) capture colors at construction;
   /// a later `copyWith(colorScheme: ...)` would leave them stale.
   static ThemeData dark(Color primary) =>
       ThemeData.dark(useMaterial3: true).copyWith(

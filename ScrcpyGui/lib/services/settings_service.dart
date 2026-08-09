@@ -5,7 +5,7 @@ import '../models/app_drawer_settings_model.dart';
 import '../models/settings_model.dart';
 import 'log_service.dart';
 
-/// Internal notifier — exposed externally only as [Listenable] so callers
+/// Internal notifier, exposed externally only as [Listenable] so callers
 /// must use addListener/removeListener and cannot call [notifyListeners]
 /// directly.
 class _ScopedNotifier extends ChangeNotifier {

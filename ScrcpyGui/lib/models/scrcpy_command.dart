@@ -443,7 +443,7 @@ class ScrcpyCommand {
   }
 
   /// Generates the flag portion of the scrcpy command.
-  /// Window title and serial are NOT included — CommandNotifier.fullCommand handles those.
+  /// Window title and serial are NOT included; CommandNotifier.fullCommand handles those.
   String toCliString() {
     final parts = <String>[];
 
@@ -498,7 +498,7 @@ class ScrcpyCommand {
     if (noVdDestroyContent) parts.add('--no-vd-destroy-content');
     if (noVdSystemDecorations) parts.add('--no-vd-system-decorations');
 
-    // CameraOptions — only emits --video-source=camera when at least one field is set
+    // CameraOptions: only emits --video-source=camera when at least one field is set
     final hasCameraOption = cameraId.isNotEmpty ||
         cameraSize.isNotEmpty ||
         cameraFacing.isNotEmpty ||

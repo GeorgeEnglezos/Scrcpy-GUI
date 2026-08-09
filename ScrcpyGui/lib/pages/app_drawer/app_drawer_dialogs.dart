@@ -1,6 +1,6 @@
 /// App Drawer dialogs: create/rename/manage groups and fetch-missing.
 ///
-/// Top-level functions taking explicit parameters — no page state captured.
+/// Top-level functions taking explicit parameters; no page state captured.
 library;
 
 import 'package:flutter/material.dart';

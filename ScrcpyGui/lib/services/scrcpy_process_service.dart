@@ -13,7 +13,7 @@ import 'shell_runner.dart';
 class ScrcpyProcessService {
   /// Returns all running scrcpy processes with details.
   ///
-  /// Each map contains: pid, name, and — when available — fullCommand,
+  /// Each map contains: pid, name, and, when available, fullCommand,
   /// deviceId, windowTitle, connectionType ('wireless'/'usb'),
   /// startTime (yyyyMMddHHmmss…, Windows only), memoryUsage (MB, Windows
   /// only). Empty list on error.
@@ -31,7 +31,7 @@ class ScrcpyProcessService {
     }
   }
 
-  /// Single Get-CimInstance call per refresh — WMIC is removed from recent
+  /// Single Get-CimInstance call per refresh; WMIC is removed from recent
   /// Windows 11 builds, and per-process spawns are too slow.
   static Future<List<Map<String, String>>> _getWindowsProcesses() async {
     const psScript =
@@ -136,7 +136,7 @@ class ScrcpyProcessService {
     return details;
   }
 
-  /// Kills a process by PID — gracefully if this app started it, otherwise
+  /// Kills a process by PID: gracefully if this app started it, otherwise
   /// via the platform kill command.
   static Future<void> killProcess(int pid) async {
     try {

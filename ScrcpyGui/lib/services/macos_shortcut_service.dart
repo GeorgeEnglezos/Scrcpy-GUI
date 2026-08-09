@@ -42,7 +42,7 @@ class MacosShortcutService {
         await _createIcns(iconPngFile, resourcesDir.path);
       }
 
-      // Write the launcher shell script — runs silently, no Terminal window
+      // Write the launcher shell script, runs silently, no Terminal window
       final launcherPath = p.join(macosDir.path, 'launcher');
       await File(launcherPath).writeAsString('#!/bin/bash\n$scrcpyCommand\n');
       await Process.run('chmod', ['+x', launcherPath]);
@@ -64,7 +64,7 @@ class MacosShortcutService {
 
   /// Converts a PNG to an ICNS file inside [resourcesPath] using the
   /// macOS built-in tools sips (resize) and iconutil (pack).
-  /// Both tools ship with every macOS install — no external dependencies.
+  /// Both tools ship with every macOS install; no external dependencies.
   static Future<void> _createIcns(File pngFile, String resourcesPath) async {
     final tempDir = await Directory.systemTemp.createTemp('scrcpygui_iconset');
     try {

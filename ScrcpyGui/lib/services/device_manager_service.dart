@@ -206,8 +206,8 @@ class DeviceManagerService extends ChangeNotifier {
   /// Refetch package + codec data for every currently connected device.
   ///
   /// Use after changing a setting that affects which packages are returned
-  /// (e.g. `includeSystemApps`). Reloading every device — not just the
-  /// selected one — keeps the per-device cache in [devicesInfo] consistent
+  /// (e.g. `includeSystemApps`). Reloading every device, not just the
+  /// selected one, keeps the per-device cache in [devicesInfo] consistent
   /// so switching to another device doesn't surface a stale package list.
   Future<void> reloadAllDevices() async {
     for (final deviceId in _lastConnectedDevices) {

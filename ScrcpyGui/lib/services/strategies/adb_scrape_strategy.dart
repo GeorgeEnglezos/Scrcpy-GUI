@@ -80,7 +80,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
     }
     if (sentinels.isNotEmpty) onBatchDone(sentinels);
 
-    LogService.info('AdbScrapeStrategy', 'Fetch complete for device=${LogService.sanitizeDevice(deviceId)} — ${packages.length - pendingIcon.length}/${packages.length} icons resolved');
+    LogService.info('AdbScrapeStrategy', 'Fetch complete for device=${LogService.sanitizeDevice(deviceId)}: ${packages.length - pendingIcon.length}/${packages.length} icons resolved');
     onProgress?.call(total, total, 'Done');
   }
 
@@ -240,7 +240,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
         outResId: outResId,
       );
 
-      // base.apk arsc gave no paths — try each density split's own arsc
+      // base.apk arsc gave no paths, try each density split's own arsc
       if (iconPaths.isEmpty && outResId.isNotEmpty && outResId.first != null) {
         final iconResId = outResId.first!;
         for (final splitPath in allApkPaths) {

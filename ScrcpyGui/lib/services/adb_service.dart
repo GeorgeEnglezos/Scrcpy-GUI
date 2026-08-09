@@ -2,7 +2,7 @@
 ///
 /// Everything that talks to adb or scrcpy as a tool: executable resolution,
 /// device queries, package listing, encoder parsing, and wireless setup.
-/// No Flutter UI imports — feedback belongs to the widget layer.
+/// No Flutter UI imports; feedback belongs to the widget layer.
 library;
 
 import 'dart:io';
@@ -61,7 +61,7 @@ class AdbService {
   }
 
   /// Replaces the full scrcpy executable path in a command string with just
-  /// "scrcpy". Used for display — the full path is preserved for execution
+  /// "scrcpy". Used for display; the full path is preserved for execution
   /// and clipboard.
   static String toDisplayCommand(String cmd) {
     final exe = scrcpyExecutable;
@@ -108,7 +108,7 @@ class AdbService {
   }
 
   /// Widget tests run under fake async, which cannot complete a real process
-  /// spawn — set true there so [isScrcpyOnPath] short-circuits.
+  /// spawn, set true there so [isScrcpyOnPath] short-circuits.
   @visibleForTesting
   static bool debugSkipProcessChecks = false;
 
@@ -221,7 +221,7 @@ class AdbService {
     }
     final octets = ipAddress.split('.').map(int.parse).toList();
     if (octets.any((o) => o > 255)) {
-      return 'Invalid IP address: each octet must be 0–255';
+      return 'Invalid IP address: each octet must be 0-255';
     }
     return null;
   }
@@ -361,7 +361,7 @@ class AdbService {
   /// Complete wireless connection setup for a device.
   ///
   /// Workflow:
-  /// 1. Resolves the device IP — auto-detected via [getDeviceIpAddress] when
+  /// 1. Resolves the device IP, auto-detected via [getDeviceIpAddress] when
   ///    [ipAddress] is null, otherwise the provided address is validated and
   ///    used as-is (manual mode).
   /// 2. Enables TCP/IP mode on the USB-connected device.
@@ -377,7 +377,7 @@ class AdbService {
   }) async {
     final String resolvedIp;
     if (ipAddress != null) {
-      // Validate IP address format and octet ranges (0–255)
+      // Validate IP address format and octet ranges (0-255)
       final ipError = validateIpAddress(ipAddress);
       if (ipError != null) {
         return {'success': false, 'message': ipError};

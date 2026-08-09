@@ -7,7 +7,7 @@ import 'adb_service.dart';
 
 /// Central state holder for the in-progress scrcpy command.
 ///
-/// Owns the current [ScrcpyCommand] and exposes [fullCommand] — the fully
+/// Owns the current [ScrcpyCommand] and exposes [fullCommand], the fully
 /// assembled CLI string including base executable, selected device serial,
 /// window title, shortcut modifier, and all flag arguments.
 ///
@@ -79,7 +79,7 @@ class CommandNotifier extends ChangeNotifier {
 
   /// Persist the current command as the default preset. Returns true on
   /// successful disk write, false otherwise. Builds a new settings instance
-  /// — never mutates the cached settings before persistence succeeds.
+  /// and never mutates the cached settings before persistence succeeds.
   Future<bool> saveDefault() async {
     final settings = SettingsService.currentSettings;
     if (settings == null) return false;

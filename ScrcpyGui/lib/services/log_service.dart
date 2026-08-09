@@ -24,11 +24,11 @@ class LogEntry {
 /// Singleton logging service.
 ///
 /// Logging is off by default. Enable via Settings → "Enable logging".
-/// File logging is a secondary toggle — also off by default.
+/// File logging is a secondary toggle, also off by default.
 ///
 /// Usage:
 ///   LogService.info('CommandExecutor/executeCommand', 'Running: $cmd');
-///   LogService.error('CommandExecutor/executeCommand', 'exitCode=$code — $err');
+///   LogService.error('CommandExecutor/executeCommand', 'exitCode=$code: $err');
 class LogService extends ChangeNotifier {
   LogService._();
 

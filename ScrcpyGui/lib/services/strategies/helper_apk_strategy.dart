@@ -33,7 +33,7 @@ class HelperApkStrategy implements IconFetchStrategy {
   static const Duration _pollTimeout = Duration(seconds: 300);
 
   /// Runs a command in the device shell via `adb -s <id> shell <args>`.
-  /// argv all the way — the local shell is never involved.
+  /// argv all the way; the local shell is never involved.
   Future<String> _deviceShell(String deviceId, List<String> deviceArgs) =>
       ShellRunner.runOut(
         AdbService.adbExecutable,
@@ -42,7 +42,7 @@ class HelperApkStrategy implements IconFetchStrategy {
 
   /// Runs `test [testArgs]` on the device and returns true if it passed.
   /// The pipeline is passed as one argument so it executes in the device
-  /// shell — never in the local one (stock Windows has no `test`).
+  /// shell, never in the local one (stock Windows has no `test`).
   Future<bool> _deviceTest(String deviceId, String testArgs) async {
     final result = await _deviceShell(
       deviceId,
@@ -72,7 +72,7 @@ class HelperApkStrategy implements IconFetchStrategy {
     final isInstalled = await _isApkInstalled(deviceId);
     if (!isInstalled) {
       if (autoInstall) {
-        LogService.info('HelperApkStrategy', 'APK not installed — installing via ADB on device=${LogService.sanitizeDevice(deviceId)}');
+        LogService.info('HelperApkStrategy', 'APK not installed, installing via ADB on device=${LogService.sanitizeDevice(deviceId)}');
         onProgress?.call(0, n, 'Installing helper APK...');
         await _installApk(deviceId);
         LogService.info('HelperApkStrategy', 'APK installed successfully on device=${LogService.sanitizeDevice(deviceId)}');
@@ -87,7 +87,7 @@ class HelperApkStrategy implements IconFetchStrategy {
     }
 
     // Step 2: Check if an export is already mid-flight (dir exists but no
-    // labels.json yet). If so, just poll — don't re-trigger and interrupt it.
+    // labels.json yet). If so, just poll, don't re-trigger and interrupt it.
     // Otherwise always trigger a fresh export so the desktop never relies on
     // stale on-device files.
     onProgress?.call(0, n, 'Checking export state...');
@@ -99,9 +99,9 @@ class HelperApkStrategy implements IconFetchStrategy {
     }
 
     if (exportInProgress) {
-      // Another fetch is already running — don't interrupt it, just wait.
+      // Another fetch is already running, don't interrupt it, just wait.
       LogService.info('HelperApkStrategy',
-          'Export already in progress on device=${LogService.sanitizeDevice(deviceId)} — skipping trigger');
+          'Export already in progress on device=${LogService.sanitizeDevice(deviceId)}, skipping trigger');
       onProgress?.call(0, n, 'Waiting for mobile app to finish exporting icons...');
       final success = await _pollForExportCompletion(deviceId);
       if (!success) {
@@ -202,7 +202,7 @@ class HelperApkStrategy implements IconFetchStrategy {
 
   Future<bool> _isApkInstalled(String deviceId) async {
     try {
-      // Filter in Dart — piping to grep would run in the LOCAL shell,
+      // Filter in Dart; piping to grep would run in the LOCAL shell,
       // which doesn't exist on stock Windows.
       final result = await _deviceShell(
         deviceId,

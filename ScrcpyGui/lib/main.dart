@@ -60,7 +60,7 @@ Future<void> main() async {
   final deviceManager = DeviceManagerService();
   await deviceManager.initialize();
 
-  // Initialize CommandNotifier — unified state for the new architecture
+  // Initialize CommandNotifier: unified state for the new architecture
   final commandNotifier = CommandNotifier();
   commandNotifier.setDeviceManager(deviceManager);
   commandNotifier.loadDefault();

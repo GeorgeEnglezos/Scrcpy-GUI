@@ -2,7 +2,7 @@
 ///
 /// Single owner of process spawning: argv execution (the default), shell
 /// *string* execution (only where a string is inherent), new-terminal
-/// launches, and Flatpak host routing. No Flutter imports — UI feedback
+/// launches, and Flatpak host routing. No Flutter imports; UI feedback
 /// belongs to the widget layer.
 library;
 
@@ -95,7 +95,7 @@ class ShellRunner {
   ///
   /// Use only where a string is inherent: replaying user-facing full
   /// commands (favorites, the Home command) and Unix `ps | grep` pipelines.
-  /// Everything else should use [run] — the argv primitive has no quoting
+  /// Everything else should use [run]; the argv primitive has no quoting
   /// rules to get wrong.
   static Future<ProcessResult> runShell(String command) async {
     if (Platform.isWindows) {
@@ -156,7 +156,7 @@ class ShellRunner {
   }
 
   /// Opens [path] in the system file manager (Windows, macOS, Linux).
-  /// Throws on failure — callers decide how to surface errors.
+  /// Throws on failure; callers decide how to surface errors.
   static Future<void> openFolder(String path) async {
     if (path.isEmpty) return;
     if (Platform.isWindows) {
@@ -247,7 +247,7 @@ class ShellRunner {
   /// Launches a script file from disk in a new terminal window.
   ///
   /// Returns false when no Linux terminal emulator is available; throws on
-  /// other failures — the caller surfaces both to the user.
+  /// other failures; the caller surfaces both to the user.
   static Future<bool> runScriptFileInNewTerminal(String filePath) async {
     if (Platform.isWindows) {
       // Use backslashes so cmd.exe resolves the path correctly.

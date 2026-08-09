@@ -26,10 +26,10 @@ class CommandExecutor {
   /// - false → runs inline and shows output dialog
   ///
   /// Only tracks scrcpy commands in [CommandsService] history.
-  /// All snackbar/dialog feedback is handled here — callers show nothing.
+  /// All snackbar/dialog feedback is handled here; callers show nothing.
   ///
   /// [forceNewTerminal] always opens a new terminal window regardless of the
-  /// `openCmdWindows` setting — for commands that need an interactive
+  /// `openCmdWindows` setting, for commands that need an interactive
   /// terminal (e.g. installers prompting for a sudo password).
   static Future<void> executeCommand(
     BuildContext context,
@@ -135,7 +135,7 @@ class CommandExecutor {
   /// Runs a script file from disk in a new terminal window.
   ///
   /// Always opens a new window regardless of [SettingsService] settings.
-  /// No success snackbar is shown — the terminal window is the feedback.
+  /// No success snackbar is shown; the terminal window is the feedback.
   /// Shows an error snackbar on failure.
   static Future<void> executeScriptFile(
     BuildContext context,

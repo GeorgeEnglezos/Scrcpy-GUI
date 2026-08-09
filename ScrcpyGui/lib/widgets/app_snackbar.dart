@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 
 /// Unified feedback colors for the app's snackbars.
 enum AppSnackBarType {
-  /// Green — an action completed.
+  /// Green: an action completed.
   success,
 
-  /// Red — an action failed.
+  /// Red: an action failed.
   error,
 
-  /// Blue-grey — progress/status notice.
+  /// Blue-grey: progress/status notice.
   info,
 
-  /// Orange — completed with caveats, or user attention needed.
+  /// Orange: completed with caveats, or user attention needed.
   warning,
 
-  /// Theme default background — low-key confirmations (e.g. "Copied").
+  /// Theme default background: low-key confirmations (e.g. "Copied").
   neutral,
 }
 
