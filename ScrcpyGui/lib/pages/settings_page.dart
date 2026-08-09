@@ -13,6 +13,7 @@ import '../services/color_theme_notifier.dart';
 import '../theme/app_theme_colors.dart';
 import '../widgets/surrounding_panel.dart';
 import '../widgets/directory_row.dart';
+import '../widgets/setup_wizard_dialog.dart';
 import '../widgets/custom_checkbox.dart';
 import '../widgets/custom_dropdown.dart';
 import '../widgets/custom_multi_dropdown.dart';
@@ -166,6 +167,14 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  /// Reopens the first-run wizard, then reloads so the page shows whatever
+  /// the wizard changed.
+  Future<void> _runSetupAgain() async {
+    await showSetupWizard(context);
+    if (!mounted) return;
+    await _loadSettings();
+  }
+
   void _movePanelUp(int index) {
     if (index > 0) {
       final reordered = [..._settings.panelOrder];
@@ -293,6 +302,12 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  ElevatedButton.icon(
+                    onPressed: _runSetupAgain,
+                    icon: const Icon(Icons.auto_fix_high, size: 18),
+                    label: const Text('Run Setup Again'),
+                  ),
+                  const SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: _showResetUserInterfaceConfirmation,
                     icon: const Icon(Icons.refresh, size: 18),
