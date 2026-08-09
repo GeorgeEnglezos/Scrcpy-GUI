@@ -139,6 +139,15 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   /// Set when the picked folder holds no scrcpy executable.
   String? _scrcpyDirError;
 
+  /// True once a re-check has run and still turned nothing up, which earns the
+  /// user an explanation rather than a button that looks broken.
+  bool _recheckFoundNothing = false;
+
+  /// scrcpy is usable either from PATH or from an explicit directory. The
+  /// directory is the more reliable of the two, see [_recheckScrcpy].
+  bool get _scrcpyResolved =>
+      _scrcpyOnPath || _settings.scrcpyDirectory.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +163,37 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
       _scrcpyOnPath = onPath;
       _scrcpyChecked = true;
     });
+  }
+
+  /// Re-probes after the user installed scrcpy from this step.
+  ///
+  /// PATH alone cannot answer this. A process keeps the PATH it inherited at
+  /// launch, and WinGet stamps the version into the directory it puts on PATH,
+  /// so installing scrcpy while this app is open leaves the app holding a
+  /// stale entry that points at the previous version's deleted folder. When
+  /// PATH comes up empty we look on disk and, if we find it, pin the directory
+  /// in settings so nothing here depends on PATH again.
+  Future<void> _recheckScrcpy() async {
+    await _checkScrcpyOnPath();
+    if (!mounted) return;
+
+    if (!_scrcpyOnPath) {
+      final found = await AdbService.findScrcpyDirectory();
+      if (!mounted) return;
+      if (found != null) {
+        setState(() {
+          _settings = _settings.copyWith(scrcpyDirectory: found);
+          _scrcpyDirError = null;
+        });
+        await _save();
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _recheckFoundNothing = !_scrcpyResolved);
+
+    // WinGet installs adb alongside scrcpy, so the adb line is stale too.
+    await _checkAdb();
   }
 
   Future<void> _checkAdb() async {
@@ -303,6 +343,12 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
             AppColors.runGreen,
             'scrcpy found on your system PATH',
           )
+        else if (_settings.scrcpyDirectory.isNotEmpty)
+          _statusLine(
+            Icons.check_circle,
+            AppColors.runGreen,
+            'scrcpy found at ${_settings.scrcpyDirectory}',
+          )
         else ...[
           _statusLine(
             Icons.error_outline,
@@ -407,11 +453,20 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
                 ),
                 const SizedBox(width: 8),
                 TextButton(
-                  onPressed: _checkScrcpyOnPath,
+                  onPressed: _recheckScrcpy,
                   child: const Text('Check again'),
                 ),
               ],
             ),
+            if (_recheckFoundNothing) ...[
+              const SizedBox(height: 8),
+              _statusLine(
+                Icons.info_outline,
+                context.appTextSecondary,
+                'Still not found. Wait for the install to finish, or point '
+                'the folder below at it.',
+              ),
+            ],
           ],
         ],
       ),

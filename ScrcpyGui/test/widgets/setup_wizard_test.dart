@@ -103,7 +103,7 @@ void main() {
 
   // Opens the wizard through showDialog rather than pumping it as the home
   // widget, so that its Navigator.pop has a route to pop.
-  Future<void> pumpWizard(WidgetTester tester) async {
+  Future<void> pumpWizard(WidgetTester tester, {String scrcpyDirectory = ''}) async {
     await tester.pumpWidget(
       ChangeNotifierProvider<ColorThemeNotifier>(
         create: (_) => ColorThemeNotifier(
@@ -123,6 +123,7 @@ void main() {
                       recordingsDirectory: '/cfg/Recordings',
                       downloadsDirectory: '/cfg/Downloads',
                       batDirectory: '/cfg/Downloads',
+                      scrcpyDirectory: scrcpyDirectory,
                     ),
                     onSave: (settings) async => saved = settings,
                   ),
@@ -241,6 +242,23 @@ void main() {
       expect(find.text(hint.copyText), findsOneWidget);
       // Rendered once, by the panel, not also by the command block.
       expect(find.text(hint.note), findsOneWidget);
+    },
+  );
+
+  // A pinned directory is how the wizard records an install that PATH cannot
+  // see, so it has to read as success rather than leaving the install panel up.
+  testWidgets(
+    'a configured directory counts as found even when PATH does not resolve',
+    (tester) async {
+      AdbService.debugScrcpyOnPath = false;
+      await pumpWizard(tester, scrcpyDirectory: r'C:\winget\scrcpy-win64-v4.1');
+
+      expect(
+        find.textContaining(r'scrcpy found at C:\winget\scrcpy-win64-v4.1'),
+        findsOneWidget,
+      );
+      expect(find.text('Install scrcpy'), findsNothing);
+      expect(find.widgetWithText(DirectoryRow, 'Scrcpy Directory'), findsNothing);
     },
   );
 

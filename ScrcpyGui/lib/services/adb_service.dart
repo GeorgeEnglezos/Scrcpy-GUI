@@ -56,6 +56,59 @@ class AdbService {
     return File(p.join(directory, exeName)).exists();
   }
 
+  /// Where WinGet extracts portable packages, or null when that cannot apply.
+  static String? _wingetPackagesRoot() {
+    if (!Platform.isWindows) return null;
+    final localAppData = Platform.environment['LOCALAPPDATA'];
+    if (localAppData == null) return null;
+    return p.join(localAppData, 'Microsoft', 'WinGet', 'Packages');
+  }
+
+  /// Looks on disk for a scrcpy that PATH cannot see, returning the directory
+  /// holding the executable, or null.
+  ///
+  /// A process keeps the PATH it inherited when it launched. WinGet extracts
+  /// scrcpy into a directory stamped with the version (`scrcpy-win64-v4.1`)
+  /// and rewrites PATH to match, so an app that was already running both
+  /// misses the new entry and keeps a stale one pointing at the previous
+  /// version's now-deleted folder. PATH therefore cannot confirm an install
+  /// the user just performed, however long they wait.
+  ///
+  /// [wingetPackagesRoot] overrides the search root for tests.
+  static Future<String?> findScrcpyDirectory({
+    String? wingetPackagesRoot,
+  }) async {
+    final root = wingetPackagesRoot ?? _wingetPackagesRoot();
+    if (root == null) return null;
+
+    final rootDir = Directory(root);
+    if (!await rootDir.exists()) return null;
+
+    final matches = <Directory>[];
+    await for (final package in rootDir.list()) {
+      if (package is! Directory) continue;
+      if (!p.basename(package.path).startsWith('Genymobile.scrcpy')) continue;
+
+      // The executable sits one level down, in the version folder, but check
+      // the package root too in case that layout ever changes.
+      if (await hasScrcpyIn(package.path)) matches.add(package);
+      await for (final version in package.list()) {
+        if (version is Directory && await hasScrcpyIn(version.path)) {
+          matches.add(version);
+        }
+      }
+    }
+
+    if (matches.isEmpty) return null;
+
+    // An upgrade can leave an older version folder behind, so prefer the most
+    // recently written one.
+    matches.sort(
+      (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+    );
+    return matches.first.path;
+  }
+
   /// Wraps [executable] in double quotes when it contains spaces, so that
   /// user-facing command strings survive tokenization and `bash -c`
   /// (e.g. a scrcpy directory under "C:\Program Files").
