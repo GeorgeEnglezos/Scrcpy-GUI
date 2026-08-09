@@ -47,6 +47,9 @@ void main() {
     // pending timer that fails the test, and it hits the network.
     final settings = AppSettings.defaultSettings().copyWith(
       checkForUpdatesOnStartup: false,
+      // The gate would otherwise open the wizard, which touches the real
+      // settings directory.
+      setupCompleted: true,
     );
 
     await pumpApp(tester, settings);
@@ -58,6 +61,7 @@ void main() {
     AdbService.debugSkipProcessChecks = true;
     final settings = AppSettings.defaultSettings().copyWith(
       checkForUpdatesOnStartup: false,
+      setupCompleted: true,
       uiScale: 0.85,
     );
 

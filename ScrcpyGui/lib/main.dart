@@ -26,6 +26,7 @@ import 'services/settings_service.dart';
 import 'services/window_state_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_theme_colors.dart';
+import 'widgets/setup_wizard_dialog.dart';
 import 'widgets/sidebar.dart';
 import 'widgets/ui_scale.dart';
 import 'services/update_service.dart';
@@ -241,44 +242,47 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
         scale: _currentSettings.uiScale,
         child: child!,
       ),
-      home: Scaffold(
-        body: Row(
-          children: [
-            // Vertical navigation sidebar
-            Sidebar(
-              selectedIndex: selectedIndex,
-              showBatFilesTab: _currentSettings.showBatFilesTab,
-              showAppDrawerTab: _currentSettings.showAppDrawerTab,
-              showLogsTab: _currentSettings.loggingEnabled,
-              onItemSelected: (index) {
-                final notifier = Provider.of<CommandNotifier>(
-                  context,
-                  listen: false,
-                );
-                if (selectedIndex == 0 && index != 0) {
-                  notifier.reset();
-                } else if (index == 0 && selectedIndex != 0) {
-                  notifier.loadDefault();
-                }
-                setState(() => selectedIndex = index);
-              },
-            ),
-            // Main content area with animated page transitions
-            Expanded(
-              child: Column(
-                children: [
-                  if (_updateResult != null && !_hideBanner)
-                    _buildUpdateBanner(context),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      child: pages[selectedIndex],
-                    ),
-                  ),
-                ],
+      home: SetupWizardGate(
+        enabled: !_currentSettings.setupCompleted,
+        child: Scaffold(
+          body: Row(
+            children: [
+              // Vertical navigation sidebar
+              Sidebar(
+                selectedIndex: selectedIndex,
+                showBatFilesTab: _currentSettings.showBatFilesTab,
+                showAppDrawerTab: _currentSettings.showAppDrawerTab,
+                showLogsTab: _currentSettings.loggingEnabled,
+                onItemSelected: (index) {
+                  final notifier = Provider.of<CommandNotifier>(
+                    context,
+                    listen: false,
+                  );
+                  if (selectedIndex == 0 && index != 0) {
+                    notifier.reset();
+                  } else if (index == 0 && selectedIndex != 0) {
+                    notifier.loadDefault();
+                  }
+                  setState(() => selectedIndex = index);
+                },
               ),
-            ),
-          ],
+              // Main content area with animated page transitions
+              Expanded(
+                child: Column(
+                  children: [
+                    if (_updateResult != null && !_hideBanner)
+                      _buildUpdateBanner(context),
+                    Expanded(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: pages[selectedIndex],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

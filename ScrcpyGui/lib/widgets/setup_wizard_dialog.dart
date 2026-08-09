@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 import '../models/settings_model.dart';
 import '../services/adb_service.dart';
 import '../services/color_theme_notifier.dart';
+import '../services/settings_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme_colors.dart';
 import 'custom_dropdown.dart';
@@ -335,4 +336,66 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
           ),
         ],
       );
+}
+
+/// Shows the wizard once after the first frame when [enabled], then renders
+/// [child] untouched either way.
+///
+/// Mounted inside `MaterialApp.home` rather than `MaterialApp.builder`:
+/// `builder` inserts widgets above the Navigator, so a context taken there has
+/// no Navigator ancestor and showDialog throws.
+class SetupWizardGate extends StatefulWidget {
+  final bool enabled;
+  final Widget child;
+
+  const SetupWizardGate({
+    super.key,
+    required this.enabled,
+    required this.child,
+  });
+
+  @override
+  State<SetupWizardGate> createState() => _SetupWizardGateState();
+}
+
+class _SetupWizardGateState extends State<SetupWizardGate> {
+  bool _opened = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.enabled) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _opened) return;
+      _opened = true;
+      showSetupWizard(context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// Opens the setup wizard, resolving its starting settings first.
+///
+/// The only entry point: used by [SetupWizardGate] on first run and by the
+/// "Run Setup Again" button in Settings.
+Future<void> showSetupWizard(BuildContext context) async {
+  final service = SettingsService();
+  final settingsDir = await service.getSettingsDirectory();
+  final settings = SettingsService.withDirectoryDefaults(
+    SettingsService.currentSettings ?? AppSettings.defaultSettings(),
+    settingsDir,
+  );
+  if (!context.mounted) return;
+
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => SetupWizardDialog(
+      initialSettings: settings,
+      onSave: (updated) => service.saveSettings(updated),
+    ),
+  );
 }

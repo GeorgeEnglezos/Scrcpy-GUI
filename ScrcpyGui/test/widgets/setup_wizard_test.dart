@@ -193,4 +193,33 @@ void main() {
     expect(saved, isNotNull);
     expect(saved!.downloadsDirectory, '/picked/Downloads');
   });
+
+  group('SetupWizardGate', () {
+    // Only the disabled case is covered here. Enabling the gate calls
+    // getSettingsDirectory, which creates a real directory under APPDATA, and
+    // a widget test has no business touching the user's filesystem.
+    testWidgets('renders its child and opens nothing when disabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ColorThemeNotifier>(
+          create: (_) => ColorThemeNotifier(
+            presets: [preset],
+            selectedName: 'Dark',
+          ),
+          child: MaterialApp(
+            theme: AppTheme.dark(const Color(0xFF00AAFF)),
+            home: const SetupWizardGate(
+              enabled: false,
+              child: Scaffold(body: Text('the app')),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('the app'), findsOneWidget);
+      expect(find.text('Welcome to Scrcpy GUI'), findsNothing);
+    });
+  });
 }
