@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import '../models/settings_model.dart';
 import '../services/adb_service.dart';
 import '../services/color_theme_notifier.dart';
+import '../services/shell_runner.dart';
 import '../services/update_service.dart';
 import '../services/settings_service.dart';
 import '../theme/app_colors.dart';
@@ -46,7 +47,19 @@ class ScrcpyInstallHint {
   /// Caveat shown beneath the block.
   final String note;
 
-  const ScrcpyInstallHint({required this.commands, required this.note});
+  /// What the "Run in terminal" button executes, or null when running the
+  /// listed commands is not safe to automate.
+  ///
+  /// Null on Linux specifically: the lines there are alternatives for
+  /// different distributions, so running them in sequence would fire the wrong
+  /// package manager. The user copies the one that matches their system.
+  final String? runnable;
+
+  const ScrcpyInstallHint({
+    required this.commands,
+    required this.note,
+    this.runnable,
+  });
 
   String get copyText => commands.join('\n');
 }
@@ -62,6 +75,7 @@ ScrcpyInstallHint scrcpyInstallHint(HostOs os) {
       return const ScrcpyInstallHint(
         commands: ['winget install --exact Genymobile.scrcpy'],
         note: 'WinGet installs adb alongside scrcpy.',
+        runnable: 'winget install --exact Genymobile.scrcpy',
       );
     case HostOs.macos:
       return const ScrcpyInstallHint(
@@ -70,6 +84,8 @@ ScrcpyInstallHint scrcpyInstallHint(HostOs os) {
           'brew install --cask android-platform-tools',
         ],
         note: 'The second line installs adb, which scrcpy needs on PATH.',
+        runnable:
+            'brew install scrcpy && brew install --cask android-platform-tools',
       );
     case HostOs.linux:
       return const ScrcpyInstallHint(
@@ -77,8 +93,10 @@ ScrcpyInstallHint scrcpyInstallHint(HostOs os) {
           'pacman -S scrcpy',
           'dnf copr enable zeno/scrcpy && dnf install scrcpy',
         ],
-        note: 'Arch first, then Fedora. On Debian and Ubuntu the apt package '
-            'is obsolete upstream, so use the release download instead.',
+        note: 'One line per distribution, Arch then Fedora, so copy the one '
+            'that matches yours rather than running both. On Debian and '
+            'Ubuntu the apt package is obsolete upstream, so use the manual '
+            'download instead.',
       );
   }
 }
@@ -293,17 +311,7 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
             'folder holding a copy you already have.',
           ),
           const SizedBox(height: 16),
-          _buildInstallHint(),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ElevatedButton.icon(
-              onPressed: () =>
-                  UpdateService.launchReleasePage(kScrcpyReleasesUrl),
-              icon: const Icon(Icons.download, size: 18),
-              label: const Text('Get scrcpy'),
-            ),
-          ),
+          _buildInstallPanel(),
           const SizedBox(height: 16),
           DirectoryRow(
             label: 'Scrcpy Directory',
@@ -334,57 +342,140 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
     );
   }
 
-  /// The platform's install commands in a copyable block.
-  Widget _buildInstallHint() {
+  /// Both ways to get scrcpy, boxed together so step 1 reads as one choice
+  /// rather than a pile of loose controls.
+  Widget _buildInstallPanel() {
     final hint = scrcpyInstallHint(currentHostOs);
+    final runnable = hint.runnable;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _hint('Install it with a package manager:'),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-          decoration: BoxDecoration(
-            color: context.appCommandSurface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: context.appDivider),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        border: Border.all(color: context.appDivider),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
             children: [
-              Expanded(
-                child: SelectableText(
-                  hint.copyText,
-                  style: TextStyle(
-                    color: context.appTextPrimary,
-                    fontFamily: 'monospace',
-                    fontSize: 12.5,
-                    height: 1.5,
-                  ),
+              Icon(Icons.download_for_offline_outlined,
+                  size: 18, color: context.appPrimary),
+              const SizedBox(width: 8),
+              Text(
+                'Install scrcpy',
+                style: TextStyle(
+                  color: context.appTextPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.copy, size: 18),
-                color: context.appTextSecondary,
-                tooltip: 'Copy',
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: hint.copyText));
-                  showAppSnackBar(
-                    context,
-                    'Install command copied',
-                    type: AppSnackBarType.neutral,
-                  );
-                },
               ),
             ],
           ),
+          const SizedBox(height: 14),
+          _optionLabel('Option 1: Manual download'),
+          const SizedBox(height: 6),
+          _hint('Grab the latest release, extract it, then point the folder '
+              'below at it.'),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton.icon(
+              onPressed: () =>
+                  UpdateService.launchReleasePage(kScrcpyReleasesUrl),
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: const Text('Get scrcpy'),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Divider(color: context.appDivider, height: 1),
+          const SizedBox(height: 16),
+          _optionLabel('Option 2: Run a command'),
+          const SizedBox(height: 8),
+          _buildCommandBlock(hint),
+          const SizedBox(height: 6),
+          _hint(hint.note),
+          if (runnable != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _runInstallCommand(runnable),
+                  icon: const Icon(Icons.terminal, size: 18),
+                  label: const Text('Run in terminal'),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: _checkScrcpyOnPath,
+                  child: const Text('Check again'),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _optionLabel(String text) => Text(
+        text,
+        style: TextStyle(
+          color: context.appTextPrimary,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
         ),
-        const SizedBox(height: 6),
-        _hint(hint.note),
-      ],
+      );
+
+  /// Opens a terminal running [command]. The terminal stays open so the user
+  /// can see the package manager's output and answer any prompt it raises.
+  Future<void> _runInstallCommand(String command) async {
+    await ShellRunner.runCommandInNewTerminal(command);
+    if (!mounted) return;
+    showAppSnackBar(
+      context,
+      'Opened a terminal. Press Check again once it finishes.',
+      type: AppSnackBarType.info,
+    );
+  }
+
+  Widget _buildCommandBlock(ScrcpyInstallHint hint) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      decoration: BoxDecoration(
+        color: context.appCommandSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: context.appDivider),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: SelectableText(
+              hint.copyText,
+              style: TextStyle(
+                color: context.appTextPrimary,
+                fontFamily: 'monospace',
+                fontSize: 12.5,
+                height: 1.5,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.copy, size: 18),
+            color: context.appTextSecondary,
+            tooltip: 'Copy',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: hint.copyText));
+              showAppSnackBar(
+                context,
+                'Install command copied',
+                type: AppSnackBarType.neutral,
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 

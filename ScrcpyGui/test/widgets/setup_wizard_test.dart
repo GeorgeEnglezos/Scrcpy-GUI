@@ -64,6 +64,23 @@ void main() {
       expect(text, contains('pacman -S scrcpy'));
     });
 
+    // The Linux lines target different distributions, so running them in
+    // sequence would invoke the wrong package manager. Nothing to automate.
+    test('Linux offers no runnable command', () {
+      expect(scrcpyInstallHint(HostOs.linux).runnable, isNull);
+    });
+
+    test('Windows and macOS each run every command they list', () {
+      for (final os in [HostOs.windows, HostOs.macos]) {
+        final hint = scrcpyInstallHint(os);
+        final runnable = hint.runnable;
+        expect(runnable, isNotNull, reason: '$os has no runnable command');
+        for (final command in hint.commands) {
+          expect(runnable, contains(command), reason: '$os drops $command');
+        }
+      }
+    });
+
     test('copyText joins multiple commands one per line', () {
       final hint = scrcpyInstallHint(HostOs.macos);
       expect(hint.copyText.split('\n').length, hint.commands.length);
@@ -215,13 +232,31 @@ void main() {
         find.widgetWithText(DirectoryRow, 'Scrcpy Directory'),
         findsOneWidget,
       );
-      // Someone with no scrcpy at all needs a way to go get it.
-      expect(find.text('Get scrcpy'), findsOneWidget);
-      // ... and the commands to do it from a terminal instead.
+      // Both ways to get scrcpy live in one labelled box.
       final hint = scrcpyInstallHint(currentHostOs);
-      expect(find.text('Install it with a package manager:'), findsOneWidget);
+      expect(find.text('Install scrcpy'), findsOneWidget);
+      expect(find.text('Option 1: Manual download'), findsOneWidget);
+      expect(find.text('Get scrcpy'), findsOneWidget);
+      expect(find.text('Option 2: Run a command'), findsOneWidget);
       expect(find.text(hint.copyText), findsOneWidget);
+      // Rendered once, by the panel, not also by the command block.
       expect(find.text(hint.note), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the run button is offered only where a command is safe to automate',
+    (tester) async {
+      AdbService.debugScrcpyOnPath = false;
+      await pumpWizard(tester);
+
+      final expected = scrcpyInstallHint(currentHostOs).runnable == null
+          ? findsNothing
+          : findsOneWidget;
+      expect(find.text('Run in terminal'), expected);
+      expect(find.text('Check again'), expected);
+      // Copy is always available, whichever platform this runs on.
+      expect(find.byTooltip('Copy'), findsOneWidget);
     },
   );
 
@@ -240,10 +275,11 @@ void main() {
         find.widgetWithText(DirectoryRow, 'Scrcpy Directory'),
         findsNothing,
       );
-      // The download link and install commands would both be noise on a step
-      // the user should pass straight through.
+      // The whole install panel would be noise on a step the user should pass
+      // straight through.
+      expect(find.text('Install scrcpy'), findsNothing);
       expect(find.text('Get scrcpy'), findsNothing);
-      expect(find.text('Install it with a package manager:'), findsNothing);
+      expect(find.text('Run in terminal'), findsNothing);
     },
   );
 
