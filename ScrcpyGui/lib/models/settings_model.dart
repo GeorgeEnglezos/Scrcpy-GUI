@@ -147,6 +147,11 @@ class WindowState {
   }
 }
 
+/// Bounds for [AppSettings.uiScale]. Zooming out only: this is a fit-more
+/// tool for small screens, not a magnifier.
+const double kMinUiScale = 0.8;
+const double kMaxUiScale = 1.0;
+
 /// App-wide settings. Immutable, use [copyWith] to derive a new instance.
 class AppSettings {
   final List<PanelSettings> panelOrder;
@@ -168,6 +173,7 @@ class AppSettings {
   final bool fileLoggingEnabled;
   final ScrcpyCommand? defaultPreset;
   final WindowState? windowState;
+  final double uiScale;
 
   AppSettings({
     required List<PanelSettings> panelOrder,
@@ -188,6 +194,7 @@ class AppSettings {
     this.fileLoggingEnabled = false,
     this.defaultPreset,
     this.windowState,
+    this.uiScale = 1.0,
   }) : panelOrder = List.unmodifiable(panelOrder),
        shortcutMod = List.unmodifiable(shortcutMod);
 
@@ -213,6 +220,7 @@ class AppSettings {
     ScrcpyCommand? defaultPreset,
     bool clearDefaultPreset = false,
     WindowState? windowState,
+    double? uiScale,
   }) {
     return AppSettings(
       panelOrder: panelOrder ?? this.panelOrder,
@@ -236,6 +244,7 @@ class AppSettings {
           ? null
           : (defaultPreset ?? this.defaultPreset),
       windowState: windowState ?? this.windowState,
+      uiScale: uiScale ?? this.uiScale,
     );
   }
 
@@ -291,6 +300,9 @@ class AppSettings {
       windowState: WindowState.fromJson(
         json['windowState'] as Map<String, dynamic>?,
       ),
+      uiScale: ((json['uiScale'] as num?)?.toDouble() ?? 1.0)
+          .clamp(kMinUiScale, kMaxUiScale)
+          .toDouble(),
     );
   }
 
@@ -313,6 +325,7 @@ class AppSettings {
       'fileLoggingEnabled': fileLoggingEnabled,
       if (defaultPreset != null) 'defaultPreset': defaultPreset!.toJson(),
       if (windowState != null) 'windowState': windowState!.toJson(),
+      'uiScale': uiScale,
     };
   }
 
