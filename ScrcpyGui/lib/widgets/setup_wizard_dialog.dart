@@ -9,7 +9,6 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
 import '../models/settings_model.dart';
@@ -47,7 +46,12 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   late AppSettings _settings;
 
   bool _scrcpyOnPath = false;
-  bool _toolsChecked = false;
+  bool _scrcpyChecked = false;
+
+  /// Null while the probe is still running, which the adb status line renders
+  /// as "Checking adb...". This is deliberately its own gate: adb can take up
+  /// to 10 seconds to time out on a machine that has none, and that should
+  /// not block the scrcpy Browse row above it.
   AdbStatus? _adbStatus;
 
   /// Set when the picked folder holds no scrcpy executable.
@@ -57,18 +61,23 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   void initState() {
     super.initState();
     _settings = widget.initialSettings;
-    _checkTools();
+    _checkScrcpyOnPath();
+    _checkAdb();
   }
 
-  Future<void> _checkTools() async {
+  Future<void> _checkScrcpyOnPath() async {
     final onPath = await AdbService.isScrcpyOnPath();
-    final adb = await AdbService.checkAdb();
     if (!mounted) return;
     setState(() {
       _scrcpyOnPath = onPath;
-      _adbStatus = adb;
-      _toolsChecked = true;
+      _scrcpyChecked = true;
     });
+  }
+
+  Future<void> _checkAdb() async {
+    final adb = await AdbService.checkAdb();
+    if (!mounted) return;
+    setState(() => _adbStatus = adb);
   }
 
   Future<void> _save() => widget.onSave(_settings);
@@ -86,12 +95,20 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
     final result = await FilePicker.platform.getDirectoryPath();
     if (result == null) return;
 
-    final exeName = Platform.isWindows ? 'scrcpy.exe' : 'scrcpy';
-    final found = await File(p.join(result, exeName)).exists();
+    final found = await AdbService.hasScrcpyIn(result);
     if (!mounted) return;
 
+    if (!found) {
+      final exeName = Platform.isWindows ? 'scrcpy.exe' : 'scrcpy';
+      // Report the failure but do not persist it: AdbService.adbExecutable
+      // derives adb's path from scrcpyDirectory too, so saving a wrong
+      // folder here would also break adb resolution.
+      setState(() => _scrcpyDirError = 'No $exeName in that folder.');
+      return;
+    }
+
     setState(() {
-      _scrcpyDirError = found ? null : 'No $exeName in that folder.';
+      _scrcpyDirError = null;
       _settings = _settings.copyWith(scrcpyDirectory: result);
     });
     await _save();
@@ -169,12 +186,15 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   }
 
   Widget _buildScrcpyStep() {
-    if (!_toolsChecked) {
+    if (!_scrcpyChecked) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 32),
         child: Center(child: CircularProgressIndicator()),
       );
     }
+
+    final scrcpyDirError = _scrcpyDirError;
+    final adbReachable = _adbStatus?.reachable == true;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,21 +224,21 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
             showOpenButton: false,
             onBrowse: _pickScrcpyDirectory,
           ),
-          if (_scrcpyDirError != null) ...[
+          if (scrcpyDirError != null) ...[
             const SizedBox(height: 8),
             _statusLine(
               Icons.warning_amber_rounded,
               AppColors.error,
-              _scrcpyDirError!,
+              scrcpyDirError,
             ),
           ],
         ],
         const SizedBox(height: 12),
         _statusLine(
-          _adbStatus?.reachable == true
-              ? Icons.check_circle
-              : Icons.info_outline,
-          _adbStatus?.reachable == true ? AppColors.runGreen : AppColors.error,
+          adbReachable ? Icons.check_circle : Icons.info_outline,
+          // adb is informational and never blocks progress, so it never uses
+          // the error color, not even while still checking or not found.
+          adbReachable ? AppColors.runGreen : context.appTextSecondary,
           _adbStatusLabel,
         ),
       ],
@@ -227,7 +247,8 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
 
   String get _adbStatusLabel {
     final status = _adbStatus;
-    if (status == null || !status.reachable) return 'adb not found';
+    if (status == null) return 'Checking adb...';
+    if (!status.reachable) return 'adb not found';
     if (status.deviceCount == 0) return 'adb responding, no devices connected';
     if (status.deviceCount == 1) return 'adb responding, 1 device connected';
     return 'adb responding, ${status.deviceCount} devices connected';

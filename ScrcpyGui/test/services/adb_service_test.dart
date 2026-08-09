@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:scrcpy_gui_prod/services/adb_service.dart';
 
 void main() {
@@ -14,6 +17,21 @@ void main() {
 
       expect(status.reachable, isTrue);
       expect(status.deviceCount, 0);
+    });
+  });
+
+  group('AdbService.hasScrcpyIn', () {
+    test('is false for an empty folder, true once the executable exists',
+        () async {
+      final dir = Directory.systemTemp.createTempSync('adb_service_test');
+      addTearDown(() => dir.deleteSync(recursive: true));
+
+      expect(await AdbService.hasScrcpyIn(dir.path), isFalse);
+
+      final exeName = Platform.isWindows ? 'scrcpy.exe' : 'scrcpy';
+      File(p.join(dir.path, exeName)).createSync();
+
+      expect(await AdbService.hasScrcpyIn(dir.path), isTrue);
     });
   });
 }

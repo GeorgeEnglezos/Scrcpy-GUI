@@ -47,6 +47,15 @@ class AdbService {
     return p.join(dir, Platform.isWindows ? 'scrcpy.exe' : 'scrcpy');
   }
 
+  /// Whether [directory] contains the platform's scrcpy executable.
+  ///
+  /// Used to reject a folder the user picked before it is persisted, since a
+  /// wrong scrcpyDirectory also breaks adb resolution.
+  static Future<bool> hasScrcpyIn(String directory) {
+    final exeName = Platform.isWindows ? 'scrcpy.exe' : 'scrcpy';
+    return File(p.join(directory, exeName)).exists();
+  }
+
   /// Wraps [executable] in double quotes when it contains spaces, so that
   /// user-facing command strings survive tokenization and `bash -c`
   /// (e.g. a scrcpy directory under "C:\Program Files").
@@ -124,8 +133,15 @@ class AdbService {
   @visibleForTesting
   static bool debugSkipProcessChecks = false;
 
+  /// Test-only override for [isScrcpyOnPath]. When non-null it is returned
+  /// directly, so both the found and not-found branches are reachable without
+  /// spawning a process.
+  @visibleForTesting
+  static bool? debugScrcpyOnPath;
+
   /// Returns true if scrcpy is resolvable on the system PATH.
   static Future<bool> isScrcpyOnPath() async {
+    if (debugScrcpyOnPath != null) return debugScrcpyOnPath!;
     if (debugSkipProcessChecks) return true;
     try {
       final result = Platform.isWindows
