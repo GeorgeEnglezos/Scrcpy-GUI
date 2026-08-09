@@ -143,24 +143,36 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   /// user an explanation rather than a button that looks broken.
   bool _recheckFoundNothing = false;
 
-  /// scrcpy is usable either from PATH or from an explicit directory. The
-  /// directory is the more reliable of the two, see [_recheckScrcpy].
-  bool get _scrcpyResolved =>
-      _scrcpyOnPath || _settings.scrcpyDirectory.isNotEmpty;
+  /// Whether the configured directory really holds scrcpy right now.
+  ///
+  /// Checked rather than assumed: the directory is a string in a settings
+  /// file, and the executable can be deleted, moved, or upgraded out from
+  /// under it. WinGet does exactly that, since its folder name carries the
+  /// version.
+  bool _pinnedDirHasScrcpy = false;
+
+  /// scrcpy is usable either from PATH or from a directory that still has it.
+  bool get _scrcpyResolved => _scrcpyOnPath || _pinnedDirHasScrcpy;
 
   @override
   void initState() {
     super.initState();
     _settings = widget.initialSettings;
-    _checkScrcpyOnPath();
+    _checkScrcpyAvailability();
     _checkAdb();
   }
 
-  Future<void> _checkScrcpyOnPath() async {
+  /// Establishes both ways scrcpy can be available: on PATH, or in the
+  /// configured directory. The directory is verified, never assumed.
+  Future<void> _checkScrcpyAvailability() async {
     final onPath = await AdbService.isScrcpyOnPath();
+    final directory = _settings.scrcpyDirectory;
+    final pinnedValid =
+        directory.isNotEmpty && await AdbService.hasScrcpyIn(directory);
     if (!mounted) return;
     setState(() {
       _scrcpyOnPath = onPath;
+      _pinnedDirHasScrcpy = pinnedValid;
       _scrcpyChecked = true;
     });
   }
@@ -174,11 +186,11 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   /// PATH comes up empty we look on disk and, if we find it, pin the directory
   /// in settings so nothing here depends on PATH again.
   Future<void> _recheckScrcpy() async {
-    await _checkScrcpyOnPath();
+    await _checkScrcpyAvailability();
     if (!mounted) return;
 
     var pinned = false;
-    if (!_scrcpyOnPath) {
+    if (!_scrcpyResolved) {
       final found = await AdbService.findScrcpyDirectory();
       if (!mounted) return;
       if (found != null) {
@@ -201,9 +213,12 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   /// derives adb's path from this directory, so the previous adb result went
   /// stale the moment it changed. Every path that sets the directory goes
   /// through here so the two cannot drift apart again.
+  /// Both callers verify the folder holds scrcpy before calling, so the
+  /// pinned-directory flag is set here rather than probing the disk again.
   Future<void> _applyScrcpyDirectory(String directory) async {
     setState(() {
       _scrcpyDirError = null;
+      _pinnedDirHasScrcpy = true;
       _settings = _settings.copyWith(scrcpyDirectory: directory);
     });
     await _save();
@@ -352,7 +367,7 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
             AppColors.runGreen,
             'scrcpy found on your system PATH',
           )
-        else if (_settings.scrcpyDirectory.isNotEmpty)
+        else if (_pinnedDirHasScrcpy)
           _statusLine(
             Icons.check_circle,
             AppColors.runGreen,

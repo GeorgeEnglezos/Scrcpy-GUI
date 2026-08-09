@@ -141,7 +141,27 @@ void main() {
     );
 
     await tester.tap(find.text('open'));
+
+    if (scrcpyDirectory.isNotEmpty) {
+      // Validating a pinned directory hits the real filesystem, which the fake
+      // clock cannot drive. Until it resolves the step shows an animating
+      // spinner, so pumpAndSettle alone would spin until it timed out. Build
+      // one frame, hand time to the real event loop, then settle.
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+    }
+
     await tester.pumpAndSettle();
+  }
+
+  /// A folder that looks like an extracted scrcpy release.
+  Directory makeScrcpyDir() {
+    final dir = Directory.systemTemp.createTempSync('wizard_scrcpy_dir');
+    File(p.join(dir.path, Platform.isWindows ? 'scrcpy.exe' : 'scrcpy'))
+        .createSync();
+    return dir;
   }
 
   testWidgets('opens on step 1 and reports scrcpy found on PATH', (
@@ -294,15 +314,39 @@ void main() {
   testWidgets(
     'a configured directory counts as found even when PATH does not resolve',
     (tester) async {
+      final dir = makeScrcpyDir();
+      addTearDown(() => dir.deleteSync(recursive: true));
+
       AdbService.debugScrcpyOnPath = false;
-      await pumpWizard(tester, scrcpyDirectory: r'C:\winget\scrcpy-win64-v4.1');
+      await pumpWizard(tester, scrcpyDirectory: dir.path);
 
       expect(
-        find.textContaining(r'scrcpy found at C:\winget\scrcpy-win64-v4.1'),
+        find.textContaining('scrcpy found at ${dir.path}'),
         findsOneWidget,
       );
       expect(find.text('Install scrcpy'), findsNothing);
       expect(find.widgetWithText(DirectoryRow, 'Scrcpy Directory'), findsNothing);
+    },
+  );
+
+  // A pinned path is just a string in a settings file. If scrcpy is deleted
+  // out from under it, claiming success sends the user to a Home page whose
+  // every run button fails.
+  testWidgets(
+    'a configured directory whose scrcpy was deleted is not counted as found',
+    (tester) async {
+      final dir = Directory.systemTemp.createTempSync('wizard_emptied');
+      addTearDown(() => dir.deleteSync(recursive: true));
+
+      AdbService.debugScrcpyOnPath = false;
+      await pumpWizard(tester, scrcpyDirectory: dir.path);
+
+      expect(find.textContaining('scrcpy found at'), findsNothing);
+      expect(find.text('Install scrcpy'), findsOneWidget);
+      expect(
+        find.widgetWithText(DirectoryRow, 'Scrcpy Directory'),
+        findsOneWidget,
+      );
     },
   );
 
