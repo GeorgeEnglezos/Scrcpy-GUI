@@ -13,6 +13,30 @@ import 'package:scrcpy_gui_prod/services/command_notifier.dart';
 import 'package:scrcpy_gui_prod/services/device_manager_service.dart';
 import 'package:scrcpy_gui_prod/services/log_service.dart';
 import 'package:scrcpy_gui_prod/services/adb_service.dart';
+import 'package:scrcpy_gui_prod/widgets/ui_scale.dart';
+
+Future<void> pumpApp(WidgetTester tester, AppSettings settings) async {
+  // fromJson with only name/brightness fills every color with defaults.
+  final preset = ColorPreset.fromJson({'name': 'Dark', 'brightness': 'dark'});
+
+  await tester.pumpWidget(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<DeviceManagerService>(
+          // Not initialize()d, no adb polling in tests.
+          create: (_) => DeviceManagerService(),
+        ),
+        ChangeNotifierProvider<CommandNotifier>(create: (_) => CommandNotifier()),
+        ChangeNotifierProvider<AppIconController>(create: (_) => AppIconController()),
+        ChangeNotifierProvider<ColorThemeNotifier>(
+          create: (_) => ColorThemeNotifier(presets: [preset], selectedName: 'Dark'),
+        ),
+        ChangeNotifierProvider<LogService>.value(value: LogService.instance),
+      ],
+      child: ScrcpyGuiApp(settings: settings),
+    ),
+  );
+}
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
@@ -25,35 +49,20 @@ void main() {
       checkForUpdatesOnStartup: false,
     );
 
-    // fromJson with only name/brightness fills every color with defaults.
-    final preset = ColorPreset.fromJson({'name': 'Dark', 'brightness': 'dark'});
+    await pumpApp(tester, settings);
 
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider<DeviceManagerService>(
-            // Not initialize()d — no adb polling in tests.
-            create: (_) => DeviceManagerService(),
-          ),
-          ChangeNotifierProvider<CommandNotifier>(
-            create: (_) => CommandNotifier(),
-          ),
-          ChangeNotifierProvider<AppIconController>(
-            create: (_) => AppIconController(),
-          ),
-          ChangeNotifierProvider<ColorThemeNotifier>(
-            create: (_) => ColorThemeNotifier(
-              presets: [preset],
-              selectedName: 'Dark',
-            ),
-          ),
-          ChangeNotifierProvider<LogService>.value(value: LogService.instance),
-        ],
-        child: ScrcpyGuiApp(settings: settings),
-      ),
+    expect(find.byType(ScrcpyGuiApp), findsOneWidget);
+  });
+
+  testWidgets('the saved ui scale reaches the widget tree', (tester) async {
+    AdbService.debugSkipProcessChecks = true;
+    final settings = AppSettings.defaultSettings().copyWith(
+      checkForUpdatesOnStartup: false,
+      uiScale: 0.85,
     );
 
-    // Verify app loads without errors
-    expect(find.byType(ScrcpyGuiApp), findsOneWidget);
+    await pumpApp(tester, settings);
+
+    expect(tester.widget<UiScale>(find.byType(UiScale)).scale, 0.85);
   });
 }

@@ -27,6 +27,7 @@ import 'services/window_state_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_theme_colors.dart';
 import 'widgets/sidebar.dart';
+import 'widgets/ui_scale.dart';
 import 'services/update_service.dart';
 
 Future<void> main() async {
@@ -234,6 +235,12 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
       themeMode: context.watch<ColorThemeNotifier>().current.brightness == 'dark'
           ? ThemeMode.dark
           : ThemeMode.light,
+      // child is non-null because home is always provided below; MaterialApp
+      // only passes null to builder when it has no route to render.
+      builder: (context, child) => UiScale(
+        scale: _currentSettings.uiScale,
+        child: child!,
+      ),
       home: Scaffold(
         body: Row(
           children: [
