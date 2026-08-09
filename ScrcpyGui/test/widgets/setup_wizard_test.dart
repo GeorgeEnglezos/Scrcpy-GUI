@@ -113,17 +113,37 @@ void main() {
     expect(find.text('Next'), findsNothing);
   });
 
-  // Skipping still counts as done. Without this the wizard would reopen on
-  // every launch for anyone who dismissed it.
-  testWidgets('Skip marks setup complete and closes', (tester) async {
+  // Skip moves past one step, it does not dismiss the wizard. Nothing is
+  // persisted by skipping, since the step was never configured.
+  testWidgets('Skip advances one step and leaves the wizard open', (
+    tester,
+  ) async {
     await pumpWizard(tester);
 
-    await tester.tap(find.text('Skip'));
+    await tester.tap(find.text('Skip this step'));
     await tester.pumpAndSettle();
 
-    expect(saved, isNotNull);
-    expect(saved!.setupCompleted, isTrue);
-    expect(find.text('Welcome to Scrcpy GUI'), findsNothing);
+    expect(find.text('Step 2 of 3'), findsOneWidget);
+    expect(find.text('Welcome to Scrcpy GUI'), findsOneWidget);
+    expect(saved, isNull);
+  });
+
+  // On the last step, skipping and finishing would be the same action, so
+  // only Finish is offered.
+  testWidgets('the last step offers Back and Finish but no Skip', (
+    tester,
+  ) async {
+    await pumpWizard(tester);
+
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Step 3 of 3'), findsOneWidget);
+    expect(find.text('Skip this step'), findsNothing);
+    expect(find.text('Back'), findsOneWidget);
+    expect(find.text('Finish'), findsOneWidget);
   });
 
   testWidgets('Finish marks setup complete and closes', (tester) async {
@@ -156,6 +176,8 @@ void main() {
         find.widgetWithText(DirectoryRow, 'Scrcpy Directory'),
         findsOneWidget,
       );
+      // Someone with no scrcpy at all needs a way to go get it.
+      expect(find.text('Get scrcpy'), findsOneWidget);
     },
   );
 
@@ -174,6 +196,9 @@ void main() {
         find.widgetWithText(DirectoryRow, 'Scrcpy Directory'),
         findsNothing,
       );
+      // The download link would be noise on a step the user should pass
+      // straight through.
+      expect(find.text('Get scrcpy'), findsNothing);
     },
   );
 

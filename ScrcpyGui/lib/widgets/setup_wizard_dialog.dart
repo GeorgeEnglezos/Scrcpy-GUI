@@ -14,11 +14,17 @@ import 'package:provider/provider.dart';
 import '../models/settings_model.dart';
 import '../services/adb_service.dart';
 import '../services/color_theme_notifier.dart';
+import '../services/update_service.dart';
 import '../services/settings_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme_colors.dart';
 import 'custom_dropdown.dart';
 import 'directory_row.dart';
+
+/// Where step 1 sends a user who has no scrcpy yet. The /latest redirect means
+/// this never needs updating when scrcpy releases.
+const kScrcpyReleasesUrl =
+    'https://github.com/Genymobile/scrcpy/releases/latest';
 
 class SetupWizardDialog extends StatefulWidget {
   /// Settings the wizard starts from, with directory defaults already applied
@@ -161,7 +167,13 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
       ),
       content: SizedBox(width: 520, child: _buildStepBody()),
       actions: [
-        TextButton(onPressed: _close, child: const Text('Skip')),
+        // Skips this step only, never the wizard. Hidden on the last step,
+        // where skipping and finishing would be the same action.
+        if (!isLastStep)
+          TextButton(
+            onPressed: () => setState(() => _step++),
+            child: const Text('Skip this step'),
+          ),
         if (_step > 0)
           TextButton(
             onPressed: () => setState(() => _step--),
@@ -214,7 +226,18 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
           _statusLine(
             Icons.error_outline,
             AppColors.error,
-            'scrcpy is not on your system PATH. Choose the folder holding it.',
+            'scrcpy is not on your system PATH. Download it, or choose the '
+            'folder holding a copy you already have.',
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton.icon(
+              onPressed: () =>
+                  UpdateService.launchReleasePage(kScrcpyReleasesUrl),
+              icon: const Icon(Icons.download, size: 18),
+              label: const Text('Get scrcpy'),
+            ),
           ),
           const SizedBox(height: 16),
           DirectoryRow(
