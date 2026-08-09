@@ -14,6 +14,18 @@ import 'log_service.dart';
 import 'settings_service.dart';
 import 'shell_runner.dart';
 
+/// Outcome of a quick adb reachability probe. Deliberately data, not a
+/// display string: formatting belongs to the widget layer.
+class AdbStatus {
+  /// True when adb ran and exited cleanly.
+  final bool reachable;
+
+  /// Devices `adb devices` listed. Always 0 when [reachable] is false.
+  final int deviceCount;
+
+  const AdbStatus({required this.reachable, required this.deviceCount});
+}
+
 class AdbService {
   /// Returns the adb executable path.
   ///
@@ -159,6 +171,34 @@ class AdbService {
         .map((l) => l.split('\t').first.trim())
         .where((id) => id.isNotEmpty)
         .toList();
+  }
+
+  /// Probes whether adb is usable, and how many devices it sees.
+  ///
+  /// Two calls rather than one: [adbDevices] returns an empty list both when
+  /// adb is missing and when adb works with nothing plugged in, so it cannot
+  /// tell "broken" from "idle" on its own.
+  static Future<AdbStatus> checkAdb() async {
+    if (debugSkipProcessChecks) {
+      return const AdbStatus(reachable: true, deviceCount: 0);
+    }
+
+    try {
+      // A missing executable raises ProcessException instead of returning a
+      // non-zero exit code, so the catch is load-bearing, not defensive.
+      final result = await runAdbProcess(
+        ['version'],
+        timeout: const Duration(seconds: 10),
+      );
+      if (result.exitCode != 0) {
+        return const AdbStatus(reachable: false, deviceCount: 0);
+      }
+    } catch (_) {
+      return const AdbStatus(reachable: false, deviceCount: 0);
+    }
+
+    final devices = await adbDevices();
+    return AdbStatus(reachable: true, deviceCount: devices.length);
   }
 
   /// Lists installed packages on a device via `pm list packages`.
