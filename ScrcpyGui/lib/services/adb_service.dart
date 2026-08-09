@@ -192,6 +192,12 @@ class AdbService {
   @visibleForTesting
   static bool? debugScrcpyOnPath;
 
+  /// Test-only override for [checkAdb]. When non-null it is returned directly,
+  /// so both the reachable and the missing branch are exercisable without
+  /// spawning a process.
+  @visibleForTesting
+  static AdbStatus? debugAdbStatus;
+
   /// Returns true if scrcpy is resolvable on the system PATH.
   static Future<bool> isScrcpyOnPath() async {
     if (debugScrcpyOnPath != null) return debugScrcpyOnPath!;
@@ -248,6 +254,8 @@ class AdbService {
   /// adb is missing and when adb works with nothing plugged in, so it cannot
   /// tell "broken" from "idle" on its own.
   static Future<AdbStatus> checkAdb() async {
+    final override = debugAdbStatus;
+    if (override != null) return override;
     if (debugSkipProcessChecks) {
       return const AdbStatus(reachable: true, deviceCount: 0);
     }

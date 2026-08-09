@@ -177,22 +177,36 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
     await _checkScrcpyOnPath();
     if (!mounted) return;
 
+    var pinned = false;
     if (!_scrcpyOnPath) {
       final found = await AdbService.findScrcpyDirectory();
       if (!mounted) return;
       if (found != null) {
-        setState(() {
-          _settings = _settings.copyWith(scrcpyDirectory: found);
-          _scrcpyDirError = null;
-        });
-        await _save();
+        await _applyScrcpyDirectory(found);
+        pinned = true;
       }
     }
 
     if (!mounted) return;
     setState(() => _recheckFoundNothing = !_scrcpyResolved);
 
-    // WinGet installs adb alongside scrcpy, so the adb line is stale too.
+    // Pinning already re-probed adb. Otherwise the adb line is still stale,
+    // since a package manager installs adb alongside scrcpy.
+    if (!pinned) await _checkAdb();
+  }
+
+  /// Records a validated scrcpy directory.
+  ///
+  /// Re-probes adb rather than leaving that to callers: [AdbService.adbExecutable]
+  /// derives adb's path from this directory, so the previous adb result went
+  /// stale the moment it changed. Every path that sets the directory goes
+  /// through here so the two cannot drift apart again.
+  Future<void> _applyScrcpyDirectory(String directory) async {
+    setState(() {
+      _scrcpyDirError = null;
+      _settings = _settings.copyWith(scrcpyDirectory: directory);
+    });
+    await _save();
     await _checkAdb();
   }
 
@@ -229,11 +243,7 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
       return;
     }
 
-    setState(() {
-      _scrcpyDirError = null;
-      _settings = _settings.copyWith(scrcpyDirectory: result);
-    });
-    await _save();
+    await _applyScrcpyDirectory(result);
   }
 
   /// Picks a directory and folds it into the settings via [apply].

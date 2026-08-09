@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -99,6 +102,7 @@ void main() {
   tearDown(() {
     AdbService.debugSkipProcessChecks = false;
     AdbService.debugScrcpyOnPath = null;
+    AdbService.debugAdbStatus = null;
   });
 
   // Opens the wizard through showDialog rather than pumping it as the home
@@ -244,6 +248,46 @@ void main() {
       expect(find.text(hint.note), findsOneWidget);
     },
   );
+
+  // AdbService.adbExecutable derives adb's path from scrcpyDirectory, so the
+  // adb result goes stale the instant that directory changes. Choosing the
+  // extracted scrcpy folder must re-probe, or step 1 keeps insisting adb is
+  // missing while sitting right next to the adb.exe that shipped in the zip.
+  testWidgets('choosing a scrcpy directory re-probes adb', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('wizard_scrcpy');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    File(p.join(dir.path, Platform.isWindows ? 'scrcpy.exe' : 'scrcpy'))
+        .createSync();
+
+    AdbService.debugScrcpyOnPath = false;
+    AdbService.debugAdbStatus =
+        const AdbStatus(reachable: false, deviceCount: 0);
+    FilePicker.platform = _FakeFilePicker(dir.path);
+
+    await pumpWizard(tester);
+    expect(find.text('adb not found'), findsOneWidget);
+
+    // The zip ships adb.exe beside scrcpy.exe, so adb resolves from the folder
+    // the user just chose.
+    AdbService.debugAdbStatus =
+        const AdbStatus(reachable: true, deviceCount: 0);
+
+    // The install panel pushes the Browse row below the fold, so the step
+    // scrolls. Bring it into view the way a user would.
+    await tester.ensureVisible(find.text('Browse...'));
+    await tester.pumpAndSettle();
+
+    // runAsync because picking validates the folder with real filesystem I/O,
+    // which the fake async clock cannot complete on its own.
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Browse...'));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pumpAndSettle();
+
+    expect(find.text('adb responding, no devices connected'), findsOneWidget);
+    expect(find.text('adb not found'), findsNothing);
+  });
 
   // A pinned directory is how the wizard records an install that PATH cannot
   // see, so it has to read as success rather than leaving the install panel up.
