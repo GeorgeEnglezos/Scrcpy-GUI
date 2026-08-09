@@ -100,11 +100,23 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                         children: [
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 170),
-                            child: DropdownButton<String>(
+                            // FormField variant so the field picks up the app's
+                            // InputDecorationTheme; a bare DropdownButton is not
+                            // an InputDecorator and would keep Material's
+                            // underline next to the outlined IP/port fields.
+                            child: DropdownButtonFormField<String>(
                               isExpanded: true,
-                              value: selected,
+                              initialValue: selected,
                               style: TextStyle(color: context.appTextPrimary, fontSize: kFontSize),
                               dropdownColor: context.appSurface,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: context.appInputFill,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: kRowHorizontalPadding,
+                                  vertical: kRowVerticalPadding / 2,
+                                ),
+                              ),
                               hint: Text(
                                 'Select Device',
                                 overflow: TextOverflow.ellipsis,
