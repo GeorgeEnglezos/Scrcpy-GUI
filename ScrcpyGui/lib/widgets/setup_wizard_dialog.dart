@@ -337,7 +337,6 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
       );
     }
 
-    final scrcpyDirError = _scrcpyDirError;
     final adbReachable = _adbStatus?.reachable == true;
 
     return Column(
@@ -368,23 +367,6 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
           ),
           const SizedBox(height: 16),
           _buildInstallPanel(),
-          const SizedBox(height: 16),
-          DirectoryRow(
-            label: 'Scrcpy Directory',
-            path: _settings.scrcpyDirectory.isEmpty
-                ? '(not set)'
-                : _settings.scrcpyDirectory,
-            showOpenButton: false,
-            onBrowse: _pickScrcpyDirectory,
-          ),
-          if (scrcpyDirError != null) ...[
-            const SizedBox(height: 8),
-            _statusLine(
-              Icons.warning_amber_rounded,
-              AppColors.error,
-              scrcpyDirError,
-            ),
-          ],
         ],
         const SizedBox(height: 12),
         _statusLine(
@@ -403,6 +385,7 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   Widget _buildInstallPanel() {
     final hint = scrcpyInstallHint(currentHostOs);
     final runnable = hint.runnable;
+    final scrcpyDirError = _scrcpyDirError;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -444,6 +427,23 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
               label: const Text('Get scrcpy'),
             ),
           ),
+          const SizedBox(height: 12),
+          DirectoryRow(
+            label: 'Scrcpy Directory',
+            path: _settings.scrcpyDirectory.isEmpty
+                ? '(not set)'
+                : _settings.scrcpyDirectory,
+            showOpenButton: false,
+            onBrowse: _pickScrcpyDirectory,
+          ),
+          if (scrcpyDirError != null) ...[
+            const SizedBox(height: 8),
+            _statusLine(
+              Icons.warning_amber_rounded,
+              AppColors.error,
+              scrcpyDirError,
+            ),
+          ],
           const SizedBox(height: 16),
           Divider(color: context.appDivider, height: 1),
           const SizedBox(height: 16),
@@ -454,17 +454,21 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
           _hint(hint.note),
           if (runnable != null) ...[
             const SizedBox(height: 10),
-            Row(
+            // Wrap, not Row: the two labels together outgrow the panel at this
+            // dialog width, and they would again in a longer translation.
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 ElevatedButton.icon(
                   onPressed: () => _runInstallCommand(runnable),
                   icon: const Icon(Icons.terminal, size: 18),
                   label: const Text('Run in terminal'),
                 ),
-                const SizedBox(width: 8),
                 TextButton(
                   onPressed: _recheckScrcpy,
-                  child: const Text('Check again'),
+                  child: const Text('Check for installation'),
                 ),
               ],
             ),
@@ -473,8 +477,8 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
               _statusLine(
                 Icons.info_outline,
                 context.appTextSecondary,
-                'Still not found. Wait for the install to finish, or point '
-                'the folder below at it.',
+                'Still not found. Wait for the install to finish, or use '
+                'Browse under Option 1 to point at it.',
               ),
             ],
           ],

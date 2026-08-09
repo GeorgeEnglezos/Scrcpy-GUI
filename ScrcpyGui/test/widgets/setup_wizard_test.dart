@@ -316,7 +316,7 @@ void main() {
           ? findsNothing
           : findsOneWidget;
       expect(find.text('Run in terminal'), expected);
-      expect(find.text('Check again'), expected);
+      expect(find.text('Check for installation'), expected);
       // Copy is always available, whichever platform this runs on.
       expect(find.byTooltip('Copy'), findsOneWidget);
     },
