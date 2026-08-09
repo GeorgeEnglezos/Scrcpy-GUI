@@ -154,6 +154,31 @@ class SettingsService {
     return fullDir;
   }
 
+  /// Returns [settings] with any unset directory filled in relative to
+  /// [settingsDir]. Pure: no disk access, and the input is never mutated.
+  ///
+  /// Shared by the Settings page and the first-run wizard so the two cannot
+  /// suggest different defaults for the same field.
+  static AppSettings withDirectoryDefaults(
+    AppSettings settings,
+    String settingsDir,
+  ) {
+    final recordings = settings.recordingsDirectory.isEmpty
+        ? '$settingsDir/Recordings'
+        : settings.recordingsDirectory;
+    final downloads = settings.downloadsDirectory.isEmpty
+        ? '$settingsDir/Downloads'
+        : settings.downloadsDirectory;
+    final scripts =
+        settings.batDirectory.isEmpty ? downloads : settings.batDirectory;
+
+    return settings.copyWith(
+      recordingsDirectory: recordings,
+      downloadsDirectory: downloads,
+      batDirectory: scripts,
+    );
+  }
+
   /// Reset only User Interface settings (panel order and properties)
   Future<void> resetUserInterface() async {
     if (_cachedSettings != null) {

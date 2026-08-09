@@ -85,34 +85,24 @@ class _SettingsPageState extends State<SettingsPage> {
     final settingsDir = await _settingsService.getSettingsDirectory();
     final appIconCacheDir = await AppIconCache.cacheDir();
 
-    final recordingsDir = settings.recordingsDirectory.isEmpty
-        ? '$settingsDir/Recordings'
-        : settings.recordingsDirectory;
-    final downloadsDir = settings.downloadsDirectory.isEmpty
-        ? '$settingsDir/Downloads'
-        : settings.downloadsDirectory;
-    final batDir = settings.batDirectory.isEmpty
-        ? (downloadsDir.isNotEmpty ? downloadsDir : '$settingsDir/Downloads')
-        : settings.batDirectory;
-
+    final withDefaults = SettingsService.withDirectoryDefaults(
+      settings,
+      settingsDir,
+    );
     final defaultsApplied =
-        recordingsDir != settings.recordingsDirectory ||
-        downloadsDir != settings.downloadsDirectory ||
-        batDir != settings.batDirectory;
+        withDefaults.recordingsDirectory != settings.recordingsDirectory ||
+        withDefaults.downloadsDirectory != settings.downloadsDirectory ||
+        withDefaults.batDirectory != settings.batDirectory;
+    settings = withDefaults;
 
     if (defaultsApplied) {
-      settings = settings.copyWith(
-        recordingsDirectory: recordingsDir,
-        downloadsDirectory: downloadsDir,
-        batDirectory: batDir,
-      );
       // Persist the populated defaults so other consumers see them too.
       await _settingsService.saveSettings(settings);
     }
 
-    await _createDirectoryIfNeeded(recordingsDir);
-    await _createDirectoryIfNeeded(downloadsDir);
-    await _createDirectoryIfNeeded(batDir);
+    await _createDirectoryIfNeeded(settings.recordingsDirectory);
+    await _createDirectoryIfNeeded(settings.downloadsDirectory);
+    await _createDirectoryIfNeeded(settings.batDirectory);
 
     setState(() {
       _settings = settings.copyWith(settingsDirectory: settingsDir);
