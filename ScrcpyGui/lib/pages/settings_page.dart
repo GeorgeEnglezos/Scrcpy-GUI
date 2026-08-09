@@ -12,6 +12,7 @@ import '../services/shell_runner.dart';
 import '../services/color_theme_notifier.dart';
 import '../theme/app_theme_colors.dart';
 import '../widgets/surrounding_panel.dart';
+import '../widgets/directory_row.dart';
 import '../widgets/custom_checkbox.dart';
 import '../widgets/custom_dropdown.dart';
 import '../widgets/custom_multi_dropdown.dart';
@@ -849,11 +850,12 @@ class _SettingsPageState extends State<SettingsPage> {
       contentPadding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          _buildDirectoryRow(
-            'Scrcpy Directory',
-            _settings.scrcpyDirectory.isEmpty
+          DirectoryRow(
+            label: 'Scrcpy Directory',
+            path: _settings.scrcpyDirectory.isEmpty
                 ? '(using system PATH)'
                 : _settings.scrcpyDirectory,
+            onOpen: () => _openFolder(_settings.scrcpyDirectory),
             onBrowse: () => _pickDirectory((path) {
               _settings = _settings.copyWith(scrcpyDirectory: path);
               _saveSettings();
@@ -868,132 +870,53 @@ class _SettingsPageState extends State<SettingsPage> {
                 : null,
           ),
           const SizedBox(height: 16),
-          _buildDirectoryRow(
-            'Recordings Directory',
-            _settings.recordingsDirectory,
+          DirectoryRow(
+            label: 'Recordings Directory',
+            path: _settings.recordingsDirectory,
+            onOpen: () => _openFolder(_settings.recordingsDirectory),
             onBrowse: () => _pickDirectory((path) {
               _settings = _settings.copyWith(recordingsDirectory: path);
               _saveSettings();
             }),
           ),
           const SizedBox(height: 16),
-          _buildDirectoryRow(
-            'Downloads Directory',
-            _settings.downloadsDirectory,
+          DirectoryRow(
+            label: 'Downloads Directory',
+            path: _settings.downloadsDirectory,
+            onOpen: () => _openFolder(_settings.downloadsDirectory),
             onBrowse: () => _pickDirectory((path) {
               _settings = _settings.copyWith(downloadsDirectory: path);
               _saveSettings();
             }),
           ),
           const SizedBox(height: 16),
-          _buildDirectoryRow(
-            Platform.isWindows
+          DirectoryRow(
+            label: Platform.isWindows
                 ? 'Scripts Directory (.bat, .cmd)'
                 : 'Scripts Directory (.sh${Platform.isMacOS ? ', .command' : ''})',
-            _settings.batDirectory,
+            path: _settings.batDirectory,
+            onOpen: () => _openFolder(_settings.batDirectory),
             onBrowse: () => _pickDirectory((path) {
               _settings = _settings.copyWith(batDirectory: path);
               _saveSettings();
             }),
           ),
           const SizedBox(height: 16),
-          _buildDirectoryRow(
-            'App Icons & _labels.json Location',
-            _appIconCacheDirectory,
+          DirectoryRow(
+            label: 'App Icons & _labels.json Location',
+            path: _appIconCacheDirectory,
+            onOpen: () => _openFolder(_appIconCacheDirectory),
             showBrowseButton: false,
           ),
           const SizedBox(height: 16),
-          _buildDirectoryRow(
-            'Settings Location',
-            _settings.settingsDirectory,
+          DirectoryRow(
+            label: 'Settings Location',
+            path: _settings.settingsDirectory,
             showOpenButton: false,
             showBrowseButton: false,
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDirectoryRow(
-    String label,
-    String path, {
-    VoidCallback? onBrowse,
-    VoidCallback? onClear,
-    bool showOpenButton = true,
-    bool showBrowseButton = true,
-  }) {
-    final textColor = context.appTextSecondary;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: context.appTextPrimary,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: context.appInputFill,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: textColor.withValues(alpha: 0.2)),
-                ),
-                child: Text(
-                  path,
-                  style: TextStyle(color: textColor, fontSize: 13),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-
-            if (showOpenButton) ...[
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: () => _openFolder(path),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                child: const Text(
-                  'Open',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-
-            if (showBrowseButton) ...[
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: onBrowse,
-                child: Text(
-                  'Browse...',
-                  style: TextStyle(color: context.appOnPrimary),
-                ),
-              ),
-            ],
-
-            if (onClear != null) ...[
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: onClear,
-                style:
-                    ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
-                child: const Text(
-                  'Clear',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ],
     );
   }
 }
