@@ -36,15 +36,24 @@ class CtxMenuController {
     _entry = null;
   }
 
+  /// [position] is a global (window) coordinate, typically a gesture's
+  /// globalPosition.
   void show(BuildContext context, Offset position, List<CtxMenuItem> items) {
     dismiss();
     final overlay = Overlay.of(context, rootOverlay: true);
-    final screen = MediaQuery.sizeOf(context);
+
+    // The overlay paints inside the app's UI scale transform, so a global
+    // position used as a raw Positioned offset lands short of the click by the
+    // scale factor. globalToLocal undoes every ancestor transform, and the
+    // clamp below then compares like with like by measuring the overlay itself.
+    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
+    final local = overlayBox?.globalToLocal(position) ?? position;
+    final screen = overlayBox?.size ?? MediaQuery.sizeOf(context);
 
     const menuWidth = 240.0;
     final estHeight = items.length * 42.0 + 8;
-    var left = position.dx;
-    var top = position.dy;
+    var left = local.dx;
+    var top = local.dy;
     if (left + menuWidth > screen.width - 8) {
       left = screen.width - menuWidth - 8;
     }
