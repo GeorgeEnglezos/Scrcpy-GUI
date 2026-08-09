@@ -20,6 +20,24 @@ import '../services/app_icon_controller.dart';
 import '../services/app_icon_cache.dart';
 import '../services/device_manager_service.dart';
 
+/// Dropdown label mapped to the stored scale factor. Order is the order shown.
+const _uiScaleOptions = <String, double>{
+  '100% (Default)': 1.0,
+  '95%': 0.95,
+  '90%': 0.90,
+  '85%': 0.85,
+  '80%': 0.80,
+};
+
+/// Reverse lookup with a tolerance, so a float that does not compare equal
+/// cannot leave the dropdown blank.
+String _uiScaleLabel(double scale) {
+  for (final entry in _uiScaleOptions.entries) {
+    if ((entry.value - scale).abs() < 0.001) return entry.key;
+  }
+  return _uiScaleOptions.keys.first;
+}
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -462,6 +480,20 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
               );
+            },
+          ),
+          const SizedBox(height: 16),
+          CustomDropdown(
+            label: 'UI Scale',
+            value: _uiScaleLabel(_settings.uiScale),
+            items: _uiScaleOptions.keys.toList(),
+            onChanged: (value) {
+              final scale = _uiScaleOptions[value];
+              if (scale == null) return;
+              setState(() {
+                _settings = _settings.copyWith(uiScale: scale);
+              });
+              _saveSettings();
             },
           ),
           const SizedBox(height: 16),
