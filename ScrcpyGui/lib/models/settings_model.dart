@@ -147,10 +147,12 @@ class WindowState {
   }
 }
 
-/// Bounds for [AppSettings.uiScale]. Zooming out only: this is a fit-more
-/// tool for small screens, not a magnifier.
+/// Bounds for [AppSettings.uiScale]. Below 1.0 fits more into the same window,
+/// above it trades room for legibility. The upper bound is deliberately modest:
+/// zooming in shrinks the logical canvas, so the panel layout runs out of room
+/// well before the lower bound runs out of readability.
 const double kMinUiScale = 0.8;
-const double kMaxUiScale = 1.0;
+const double kMaxUiScale = 1.2;
 
 /// App-wide settings. Immutable, use [copyWith] to derive a new instance.
 class AppSettings {

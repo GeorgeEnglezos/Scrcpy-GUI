@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Shrinks the whole app so more content fits in the same window.
+/// Zooms the whole app in or out inside the same window.
 ///
-/// Lays the child out against a canvas enlarged by `1 / scale`, then paints it
-/// at [scale], so text, icons, padding and panel widths shrink together. A
-/// [scale] of 1.0 is a pass-through.
+/// Lays the child out against a canvas of `size / scale`, then paints it at
+/// [scale], so text, icons, padding and panel widths all change together.
+/// Below 1.0 that canvas grows and more content fits; above 1.0 it shrinks and
+/// everything gets bigger. A [scale] of 1.0 is a pass-through.
 ///
 /// [scale] must be greater than 0. Values coming from settings are already
 /// clamped to the supported range; the assert is there so a bad call site fails

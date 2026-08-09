@@ -19,6 +19,10 @@ void main() {
       expect(settings.uiScale, kMaxUiScale);
     });
 
+    test('keeps a zoomed-in value, which used to be clamped away', () {
+      expect(AppSettings.fromJsonString('{"uiScale": 1.1}').uiScale, 1.1);
+    });
+
     test('keeps a value inside the range', () {
       expect(AppSettings.fromJsonString('{"uiScale": 0.85}').uiScale, 0.85);
     });

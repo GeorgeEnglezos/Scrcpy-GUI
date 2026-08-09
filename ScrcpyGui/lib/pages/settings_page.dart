@@ -20,9 +20,13 @@ import '../services/app_icon_controller.dart';
 import '../services/app_icon_cache.dart';
 import '../services/device_manager_service.dart';
 
+const _uiScaleDefaultLabel = '100% (Default)';
+
 /// Dropdown label mapped to the stored scale factor. Order is the order shown.
 const _uiScaleOptions = <String, double>{
-  '100% (Default)': 1.0,
+  '120%': 1.20,
+  '110%': 1.10,
+  _uiScaleDefaultLabel: 1.0,
   '95%': 0.95,
   '90%': 0.90,
   '85%': 0.85,
@@ -30,12 +34,13 @@ const _uiScaleOptions = <String, double>{
 };
 
 /// Reverse lookup with a tolerance, so a float that does not compare equal
-/// cannot leave the dropdown blank.
+/// cannot leave the dropdown blank. Falls back to the default rather than to
+/// the first entry, which is the largest zoom.
 String _uiScaleLabel(double scale) {
   for (final entry in _uiScaleOptions.entries) {
     if ((entry.value - scale).abs() < 0.001) return entry.key;
   }
-  return _uiScaleOptions.keys.first;
+  return _uiScaleDefaultLabel;
 }
 
 class SettingsPage extends StatefulWidget {
