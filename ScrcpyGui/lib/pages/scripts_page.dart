@@ -572,6 +572,9 @@ class _ScriptsPageState extends State<ScriptsPage> {
                   ),
                   maxLines: null,
                   expands: true,
+                  // An expanding field is centred by its InputDecorator, which
+                  // leaves a short script floating in the middle of the box.
+                  textAlignVertical: TextAlignVertical.top,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: context.appInputFill,
