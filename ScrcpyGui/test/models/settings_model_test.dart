@@ -33,4 +33,32 @@ void main() {
       expect(restored.uiScale, 0.9);
     });
   });
+
+  group('AppSettings.setupCompleted', () {
+    test('is false for a brand new install', () {
+      expect(AppSettings.defaultSettings().setupCompleted, isFalse);
+    });
+
+    // An existing settings file with no such key belongs to someone who
+    // upgraded, not to a new install. Defaulting this to false like every
+    // other field in fromJson would show the wizard to the entire existing
+    // userbase the first time they run the new version.
+    test('is true for a settings file written before the key existed', () {
+      expect(AppSettings.fromJsonString('{}').setupCompleted, isTrue);
+    });
+
+    // toJson must always write the key. If it were omitted, a fresh install's
+    // defaults would be saved without it and read back as true, so the wizard
+    // would never open at all.
+    test('stays false through a json round-trip', () {
+      final original = AppSettings.defaultSettings();
+      final restored = AppSettings.fromJsonString(original.toJsonString());
+      expect(restored.setupCompleted, isFalse);
+    });
+
+    test('can be flipped through copyWith', () {
+      final done = AppSettings.defaultSettings().copyWith(setupCompleted: true);
+      expect(done.setupCompleted, isTrue);
+    });
+  });
 }

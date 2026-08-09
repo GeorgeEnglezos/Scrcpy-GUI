@@ -177,6 +177,10 @@ class AppSettings {
   final WindowState? windowState;
   final double uiScale;
 
+  /// False only on a genuinely new install. See [AppSettings.fromJson] for
+  /// why the JSON default is the opposite.
+  final bool setupCompleted;
+
   AppSettings({
     required List<PanelSettings> panelOrder,
     required this.scrcpyDirectory,
@@ -197,6 +201,7 @@ class AppSettings {
     this.defaultPreset,
     this.windowState,
     this.uiScale = 1.0,
+    this.setupCompleted = false,
   }) : panelOrder = List.unmodifiable(panelOrder),
        shortcutMod = List.unmodifiable(shortcutMod);
 
@@ -223,6 +228,7 @@ class AppSettings {
     bool clearDefaultPreset = false,
     WindowState? windowState,
     double? uiScale,
+    bool? setupCompleted,
   }) {
     return AppSettings(
       panelOrder: panelOrder ?? this.panelOrder,
@@ -247,6 +253,7 @@ class AppSettings {
           : (defaultPreset ?? this.defaultPreset),
       windowState: windowState ?? this.windowState,
       uiScale: uiScale ?? this.uiScale,
+      setupCompleted: setupCompleted ?? this.setupCompleted,
     );
   }
 
@@ -268,6 +275,7 @@ class AppSettings {
       checkForUpdatesOnStartup: true,
       loggingEnabled: false,
       fileLoggingEnabled: false,
+      setupCompleted: false,
     );
   }
 
@@ -305,6 +313,12 @@ class AppSettings {
       uiScale: ((json['uiScale'] as num?)?.toDouble() ?? 1.0)
           .clamp(kMinUiScale, kMaxUiScale)
           .toDouble(),
+      // Defaults to true, unlike every other field here. SettingsService only
+      // calls defaultSettings() when no settings file exists, so reaching
+      // fromJson at all means the user already has an install. Absent key
+      // means they upgraded from a version before the wizard, not that they
+      // are new.
+      setupCompleted: json['setupCompleted'] as bool? ?? true,
     );
   }
 
@@ -328,6 +342,7 @@ class AppSettings {
       if (defaultPreset != null) 'defaultPreset': defaultPreset!.toJson(),
       if (windowState != null) 'windowState': windowState!.toJson(),
       'uiScale': uiScale,
+      'setupCompleted': setupCompleted,
     };
   }
 
