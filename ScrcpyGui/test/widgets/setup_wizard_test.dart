@@ -91,19 +91,57 @@ void main() {
   });
 
   AppSettings? saved;
+  late Directory packagesRoot;
 
   setUp(() {
     saved = null;
     // isScrcpyOnPath and checkAdb both spawn real processes otherwise, which
     // the test binding's fake async cannot complete.
     AdbService.debugSkipProcessChecks = true;
+    // Point the on-disk search at an empty temp folder. Without this it scans
+    // the real WinGet packages directory, so these tests would pass or fail
+    // depending on whether the developer happens to have scrcpy installed.
+    packagesRoot = Directory.systemTemp.createTempSync('winget_packages_root');
+    AdbService.debugWingetPackagesRoot = packagesRoot.path;
   });
 
   tearDown(() {
     AdbService.debugSkipProcessChecks = false;
     AdbService.debugScrcpyOnPath = null;
     AdbService.debugAdbStatus = null;
+    AdbService.debugWingetPackagesRoot = null;
+    packagesRoot.deleteSync(recursive: true);
   });
+
+  /// Creates a WinGet-shaped package holding scrcpy, and returns the folder
+  /// the executable ends up in.
+  Directory installIntoPackagesRoot() {
+    final versionDir = Directory(
+      p.join(packagesRoot.path, 'Genymobile.scrcpy_Source', 'scrcpy-win64-v4.1'),
+    )..createSync(recursive: true);
+    File(p.join(versionDir.path, Platform.isWindows ? 'scrcpy.exe' : 'scrcpy'))
+        .createSync();
+    return versionDir;
+  }
+
+  /// Lets work that touches the real filesystem finish.
+  ///
+  /// Resolving scrcpy chains several real IO calls (list the packages root,
+  /// test each candidate, save, re-probe adb). Each one needs real time to
+  /// complete AND a pump to run its continuation, and the next call only
+  /// starts once the previous continuation has run, so a single delay advances
+  /// the chain by one step. Alternating the two drains it. Meanwhile the step
+  /// shows an animating spinner, so pumpAndSettle on its own would spin until
+  /// it timed out.
+  Future<void> settleRealIo(WidgetTester tester) async {
+    for (var i = 0; i < 8; i++) {
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+    }
+    await tester.pumpAndSettle();
+  }
 
   // Opens the wizard through showDialog rather than pumping it as the home
   // widget, so that its Navigator.pop has a route to pop.
@@ -142,18 +180,7 @@ void main() {
 
     await tester.tap(find.text('open'));
 
-    if (scrcpyDirectory.isNotEmpty) {
-      // Validating a pinned directory hits the real filesystem, which the fake
-      // clock cannot drive. Until it resolves the step shows an animating
-      // spinner, so pumpAndSettle alone would spin until it timed out. Build
-      // one frame, hand time to the real event loop, then settle.
-      await tester.pump();
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 50)),
-      );
-    }
-
-    await tester.pumpAndSettle();
+    await settleRealIo(tester);
   }
 
   /// A folder that looks like an extracted scrcpy release.
@@ -326,6 +353,28 @@ void main() {
       );
       expect(find.text('Install scrcpy'), findsNothing);
       expect(find.widgetWithText(DirectoryRow, 'Scrcpy Directory'), findsNothing);
+    },
+  );
+
+  // The bug this guards: opening the wizard used to consult PATH only, while
+  // the Check for installation button also searched disk. A WinGet install
+  // leaves PATH stale in an already-running app, so a perfectly good scrcpy
+  // read as missing on open and then appeared the instant the user clicked.
+  // Opening must resolve exactly the way the button does.
+  testWidgets(
+    'an install only findable on disk is resolved when the wizard opens',
+    (tester) async {
+      final versionDir = installIntoPackagesRoot();
+      AdbService.debugScrcpyOnPath = false;
+
+      await pumpWizard(tester);
+
+      expect(
+        find.textContaining('scrcpy found at ${versionDir.path}'),
+        findsOneWidget,
+      );
+      expect(find.text('Install scrcpy'), findsNothing);
+      expect(saved?.scrcpyDirectory, versionDir.path);
     },
   );
 

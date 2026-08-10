@@ -158,23 +158,46 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   void initState() {
     super.initState();
     _settings = widget.initialSettings;
-    _checkScrcpyAvailability();
-    _checkAdb();
+    _start();
   }
 
-  /// Establishes both ways scrcpy can be available: on PATH, or in the
-  /// configured directory. The directory is verified, never assumed.
-  Future<void> _checkScrcpyAvailability() async {
+  Future<void> _start() async {
+    final pinned = await _resolveScrcpy();
+    // Pinning a directory already re-probed adb, and adb's path derives from
+    // that directory, so probing before it was known would answer for the
+    // wrong location.
+    if (!pinned) await _checkAdb();
+  }
+
+  /// Finds scrcpy by every means available, in order of cost: PATH, then the
+  /// configured directory, then a search of the places a package manager
+  /// installs it. Returns whether it pinned a directory.
+  ///
+  /// Opening the wizard and the Check for installation button both run this.
+  /// They used to differ, with only the button searching disk, which made a
+  /// WinGet install read as missing until the user clicked: an app that was
+  /// already running holds the PATH it launched with, and WinGet stamps the
+  /// version into the directory it puts on PATH.
+  Future<bool> _resolveScrcpy() async {
     final onPath = await AdbService.isScrcpyOnPath();
     final directory = _settings.scrcpyDirectory;
+    // Verified, never assumed: the path is a string in a settings file and the
+    // executable can be deleted or upgraded out from under it.
     final pinnedValid =
         directory.isNotEmpty && await AdbService.hasScrcpyIn(directory);
-    if (!mounted) return;
+    if (!mounted) return false;
     setState(() {
       _scrcpyOnPath = onPath;
       _pinnedDirHasScrcpy = pinnedValid;
       _scrcpyChecked = true;
     });
+
+    if (onPath || pinnedValid) return false;
+
+    final found = await AdbService.findScrcpyDirectory();
+    if (!mounted || found == null) return false;
+    await _applyScrcpyDirectory(found);
+    return true;
   }
 
   /// Re-probes after the user installed scrcpy from this step.
@@ -186,19 +209,7 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   /// PATH comes up empty we look on disk and, if we find it, pin the directory
   /// in settings so nothing here depends on PATH again.
   Future<void> _recheckScrcpy() async {
-    await _checkScrcpyAvailability();
-    if (!mounted) return;
-
-    var pinned = false;
-    if (!_scrcpyResolved) {
-      final found = await AdbService.findScrcpyDirectory();
-      if (!mounted) return;
-      if (found != null) {
-        await _applyScrcpyDirectory(found);
-        pinned = true;
-      }
-    }
-
+    final pinned = await _resolveScrcpy();
     if (!mounted) return;
     setState(() => _recheckFoundNothing = !_scrcpyResolved);
 

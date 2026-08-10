@@ -56,8 +56,15 @@ class AdbService {
     return File(p.join(directory, exeName)).exists();
   }
 
+  /// Test-only override for the WinGet packages root, so the on-disk search
+  /// can run against a temp directory instead of the developer's real one.
+  @visibleForTesting
+  static String? debugWingetPackagesRoot;
+
   /// Where WinGet extracts portable packages, or null when that cannot apply.
   static String? _wingetPackagesRoot() {
+    final override = debugWingetPackagesRoot;
+    if (override != null) return override;
     if (!Platform.isWindows) return null;
     final localAppData = Platform.environment['LOCALAPPDATA'];
     if (localAppData == null) return null;
