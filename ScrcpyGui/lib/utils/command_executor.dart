@@ -63,13 +63,15 @@ class CommandExecutor {
         (SettingsService.currentSettings?.openCmdWindows ?? false);
 
     if (openInNewWindow) {
-      await ShellRunner.runCommandInNewTerminal(command);
+      final launched = await ShellRunner.runCommandInNewTerminal(command);
 
       if (!context.mounted) return;
       showAppSnackBar(
         context,
-        'Started in new window: $command',
-        type: AppSnackBarType.success,
+        launched
+            ? 'Started in new window: $command'
+            : 'Could not open a terminal window. See the log for details.',
+        type: launched ? AppSnackBarType.success : AppSnackBarType.error,
         duration: const Duration(seconds: 2),
         clearFirst: true,
       );

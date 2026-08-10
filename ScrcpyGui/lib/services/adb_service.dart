@@ -50,10 +50,12 @@ class AdbService {
   /// Whether [directory] contains the platform's scrcpy executable.
   ///
   /// Used to reject a folder the user picked before it is persisted, since a
-  /// wrong scrcpyDirectory also breaks adb resolution.
+  /// wrong scrcpyDirectory also breaks adb resolution. Goes through
+  /// [ShellRunner.hostFileExists] so that under Flatpak the check runs on the
+  /// same host that will actually run scrcpy, not the sandbox's limited view.
   static Future<bool> hasScrcpyIn(String directory) {
     final exeName = Platform.isWindows ? 'scrcpy.exe' : 'scrcpy';
-    return File(p.join(directory, exeName)).exists();
+    return ShellRunner.hostFileExists(p.join(directory, exeName));
   }
 
   /// Test-only override for the WinGet packages root, so the on-disk search

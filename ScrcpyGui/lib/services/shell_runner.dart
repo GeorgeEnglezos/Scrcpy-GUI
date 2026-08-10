@@ -9,16 +9,38 @@ library;
 import 'dart:async';
 import 'dart:io';
 
+import 'package:meta/meta.dart';
+
 import 'log_service.dart';
 
 class ShellRunner {
-  /// Environment for Unix child processes with Homebrew and the common
-  /// system bin directories prepended to PATH (GUI apps on macOS don't
-  /// inherit the login-shell PATH).
+  /// Bin directories prepended to PATH on Unix, because GUI-launched apps
+  /// (macOS especially) don't inherit the login-shell PATH. Covers Homebrew
+  /// (Apple Silicon and Intel) and MacPorts for scrcpy/adb, plus the Android
+  /// SDK platform-tools directory that Android Studio installs adb into.
+  static List<String> get _unixExtraBins {
+    final home = Platform.environment['HOME'];
+    final androidTools = home == null || home.isEmpty
+        ? null
+        : Platform.isMacOS
+            ? '$home/Library/Android/sdk/platform-tools'
+            : Platform.isLinux
+                ? '$home/Android/Sdk/platform-tools'
+                : null;
+    return [
+      '/opt/homebrew/bin',
+      '/usr/local/bin',
+      '/opt/local/bin',
+      if (androidTools != null) androidTools,
+    ];
+  }
+
+  /// Environment for Unix child processes with the package-manager and common
+  /// system bin directories prepended to PATH.
   static Map<String, String> get _unixEnv => {
         ...Platform.environment,
         'PATH':
-            '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
+            '${_unixExtraBins.join(':')}:/usr/bin:/bin:/usr/sbin:/sbin:${Platform.environment['PATH'] ?? ''}',
       };
 
   static bool get _canSpawnHostProcesses =>
@@ -61,6 +83,30 @@ class ShellRunner {
     // ponytail: timeout abandons the await but leaves a hung child running
     // (killing it would need Process.start); fine for the stuck-adb case.
     return timeout == null ? future : future.timeout(timeout);
+  }
+
+  /// Whether a file exists at [path], checked on the host that will run it.
+  ///
+  /// Under Flatpak the app's own filesystem view is limited to the granted
+  /// directories, so `File(...).exists()` reports a scrcpy outside $HOME as
+  /// missing even though `flatpak-spawn --host` can run it. Routing the check
+  /// through the host keeps directory validation consistent with execution.
+  /// Off Flatpak (Windows, macOS, plain Linux) it is a plain File check.
+  static Future<bool> hostFileExists(String path) async {
+    try {
+      if (_canSpawnHostProcesses) {
+        final result =
+            await Process.run('flatpak-spawn', ['--host', 'test', '-f', path]);
+        return result.exitCode == 0;
+      }
+      return await File(path).exists();
+    } catch (e) {
+      LogService.error(
+        'ShellRunner/hostFileExists',
+        'Existence check failed for $path: $e',
+      );
+      return false;
+    }
   }
 
   /// Runs [exe] with [args] and returns trimmed stdout, or '' on any
@@ -183,9 +229,34 @@ class ShellRunner {
   /// - Linux: auto-detects an available terminal emulator
   /// - macOS: AppleScript-controlled Terminal.app
   ///
-  /// Started processes are tracked so [killTrackedProcess] can stop them.
-  static Future<void> runCommandInNewTerminal(String command) async {
+  /// Returns true when a terminal was actually launched, false when none was
+  /// available (no Linux terminal emulator), the AppleScript failed, or the
+  /// launch threw. Callers must branch their feedback on the result: reporting
+  /// success unconditionally would tell the user a window opened when none did.
+  ///
+  /// The Windows and Linux launcher processes are tracked so
+  /// [killTrackedProcess] can stop them. macOS is not tracked: osascript is a
+  /// throwaway launcher, not the Terminal window, so there is nothing useful to
+  /// kill, and its exit code is what tells us whether the window actually
+  /// opened (Process.start would succeed even when Terminal Automation
+  /// permission is denied, wrongly reporting success on first run).
+  static Future<bool> runCommandInNewTerminal(String command) async {
     try {
+      if (Platform.isMacOS) {
+        final result = await Process.run(
+          'osascript',
+          ['-e', macTerminalDoScript(command)],
+        );
+        if (result.exitCode != 0) {
+          LogService.warning(
+            'ShellRunner/runCommandInNewTerminal',
+            'osascript exited ${result.exitCode}: ${result.stderr}',
+          );
+          return false;
+        }
+        return true;
+      }
+
       Process process;
 
       if (Platform.isWindows) {
@@ -203,25 +274,15 @@ class ShellRunner {
             'ShellRunner/runCommandInNewTerminal',
             'No terminal emulator found to run the command.',
           );
-          return;
+          return false;
         }
         process = launched;
-      } else if (Platform.isMacOS) {
-        // On macOS, we need to ensure PATH is set when opening a new Terminal
-        // window. This wraps the command with PATH export to include Homebrew
-        // and common locations.
-        final wrappedCommand =
-            'export PATH="/opt/homebrew/bin:/usr/local/bin:\$PATH" && $command';
-        process = await Process.start('osascript', [
-          '-e',
-          'tell application "Terminal" to do script "$wrappedCommand"',
-        ]);
       } else {
         LogService.warning(
           'ShellRunner/runCommandInNewTerminal',
           'Unsupported platform: ${Platform.operatingSystem}',
         );
-        return;
+        return false;
       }
 
       _runningProcesses[process.pid] = process;
@@ -236,12 +297,29 @@ class ShellRunner {
       unawaited(process.exitCode.then((_) {
         _runningProcesses.remove(process.pid);
       }));
+      return true;
     } catch (e) {
       LogService.error(
         'ShellRunner/runCommandInNewTerminal',
         'Error opening new terminal: $e',
       );
+      return false;
     }
+  }
+
+  /// Builds the `osascript -e` argument that runs [shellCommand] in a new
+  /// Terminal.app window, prepending the package-manager bin dirs to PATH
+  /// (GUI-launched apps don't inherit the login-shell PATH).
+  ///
+  /// AppleScript string metacharacters in the command are escaped, so a quoted
+  /// argument like `--window-title="A B"` reaches the shell intact instead of
+  /// terminating the AppleScript string at the first inner quote.
+  @visibleForTesting
+  static String macTerminalDoScript(String shellCommand) {
+    final wrapped =
+        'export PATH="${_unixExtraBins.join(':')}:\$PATH" && $shellCommand';
+    final escaped = wrapped.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+    return 'tell application "Terminal" to do script "$escaped"';
   }
 
   /// Launches a script file from disk in a new terminal window.
@@ -262,14 +340,12 @@ class ShellRunner {
       if (filePath.endsWith('.command')) {
         await Process.start('open', [filePath]);
       } else {
-        // .sh: open in Terminal via osascript with PATH export
-        final escapedPath =
-            filePath.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+        // .sh: open in Terminal via osascript. Shell-quote the path so spaces
+        // survive, then let macTerminalDoScript add the PATH export and the
+        // AppleScript escaping.
         await Process.start('osascript', [
           '-e',
-          'tell application "Terminal" to do script '
-              '"export PATH=\\"/opt/homebrew/bin:/usr/local/bin:\\\$PATH\\" '
-              '&& $escapedPath"',
+          macTerminalDoScript(_shellQuote(filePath)),
         ]);
       }
       return true;
@@ -303,8 +379,15 @@ class ShellRunner {
     'lxterminal',
   ];
 
+  /// Test-only override for the terminal search list, so the "no terminal
+  /// found" branch is exercisable without a real desktop. Set it to names that
+  /// resolve to nothing to force [runCommandInNewTerminal] down its false path.
+  @visibleForTesting
+  static List<String>? debugLinuxTerminalCandidates;
+
   static Future<String?> _findLinuxTerminalCommand() async {
-    for (final terminal in _linuxTerminalCandidates) {
+    for (final terminal
+        in debugLinuxTerminalCandidates ?? _linuxTerminalCandidates) {
       if (await _isCommandAvailable(terminal)) {
         return terminal;
       }

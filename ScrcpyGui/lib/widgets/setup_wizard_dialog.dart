@@ -525,12 +525,15 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
   /// Opens a terminal running [command]. The terminal stays open so the user
   /// can see the package manager's output and answer any prompt it raises.
   Future<void> _runInstallCommand(String command) async {
-    await ShellRunner.runCommandInNewTerminal(command);
+    final launched = await ShellRunner.runCommandInNewTerminal(command);
     if (!mounted) return;
     showAppSnackBar(
       context,
-      'Opened a terminal. Press Check again once it finishes.',
-      type: AppSnackBarType.info,
+      launched
+          ? 'Opened a terminal. Press Check again once it finishes.'
+          : 'Could not open a terminal. Copy the command above and run it '
+              'yourself, then press Check.',
+      type: launched ? AppSnackBarType.info : AppSnackBarType.error,
     );
   }
 

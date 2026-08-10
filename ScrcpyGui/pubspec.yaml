@@ -36,6 +36,7 @@ dependencies:
   window_manager: ^0.3.8
   screen_retriever: ^0.1.9
   path: ^1.9.0
+  meta: ^1.15.0
   file_picker: ^10.3.10
   url_launcher: ^6.1.10
   package_info_plus: ^8.0.0
