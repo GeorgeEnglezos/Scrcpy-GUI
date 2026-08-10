@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 
 import '../models/settings_model.dart';
 import '../services/adb_service.dart';
+import '../services/app_directories.dart';
 import '../services/app_icon_cache.dart';
 import '../services/app_icon_controller.dart';
 import '../services/color_theme_notifier.dart';
@@ -900,10 +901,9 @@ class _SetupWizardGateState extends State<SetupWizardGate> {
 /// "Run Setup Again" button in Settings.
 Future<void> showSetupWizard(BuildContext context) async {
   final service = SettingsService();
-  final settingsDir = await service.getSettingsDirectory();
   final settings = SettingsService.withDirectoryDefaults(
     SettingsService.currentSettings ?? AppSettings.defaultSettings(),
-    settingsDir,
+    await AppDirectories.resolve(),
   );
   if (!context.mounted) return;
 

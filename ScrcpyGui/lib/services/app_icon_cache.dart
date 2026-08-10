@@ -5,11 +5,10 @@ library;
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'app_directories.dart';
 import 'settings_service.dart';
 
 class AppIconCache {
-  static final SettingsService _settingsService = SettingsService();
-
   /// Folder created inside the configured location to hold the cache.
   ///
   /// Never skipped, even when the user picked the location themselves:
@@ -24,8 +23,8 @@ class AppIconCache {
 
   /// Returns the icon cache directory, creating it if necessary.
   ///
-  /// The configured location wins; the settings directory is the fallback for
-  /// settings written before it was configurable, and for the window before
+  /// The configured location wins; the platform cache directory is the fallback
+  /// for settings written before it was configurable, and for the window before
   /// settings finish loading.
   ///
   /// ponytail: read live on every call, so changing the location mid-fetch
@@ -34,7 +33,7 @@ class AppIconCache {
   static Future<Directory> cacheDir() async {
     final configured = SettingsService.currentSettings?.appIconsDirectory;
     final location = configured == null || configured.isEmpty
-        ? await _settingsService.getSettingsDirectory()
+        ? (await AppDirectories.resolve()).cache
         : configured;
     final dir = Directory(cachePathIn(location));
     if (!await dir.exists()) await dir.create(recursive: true);

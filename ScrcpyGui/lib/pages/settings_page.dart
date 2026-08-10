@@ -20,6 +20,7 @@ import '../widgets/custom_multi_dropdown.dart';
 import '../widgets/ui_scale_dropdown.dart';
 import 'package:provider/provider.dart';
 import '../services/app_icon_controller.dart';
+import '../services/app_directories.dart';
 import '../services/app_icon_cache.dart';
 import '../services/device_manager_service.dart';
 
@@ -61,12 +62,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _loadSettings() async {
     var settings = await _settingsService.loadSettings();
-    final settingsDir = await _settingsService.getSettingsDirectory();
+    final dirs = await AppDirectories.resolve();
 
-    final withDefaults = SettingsService.withDirectoryDefaults(
-      settings,
-      settingsDir,
-    );
+    final withDefaults = SettingsService.withDirectoryDefaults(settings, dirs);
     final defaultsApplied =
         withDefaults.recordingsDirectory != settings.recordingsDirectory ||
         withDefaults.downloadsDirectory != settings.downloadsDirectory ||
@@ -87,7 +85,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     setState(() {
-      _settings = settings.copyWith(settingsDirectory: settingsDir);
+      _settings = settings.copyWith(settingsDirectory: dirs.config);
       _isLoading = false;
     });
 

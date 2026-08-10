@@ -1,21 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:scrcpy_gui_prod/models/settings_model.dart';
+import 'package:scrcpy_gui_prod/services/app_directories.dart';
 import 'package:scrcpy_gui_prod/services/app_icon_cache.dart';
 import 'package:scrcpy_gui_prod/services/settings_service.dart';
 
 void main() {
+  final dirs = AppDirectories.singleFolder('/cfg');
+
   group('SettingsService.withDirectoryDefaults', () {
-    test('fills every unset directory from the settings directory', () {
+    test('fills every unset directory from the resolved directories', () {
       final filled = SettingsService.withDirectoryDefaults(
         AppSettings.defaultSettings(),
-        '/cfg',
+        dirs,
       );
 
-      expect(filled.recordingsDirectory, '/cfg/Recordings');
-      expect(filled.downloadsDirectory, '/cfg/Downloads');
-      expect(filled.batDirectory, '/cfg/Downloads');
+      expect(filled.recordingsDirectory, p.join('/cfg', 'Recordings'));
+      expect(filled.downloadsDirectory, p.join('/cfg', 'Downloads'));
+      expect(filled.batDirectory, p.join('/cfg', 'Downloads'));
       // The location that holds the cache folder, not the folder itself, so
-      // AppIconCache still resolves the historical <settingsDir>/app_icons.
+      // AppIconCache still resolves <cache>/app_icons.
       expect(filled.appIconsDirectory, '/cfg');
       expect(AppIconCache.cachePathIn(filled.appIconsDirectory), endsWith('app_icons'));
     });
@@ -28,7 +32,7 @@ void main() {
         appIconsDirectory: '/my/icons',
       );
 
-      final filled = SettingsService.withDirectoryDefaults(chosen, '/cfg');
+      final filled = SettingsService.withDirectoryDefaults(chosen, dirs);
 
       expect(filled.recordingsDirectory, '/my/rec');
       expect(filled.downloadsDirectory, '/my/dl');
@@ -44,7 +48,7 @@ void main() {
       );
 
       expect(
-        SettingsService.withDirectoryDefaults(chosen, '/cfg').batDirectory,
+        SettingsService.withDirectoryDefaults(chosen, dirs).batDirectory,
         '/my/dl',
       );
     });
@@ -52,7 +56,7 @@ void main() {
     test('does not mutate the settings it was given', () {
       final original = AppSettings.defaultSettings();
 
-      SettingsService.withDirectoryDefaults(original, '/cfg');
+      SettingsService.withDirectoryDefaults(original, dirs);
 
       expect(original.downloadsDirectory, isEmpty);
     });

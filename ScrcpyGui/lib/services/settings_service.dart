@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import '../models/app_drawer_settings_model.dart';
 import '../models/settings_model.dart';
+import 'app_directories.dart';
 import 'log_service.dart';
 
 /// Internal notifier, exposed externally only as [Listenable] so callers
@@ -137,45 +138,30 @@ class SettingsService {
   }
 
   /// Returns the app settings directory
-  Future<String> getSettingsDirectory() async {
-    String dir;
-    if (Platform.isWindows) {
-      dir = Platform.environment['APPDATA'] ?? '.';
-    } else if (Platform.isMacOS) {
-      dir = '${Platform.environment['HOME']}/Library/Application Support';
-    } else {
-      dir = Platform.environment['HOME'] ?? '.';
-    }
-    final fullDir = p.join(dir, 'ScrcpyGui');
-    final directory = Directory(fullDir);
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-    }
-    return fullDir;
-  }
+  Future<String> getSettingsDirectory() async =>
+      (await AppDirectories.resolve()).config;
 
-  /// Returns [settings] with any unset directory filled in relative to
-  /// [settingsDir]. Pure: no disk access, and the input is never mutated.
+  /// Returns [settings] with any unset directory filled in from [dirs]. Pure:
+  /// no disk access, and the input is never mutated.
   ///
   /// Shared by the Settings page and the first-run wizard so the two cannot
   /// suggest different defaults for the same field.
   static AppSettings withDirectoryDefaults(
     AppSettings settings,
-    String settingsDir,
+    AppDirectories dirs,
   ) {
     final recordings = settings.recordingsDirectory.isEmpty
-        ? '$settingsDir/Recordings'
+        ? dirs.recordings
         : settings.recordingsDirectory;
     final downloads = settings.downloadsDirectory.isEmpty
-        ? '$settingsDir/Downloads'
+        ? dirs.downloads
         : settings.downloadsDirectory;
     final scripts =
         settings.batDirectory.isEmpty ? downloads : settings.batDirectory;
-    // The location that holds the cache folder, not the folder itself, so the
-    // default resolves to the historical <settingsDir>/app_icons and an
-    // existing cache is still found.
+    // The location that holds the cache folder, not the folder itself, so an
+    // existing <cache>/app_icons is still found.
     final appIcons = settings.appIconsDirectory.isEmpty
-        ? settingsDir
+        ? dirs.cache
         : settings.appIconsDirectory;
 
     return settings.copyWith(
