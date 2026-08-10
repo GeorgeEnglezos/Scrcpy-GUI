@@ -1,8 +1,9 @@
 /// First-run setup wizard.
 ///
-/// Three steps: resolve scrcpy, choose directories, pick a theme. Skippable at
-/// every step, and both Skip and Finish mark setup complete so it does not
-/// reopen.
+/// Resolve scrcpy, choose directories, set up app icons, pick the appearance.
+/// The app-icons step only appears while a device is connected, since it can do
+/// nothing without one, so the wizard is three steps or four. Skippable at every
+/// step, and both Skip and Finish mark setup complete so it does not reopen.
 library;
 
 import 'dart:io';
@@ -14,7 +15,11 @@ import 'package:provider/provider.dart';
 
 import '../models/settings_model.dart';
 import '../services/adb_service.dart';
+import '../services/app_icon_cache.dart';
+import '../services/app_icon_controller.dart';
 import '../services/color_theme_notifier.dart';
+import '../services/device_manager_service.dart';
+import '../services/log_service.dart';
 import '../services/shell_runner.dart';
 import '../services/update_service.dart';
 import '../services/settings_service.dart';
@@ -23,6 +28,8 @@ import '../theme/app_theme_colors.dart';
 import 'app_snackbar.dart';
 import 'custom_dropdown.dart';
 import 'directory_row.dart';
+import 'icon_fetch_method_picker.dart';
+import 'ui_scale_dropdown.dart';
 
 /// Where step 1 sends a user who has no scrcpy yet. The /latest redirect means
 /// this never needs updating when scrcpy releases.
@@ -101,6 +108,18 @@ ScrcpyInstallHint scrcpyInstallHint(HostOs os) {
   }
 }
 
+/// The wizard's steps, in order. [appIcons] is conditional; see [_visibleSteps].
+enum _WizardStep { scrcpy, directories, appIcons, appearance }
+
+/// Dialog heading for [step]. Step one keeps the greeting; the rest name what
+/// the user is actually looking at.
+String _stepTitle(_WizardStep step) => switch (step) {
+      _WizardStep.scrcpy => 'Welcome to Scrcpy GUI',
+      _WizardStep.directories => 'Directories',
+      _WizardStep.appIcons => 'App Drawer',
+      _WizardStep.appearance => 'UI Preferences',
+    };
+
 class SetupWizardDialog extends StatefulWidget {
   /// Settings the wizard starts from, with directory defaults already applied
   /// by the caller. Passed in rather than read from the service so the dialog
@@ -122,10 +141,27 @@ class SetupWizardDialog extends StatefulWidget {
 }
 
 class _SetupWizardDialogState extends State<SetupWizardDialog> {
-  static const _stepCount = 3;
-
-  int _step = 0;
+  _WizardStep _step = _WizardStep.scrcpy;
   late AppSettings _settings;
+
+  /// Set once the user runs the fetch from this step, so the outcome can be
+  /// reported without mistaking "never ran" for "found nothing".
+  bool _appsLoaded = false;
+
+  /// The steps to show. The app-icons step needs a device to do anything at
+  /// all, so it is offered only while one is connected rather than sitting
+  /// there dead.
+  List<_WizardStep> _visibleSteps(bool hasDevice) => [
+        _WizardStep.scrcpy,
+        _WizardStep.directories,
+        if (hasDevice) _WizardStep.appIcons,
+        _WizardStep.appearance,
+      ];
+
+  /// The step actually rendered. Falls back when the device that made the
+  /// current step visible was unplugged while the user stood on it.
+  _WizardStep _resolvedStep(List<_WizardStep> steps) =>
+      steps.contains(_step) ? _step : steps.last;
 
   bool _scrcpyOnPath = false;
   bool _scrcpyChecked = false;
@@ -281,9 +317,33 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
     await _save();
   }
 
+  /// Moves the icon cache, copying whatever is already in it.
+  ///
+  /// Not [_pickInto]: this wizard reopens from Settings' "Run Setup Again", so
+  /// the cache can be full by the time anyone lands here, and only the active
+  /// cache is ever read.
+  Future<void> _pickAppIconsDirectory() async {
+    final target = await FilePicker.platform.getDirectoryPath();
+    if (target == null) return;
+
+    await AppIconCache.copyCache(_settings.appIconsDirectory, target);
+    if (!mounted) return;
+
+    setState(
+      () => _settings = _settings.copyWith(appIconsDirectory: target),
+    );
+    await _save();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isLastStep = _step == _stepCount - 1;
+    // Watched, not read: plugging a phone in mid-setup should make the
+    // app-icons step appear rather than wait for the next run.
+    final deviceId = context.watch<DeviceManagerService>().selectedDevice;
+    final steps = _visibleSteps(deviceId != null);
+    final step = _resolvedStep(steps);
+    final index = steps.indexOf(step);
+    final isLastStep = index == steps.length - 1;
 
     return AlertDialog(
       backgroundColor: context.appSurface,
@@ -294,23 +354,25 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Welcome to Scrcpy GUI',
-                style: TextStyle(
-                  color: context.appTextPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  _stepTitle(step),
+                  style: TextStyle(
+                    color: context.appTextPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               Text(
-                'Step ${_step + 1} of $_stepCount',
+                'Step ${index + 1} of ${steps.length}',
                 style: TextStyle(color: context.appTextSecondary, fontSize: 13),
               ),
             ],
           ),
           const SizedBox(height: 12),
           LinearProgressIndicator(
-            value: (_step + 1) / _stepCount,
+            value: (index + 1) / steps.length,
             color: context.appPrimary,
             backgroundColor: context.appDivider,
           ),
@@ -321,37 +383,43 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
       // a short window.
       content: SizedBox(
         width: 520,
-        child: SingleChildScrollView(child: _buildStepBody()),
+        child: SingleChildScrollView(child: _buildStepBody(step, deviceId)),
       ),
       actions: [
         // Skips this step only, never the wizard. Hidden on the last step,
         // where skipping and finishing would be the same action.
         if (!isLastStep)
           TextButton(
-            onPressed: () => setState(() => _step++),
+            onPressed: () => setState(() => _step = steps[index + 1]),
             child: const Text('Skip this step'),
           ),
-        if (_step > 0)
+        if (index > 0)
           TextButton(
-            onPressed: () => setState(() => _step--),
+            onPressed: () => setState(() => _step = steps[index - 1]),
             child: const Text('Back'),
           ),
         ElevatedButton(
-          onPressed: isLastStep ? _close : () => setState(() => _step++),
+          onPressed: isLastStep
+              ? _close
+              : () => setState(() => _step = steps[index + 1]),
           child: Text(isLastStep ? 'Finish' : 'Next'),
         ),
       ],
     );
   }
 
-  Widget _buildStepBody() {
-    switch (_step) {
-      case 0:
+  Widget _buildStepBody(_WizardStep step, String? deviceId) {
+    switch (step) {
+      case _WizardStep.scrcpy:
         return _buildScrcpyStep();
-      case 1:
+      case _WizardStep.directories:
         return _buildDirectoriesStep();
-      default:
-        return _buildThemeStep();
+      case _WizardStep.appIcons:
+        // Non-null whenever this step is visible; _visibleSteps drops it
+        // otherwise.
+        return _buildAppIconsStep(deviceId!);
+      case _WizardStep.appearance:
+        return _buildAppearanceStep();
     }
   }
 
@@ -625,15 +693,125 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
     );
   }
 
-  Widget _buildThemeStep() {
+  /// Picks how the App Drawer gets its icons, and runs it on the spot.
+  ///
+  /// Only reachable with a device connected, so the fetch is a button here
+  /// rather than an errand the user has to remember to run later.
+  Widget _buildAppIconsStep(String deviceId) {
+    final controller = context.watch<AppIconController>();
+    final method = controller.appDrawerSettings.iconFetchMethod;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _hint('The App Drawer shows your device\'s apps with their real icons '
+            'and names. Choose how to collect them, then load them now.'),
+        const SizedBox(height: 16),
+        IconFetchMethodPicker(
+          selected: method,
+          onChanged: controller.setIconFetchMethod,
+        ),
+        const SizedBox(height: 16),
+        DirectoryRow(
+          label: 'App Icons & Labels',
+          path: AppIconCache.cachePathIn(_settings.appIconsDirectory),
+          showOpenButton: false,
+          onBrowse: _pickAppIconsDirectory,
+        ),
+        const SizedBox(height: 20),
+        if (controller.isLoading)
+          _buildFetchProgress(controller)
+        else ...[
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () => _loadApps(deviceId),
+              icon: const Icon(Icons.download_rounded, size: 18),
+              label: Text('Load apps with ${iconFetchMethodName(method)}'),
+            ),
+          ),
+          if (_appsLoaded) ...[
+            const SizedBox(height: 12),
+            _statusLine(
+              Icons.check_circle,
+              AppColors.runGreen,
+              '${_loadedIconCount(controller)} of ${controller.labels.length} '
+              'apps have an icon. Re-run above, or carry on and finish in the '
+              'App Drawer.',
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFetchProgress(AppIconController controller) {
+    final total = controller.total;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        LinearProgressIndicator(
+          // Null while the total is unknown, which renders as indeterminate
+          // rather than a bar frozen at zero.
+          value: total > 0 ? controller.progress / total : null,
+          color: context.appPrimary,
+          backgroundColor: context.appDivider,
+        ),
+        const SizedBox(height: 8),
+        _hint(
+          controller.progressStatus.isEmpty
+              ? 'Loading apps...'
+              : controller.progressStatus,
+        ),
+      ],
+    );
+  }
+
+  int _loadedIconCount(AppIconController controller) => controller.icons.values
+      .where((icon) => icon != null && icon.path.isNotEmpty)
+      .length;
+
+  /// Runs the chosen fetch method against [deviceId], the same way the App
+  /// Drawer's Load Apps button does.
+  ///
+  /// Auto-install is on: the user picked the helper-APK card and pressed a
+  /// button that says it installs, so failing with "enable auto-install"
+  /// would be a dead end with no checkbox in sight.
+  Future<void> _loadApps(String deviceId) async {
+    final controller = context.read<AppIconController>();
+    final info = DeviceManagerService.devicesInfo[deviceId];
+    if (info == null) return;
+
+    // Unsorted: the App Drawer sorts by label when it renders, and nothing
+    // here displays the list.
+    await controller.loadForDevice(deviceId, info.packages);
+    await controller.fetchMissing(
+      forceUpdate: true,
+      helperApkAutoInstall: true,
+      onError: (message) {
+        LogService.error('SetupWizard/loadApps', message);
+        if (!mounted) return;
+        showAppSnackBar(
+          context,
+          message,
+          type: AppSnackBarType.error,
+          duration: const Duration(seconds: 6),
+        );
+      },
+    );
+    if (!mounted) return;
+    setState(() => _appsLoaded = true);
+  }
+
+  Widget _buildAppearanceStep() {
     final themeNotifier = context.watch<ColorThemeNotifier>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _hint('Pick a color theme. It applies as soon as you choose it.'),
-        const SizedBox(height: 16),
         CustomDropdown(
           label: 'Color Theme',
           value: themeNotifier.current.name,
@@ -642,6 +820,14 @@ class _SetupWizardDialogState extends State<SetupWizardDialog> {
             if (value == null) return;
             context.read<ColorThemeNotifier>().setPreset(value);
             setState(() => _settings = _settings.copyWith(colorPreset: value));
+            _save();
+          },
+        ),
+        const SizedBox(height: 16),
+        UiScaleDropdown(
+          scale: _settings.uiScale,
+          onChanged: (scale) {
+            setState(() => _settings = _settings.copyWith(uiScale: scale));
             _save();
           },
         ),

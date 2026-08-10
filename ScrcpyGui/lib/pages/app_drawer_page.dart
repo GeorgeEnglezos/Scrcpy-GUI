@@ -12,7 +12,6 @@ import '../services/app_icon_cache.dart';
 import '../services/app_icon_controller.dart';
 import '../services/device_manager_service.dart';
 import '../services/log_service.dart';
-import '../services/icon_fetch_strategy.dart';
 import '../services/script_repository.dart';
 import '../services/settings_service.dart';
 import '../services/adb_service.dart';
@@ -22,6 +21,7 @@ import '../services/linux_shortcut_service.dart';
 import '../services/macos_shortcut_service.dart';
 import '../services/windows_shortcut_service.dart';
 import '../theme/app_theme_colors.dart';
+import '../widgets/icon_fetch_method_picker.dart';
 import 'app_drawer/app_drawer_dialogs.dart';
 import 'app_drawer/app_drawer_tiles.dart';
 import 'app_drawer/ctx_menu.dart';
@@ -1268,67 +1268,39 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
                   ),
                 ),
                 const SizedBox(height: 28),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _buildMethodCard(
-                        controller: controller,
-                        method: IconFetchMethod.helperApk,
-                        icon: Icons.android,
-                        title: 'Helper APK',
-                        description:
-                            'Uses a small helper app on your device to extract icons and labels directly. Best icon quality and results.',
-                        badge: 'Recommended',
-                        checkboxes: [
-                          CheckboxRow(
-                            label: 'Auto-install via ADB',
-                            value: _helperApkAutoInstall,
-                            onChanged: (v) => setState(
-                              () => _helperApkAutoInstall = v ?? false,
-                            ),
+                IconFetchMethodPicker(
+                  selected: controller.appDrawerSettings.iconFetchMethod,
+                  onChanged: controller.setIconFetchMethod,
+                  helperApkExtras: [
+                    CheckboxRow(
+                      label: 'Auto-install via ADB',
+                      value: _helperApkAutoInstall,
+                      onChanged: (v) => setState(
+                        () => _helperApkAutoInstall = v ?? false,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () => launchUrl(Uri.parse(kHelperApkSourceUrl)),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.open_in_new,
+                            size: 12,
+                            color: context.appTextSecondary,
                           ),
-                          const SizedBox(height: 8),
-                          InkWell(
-                            onTap: () => launchUrl(
-                              Uri.parse(
-                                'https://github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              'Source: github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
+                              style: TextStyle(
+                                color: context.appTextSecondary,
+                                fontSize: 11,
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.open_in_new,
-                                  size: 12,
-                                  color: context.appTextSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    'Source: github.com/GeorgeEnglezos/android-icon-label-exporter-apk',
-                                    style: TextStyle(
-                                      color: context.appTextSecondary,
-                                      fontSize: 11,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildMethodCard(
-                        controller: controller,
-                        method: IconFetchMethod.adbScrape,
-                        icon: Icons.terminal,
-                        title: 'ADB',
-                        description:
-                            'Pulls each APK from the device via ADB and extracts the launcher icon by scanning the zip for density-specific PNG/WebP files. Falls back to parsing resources.arsc for apps with obfuscated icon paths. Results may vary; for better coverage, try the Helper APK method.',
-                        checkboxes: const [],
                       ),
                     ),
                   ],
@@ -1361,91 +1333,6 @@ class _AppDrawerPageState extends State<AppDrawerPage> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMethodCard({
-    required AppIconController controller,
-    required IconFetchMethod method,
-    required IconData icon,
-    required String title,
-    required String description,
-    String? badge,
-    List<Widget>? checkboxes,
-  }) {
-    final isSelected = controller.appDrawerSettings.iconFetchMethod == method;
-    return GestureDetector(
-      onTap: () => controller.setIconFetchMethod(method),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? context.appPrimary.withValues(alpha: 0.12)
-              : context.appSurface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? context.appPrimary.withValues(alpha: 0.6)
-                : context.appDivider,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 20, color: context.appPrimary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      color: context.appTextPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (isSelected)
-                  Icon(Icons.check_circle, size: 16, color: context.appPrimary),
-              ],
-            ),
-            if (badge != null) ...[
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: context.appPrimary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    color: context.appPrimary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: TextStyle(
-                color: context.appTextSecondary,
-                fontSize: 12,
-                height: 1.4,
-              ),
-            ),
-            if (checkboxes != null && checkboxes.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              ...checkboxes,
-            ],
-          ],
         ),
       ),
     );

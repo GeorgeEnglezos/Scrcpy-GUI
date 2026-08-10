@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 import '../widgets/app_snackbar.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
 import '../models/settings_model.dart';
 import '../services/log_service.dart';
@@ -17,33 +17,11 @@ import '../widgets/setup_wizard_dialog.dart';
 import '../widgets/custom_checkbox.dart';
 import '../widgets/custom_dropdown.dart';
 import '../widgets/custom_multi_dropdown.dart';
+import '../widgets/ui_scale_dropdown.dart';
 import 'package:provider/provider.dart';
 import '../services/app_icon_controller.dart';
 import '../services/app_icon_cache.dart';
 import '../services/device_manager_service.dart';
-
-const _uiScaleDefaultLabel = '100% (Default)';
-
-/// Dropdown label mapped to the stored scale factor. Order is the order shown.
-const _uiScaleOptions = <String, double>{
-  '120%': 1.20,
-  '110%': 1.10,
-  _uiScaleDefaultLabel: 1.0,
-  '95%': 0.95,
-  '90%': 0.90,
-  '85%': 0.85,
-  '80%': 0.80,
-};
-
-/// Reverse lookup with a tolerance, so a float that does not compare equal
-/// cannot leave the dropdown blank. Falls back to the default rather than to
-/// the first entry, which is the largest zoom.
-String _uiScaleLabel(double scale) {
-  for (final entry in _uiScaleOptions.entries) {
-    if ((entry.value - scale).abs() < 0.001) return entry.key;
-  }
-  return _uiScaleDefaultLabel;
-}
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -55,7 +33,6 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final SettingsService _settingsService = SettingsService();
   late AppSettings _settings;
-  String _appIconCacheDirectory = '';
   bool _isLoading = true;
 
   final MultiSelectController<String> _shortcutModController =
@@ -85,7 +62,6 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadSettings() async {
     var settings = await _settingsService.loadSettings();
     final settingsDir = await _settingsService.getSettingsDirectory();
-    final appIconCacheDir = await AppIconCache.cacheDir();
 
     final withDefaults = SettingsService.withDirectoryDefaults(
       settings,
@@ -94,7 +70,8 @@ class _SettingsPageState extends State<SettingsPage> {
     final defaultsApplied =
         withDefaults.recordingsDirectory != settings.recordingsDirectory ||
         withDefaults.downloadsDirectory != settings.downloadsDirectory ||
-        withDefaults.batDirectory != settings.batDirectory;
+        withDefaults.batDirectory != settings.batDirectory ||
+        withDefaults.appIconsDirectory != settings.appIconsDirectory;
     settings = withDefaults;
 
     if (defaultsApplied) {
@@ -105,10 +82,12 @@ class _SettingsPageState extends State<SettingsPage> {
     await _createDirectoryIfNeeded(settings.recordingsDirectory);
     await _createDirectoryIfNeeded(settings.downloadsDirectory);
     await _createDirectoryIfNeeded(settings.batDirectory);
+    await _createDirectoryIfNeeded(
+      AppIconCache.cachePathIn(settings.appIconsDirectory),
+    );
 
     setState(() {
       _settings = settings.copyWith(settingsDirectory: settingsDir);
-      _appIconCacheDirectory = appIconCacheDir.path;
       _isLoading = false;
     });
 
@@ -123,10 +102,23 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  /// Creates [path] if it is missing, logging rather than throwing.
+  ///
+  /// A directory can point at a drive that is no longer plugged in, and this
+  /// runs before the page leaves its loading state: throwing here would strand
+  /// Settings on a spinner, which is worse than a missing folder.
   Future<void> _createDirectoryIfNeeded(String path) async {
-    final directory = Directory(path);
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
+    try {
+      final directory = Directory(path);
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+    } catch (e) {
+      LogService.error(
+        'SettingsPage/createDirectory',
+        'Could not create $path',
+        err: e,
+      );
     }
   }
 
@@ -141,6 +133,36 @@ class _SettingsPageState extends State<SettingsPage> {
         onSelected(result);
       });
     }
+  }
+
+  /// Points the icon cache at a new location, bringing the existing icons and
+  /// labels along.
+  ///
+  /// Copied before the switch, because only the active cache is ever read:
+  /// leaving them behind would look exactly like losing every icon. Has its own
+  /// handler rather than reusing [_pickDirectory], whose callback runs inside
+  /// setState and so cannot await the copy.
+  Future<void> _pickAppIconsDirectory() async {
+    final target = await FilePicker.platform.getDirectoryPath();
+    if (target == null || p.equals(target, _settings.appIconsDirectory)) return;
+
+    final previous = _settings.appIconsDirectory;
+    await AppIconCache.copyCache(previous, target);
+
+    // Persisted before the mounted gate: the copy already happened, so
+    // returning early here would leave the duplicate on disk with the setting
+    // still pointing at the old location.
+    _settings = _settings.copyWith(appIconsDirectory: target);
+    await _saveSettings();
+    if (!mounted) return;
+
+    setState(() {});
+    showAppSnackBar(
+      context,
+      'App icons moved to ${AppIconCache.cachePathIn(target)}. The copies in '
+      '$previous were left in place.',
+      type: AppSnackBarType.info,
+    );
   }
 
   Future<void> _openFolder(String path) async {
@@ -209,17 +231,17 @@ class _SettingsPageState extends State<SettingsPage> {
     _saveSettings();
   }
 
-  Future<void> _showResetUserInterfaceConfirmation() async {
+  Future<void> _showResetPanelLayoutConfirmation() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: context.appSurface,
         title: Text(
-          'Reset User Interface?',
+          'Reset panel layout?',
           style: TextStyle(color: context.appTextPrimary),
         ),
         content: Text(
-          'This will reset all panel settings (order, visibility, full width, and lock expanded) to their defaults. Directory settings and other preferences will not be affected.\n\nThis action cannot be undone.',
+          'Puts the home page panels back to their default order, visibility, full width, and lock expanded.\n\nNothing else changes: directories, appearance, app drawer, and every other setting stay as they are.\n\nThis action cannot be undone.',
           style: TextStyle(color: context.appTextSecondary),
         ),
         actions: [
@@ -233,14 +255,14 @@ class _SettingsPageState extends State<SettingsPage> {
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Reset User Interface'),
+            child: const Text('Reset Panel Layout'),
           ),
         ],
       ),
     );
 
     if (confirmed == true) {
-      await _settingsService.resetUserInterface();
+      await _settingsService.resetPanelLayout();
       await _loadSettings();
     }
   }
@@ -251,11 +273,11 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (context) => AlertDialog(
         backgroundColor: context.appSurface,
         title: Text(
-          'Reset All Settings?',
+          'Reset everything to defaults?',
           style: TextStyle(color: context.appTextPrimary),
         ),
         content: Text(
-          'This will reset ALL settings to their defaults, including:\n• Panel settings (order, visibility, etc.)\n• Directory paths\n• Functionality preferences\n• Boot tab selection\n\nThis action cannot be undone.',
+          'Puts the whole app back to how it was on a fresh install:\n• Panel layout\n• Directory paths (folders and their files are kept)\n• Appearance (theme and UI scale)\n• Functionality preferences and boot tab\n• App drawer settings\n\nThis action cannot be undone.',
           style: TextStyle(color: context.appTextSecondary),
         ),
         actions: [
@@ -269,7 +291,7 @@ class _SettingsPageState extends State<SettingsPage> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Reset All Settings'),
+            child: const Text('Reset Everything'),
           ),
         ],
       ),
@@ -309,9 +331,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
-                    onPressed: _showResetUserInterfaceConfirmation,
+                    onPressed: _showResetPanelLayoutConfirmation,
                     icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Reset ONLY User Interface'),
+                    label: const Text('Reset Panel Layout Only'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
@@ -321,7 +343,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ElevatedButton.icon(
                     onPressed: _showResetAllSettingsConfirmation,
                     icon: const Icon(Icons.restore, size: 18),
-                    label: const Text('Reset All Settings'),
+                    label: const Text('Reset Everything to Defaults'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
@@ -336,27 +358,26 @@ class _SettingsPageState extends State<SettingsPage> {
                 bool isWideScreen = constraints.maxWidth > 1400;
 
                 if (isWideScreen) {
-                  return StaggeredGrid.count(
-                    crossAxisCount: 10,
-                    mainAxisSpacing: 24,
-                    crossAxisSpacing: 24,
+                  // Three fixed columns rather than a staggered grid: App
+                  // Drawer must sit under Functionality at the same width, and
+                  // a staggered grid places it by height instead.
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      StaggeredGridTile.fit(
-                        crossAxisCellCount: 3,
-                        child: _buildFunctionalitySection(),
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          children: [
+                            _buildFunctionalitySection(),
+                            const SizedBox(height: 24),
+                            _buildAppDrawerSection(),
+                          ],
+                        ),
                       ),
-                      StaggeredGridTile.fit(
-                        crossAxisCellCount: 3,
-                        child: _buildUserInterfaceSection(),
-                      ),
-                      StaggeredGridTile.fit(
-                        crossAxisCellCount: 4,
-                        child: _buildDirectorySection(),
-                      ),
-                      StaggeredGridTile.fit(
-                        crossAxisCellCount: 3,
-                        child: _buildAppDrawerSection(),
-                      ),
+                      const SizedBox(width: 24),
+                      Expanded(flex: 3, child: _buildUserInterfaceSection()),
+                      const SizedBox(width: 24),
+                      Expanded(flex: 4, child: _buildDirectorySection()),
                     ],
                   );
                 } else {
@@ -494,13 +515,9 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           const SizedBox(height: 16),
-          CustomDropdown(
-            label: 'UI Scale',
-            value: _uiScaleLabel(_settings.uiScale),
-            items: _uiScaleOptions.keys.toList(),
-            onChanged: (value) {
-              final scale = _uiScaleOptions[value];
-              if (scale == null) return;
+          UiScaleDropdown(
+            scale: _settings.uiScale,
+            onChanged: (scale) {
               setState(() {
                 _settings = _settings.copyWith(uiScale: scale);
               });
@@ -918,10 +935,13 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 16),
           DirectoryRow(
-            label: 'App Icons & _labels.json Location',
-            path: _appIconCacheDirectory,
-            onOpen: () => _openFolder(_appIconCacheDirectory),
-            showBrowseButton: false,
+            label: 'App Icons & Labels',
+            // The cache folder itself, not the location holding it, because
+            // that is the folder Open should reveal and the one icons land in.
+            path: AppIconCache.cachePathIn(_settings.appIconsDirectory),
+            onOpen: () =>
+                _openFolder(AppIconCache.cachePathIn(_settings.appIconsDirectory)),
+            onBrowse: _pickAppIconsDirectory,
           ),
           const SizedBox(height: 16),
           DirectoryRow(

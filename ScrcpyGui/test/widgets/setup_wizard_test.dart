@@ -7,12 +7,65 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:scrcpy_gui_prod/models/color_preset.dart';
+import 'package:scrcpy_gui_prod/models/phone_info_model.dart';
 import 'package:scrcpy_gui_prod/models/settings_model.dart';
 import 'package:scrcpy_gui_prod/services/adb_service.dart';
+import 'package:scrcpy_gui_prod/services/app_icon_cache.dart';
+import 'package:scrcpy_gui_prod/services/app_icon_controller.dart';
 import 'package:scrcpy_gui_prod/services/color_theme_notifier.dart';
+import 'package:scrcpy_gui_prod/services/device_manager_service.dart';
+import 'package:scrcpy_gui_prod/services/icon_fetch_strategy.dart';
 import 'package:scrcpy_gui_prod/theme/app_theme.dart';
 import 'package:scrcpy_gui_prod/widgets/directory_row.dart';
+import 'package:scrcpy_gui_prod/widgets/icon_fetch_method_picker.dart';
 import 'package:scrcpy_gui_prod/widgets/setup_wizard_dialog.dart';
+import 'package:scrcpy_gui_prod/widgets/ui_scale_dropdown.dart';
+
+/// Records the chosen fetch method without persisting it.
+///
+/// The real [AppIconController.setIconFetchMethod] writes
+/// app_drawer_settings.json under APPDATA, which a widget test has no business
+/// touching. Overriding only the setter keeps the notify-and-rebuild path that
+/// the wizard actually depends on.
+class _FakeIconController extends AppIconController {
+  int setCount = 0;
+  String? loadedDeviceId;
+  List<String>? loadedPackages;
+  bool? fetchedWithAutoInstall;
+
+  @override
+  void setIconFetchMethod(IconFetchMethod method) {
+    setCount++;
+    appDrawerSettings = appDrawerSettings.copyWith(iconFetchMethod: method);
+    notifyListeners();
+  }
+
+  // Overridden rather than driven for real: the genuine pair pulls APKs over
+  // ADB and installs a helper app on a phone.
+  @override
+  Future<void> loadForDevice(String deviceId, List<String> packages) async {
+    loadedDeviceId = deviceId;
+    loadedPackages = packages;
+    for (final pkg in packages) {
+      labels[pkg] = pkg;
+      icons[pkg] = null;
+    }
+    notifyListeners();
+  }
+
+  @override
+  Future<void> fetchMissing({
+    bool forceUpdate = true,
+    bool helperApkAutoInstall = false,
+    void Function(String message)? onError,
+  }) async {
+    fetchedWithAutoInstall = helperApkAutoInstall;
+    for (final pkg in labels.keys) {
+      icons[pkg] = File('$pkg.png');
+    }
+    notifyListeners();
+  }
+}
 
 /// Fake used to drive [FilePicker.getDirectoryPath] without a real dialog.
 /// Extends [FilePicker] (rather than mocking it) so the constructor chain
@@ -92,9 +145,13 @@ void main() {
 
   AppSettings? saved;
   late Directory packagesRoot;
+  late _FakeIconController iconController;
+  late DeviceManagerService deviceManager;
 
   setUp(() {
     saved = null;
+    iconController = _FakeIconController();
+    deviceManager = DeviceManagerService();
     // isScrcpyOnPath and checkAdb both spawn real processes otherwise, which
     // the test binding's fake async cannot complete.
     AdbService.debugSkipProcessChecks = true;
@@ -106,6 +163,9 @@ void main() {
   });
 
   tearDown(() {
+    // Static registry: a device left here would make the app-icons step show
+    // up in every later test.
+    DeviceManagerService.devicesInfo.clear();
     AdbService.debugSkipProcessChecks = false;
     AdbService.debugScrcpyOnPath = null;
     AdbService.debugAdbStatus = null;
@@ -145,13 +205,31 @@ void main() {
 
   // Opens the wizard through showDialog rather than pumping it as the home
   // widget, so that its Navigator.pop has a route to pop.
+  /// Registers a connected device, which is what makes the app-icons step
+  /// appear. [devicesInfo] is static, so the teardown below clears it.
+  void connectDevice({List<String> packages = const ['com.example.app']}) {
+    DeviceManagerService.devicesInfo['device-1'] = PhoneInfoModel(
+      deviceId: 'device-1',
+      packages: packages,
+    );
+    deviceManager.selectedDevice = 'device-1';
+  }
+
   Future<void> pumpWizard(WidgetTester tester, {String scrcpyDirectory = ''}) async {
     await tester.pumpWidget(
-      ChangeNotifierProvider<ColorThemeNotifier>(
-        create: (_) => ColorThemeNotifier(
-          presets: [preset],
-          selectedName: 'Dark',
-        ),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ColorThemeNotifier>(
+            create: (_) => ColorThemeNotifier(
+              presets: [preset],
+              selectedName: 'Dark',
+            ),
+          ),
+          ChangeNotifierProvider<AppIconController>.value(value: iconController),
+          ChangeNotifierProvider<DeviceManagerService>.value(
+            value: deviceManager,
+          ),
+        ],
         child: MaterialApp(
           theme: AppTheme.dark(const Color(0xFF00AAFF)),
           home: Scaffold(
@@ -165,6 +243,7 @@ void main() {
                       recordingsDirectory: '/cfg/Recordings',
                       downloadsDirectory: '/cfg/Downloads',
                       batDirectory: '/cfg/Downloads',
+                      appIconsDirectory: '/cfg',
                       scrcpyDirectory: scrcpyDirectory,
                     ),
                     onSave: (settings) async => saved = settings,
@@ -221,6 +300,91 @@ void main() {
     expect(find.text('Next'), findsNothing);
   });
 
+  // The heading names the step rather than repeating a greeting, so the user
+  // can tell what they are looking at without reading the body.
+  testWidgets('each step is titled for what it configures', (tester) async {
+    connectDevice();
+    await pumpWizard(tester);
+
+    expect(find.text('Welcome to Scrcpy GUI'), findsOneWidget);
+
+    for (final title in ['Directories', 'App Drawer', 'UI Preferences']) {
+      await tester.tap(find.text('Skip this step').hitTestable());
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsOneWidget, reason: 'missing $title');
+    }
+  });
+
+  // The app-icons step can do nothing without a device, so it is not offered
+  // when there is none: the wizard is three steps, not a four-step one with a
+  // dead page in the middle.
+  testWidgets('the app icons step is absent when no device is connected', (
+    tester,
+  ) async {
+    await pumpWizard(tester);
+
+    expect(find.text('Step 1 of 3'), findsOneWidget);
+
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(IconFetchMethodPicker), findsNothing);
+    expect(find.byType(UiScaleDropdown), findsOneWidget);
+  });
+
+  testWidgets('connecting a device adds the app icons step', (tester) async {
+    connectDevice();
+    await pumpWizard(tester);
+
+    expect(find.text('Step 1 of 4'), findsOneWidget);
+
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Step 3 of 4'), findsOneWidget);
+    expect(find.byType(IconFetchMethodPicker), findsOneWidget);
+  });
+
+  // The step appears mid-setup when a phone is plugged in, so the wizard has
+  // to renumber rather than keep claiming three steps.
+  testWidgets('plugging in a device while the wizard is open renumbers it', (
+    tester,
+  ) async {
+    await pumpWizard(tester);
+    expect(find.text('Step 1 of 3'), findsOneWidget);
+
+    connectDevice();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Step 1 of 4'), findsOneWidget);
+  });
+
+  // Unplugging while standing on the app-icons step must not strand the user
+  // on a step that is no longer in the list.
+  testWidgets('unplugging while on the app icons step falls back', (
+    tester,
+  ) async {
+    connectDevice();
+    await pumpWizard(tester);
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+    expect(find.byType(IconFetchMethodPicker), findsOneWidget);
+
+    DeviceManagerService.devicesInfo.clear();
+    deviceManager.selectedDevice = null;
+    await tester.pumpAndSettle();
+
+    expect(find.byType(IconFetchMethodPicker), findsNothing);
+    expect(find.text('Step 3 of 3'), findsOneWidget);
+    expect(find.byType(UiScaleDropdown), findsOneWidget);
+  });
+
   // Skip moves past one step, it does not dismiss the wizard. Nothing is
   // persisted by skipping, since the step was never configured.
   testWidgets('Skip advances one step and leaves the wizard open', (
@@ -232,7 +396,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Step 2 of 3'), findsOneWidget);
-    expect(find.text('Welcome to Scrcpy GUI'), findsOneWidget);
+    // Still open, now titled for the step it moved to.
+    expect(find.text('Directories'), findsOneWidget);
     expect(saved, isNull);
   });
 
@@ -266,7 +431,9 @@ void main() {
 
     expect(saved, isNotNull);
     expect(saved!.setupCompleted, isTrue);
-    expect(find.text('Welcome to Scrcpy GUI'), findsNothing);
+    // The title of the step Finish was pressed on, so this goes red if the
+    // dialog stays open rather than passing because the heading changed.
+    expect(find.text('UI Preferences'), findsNothing);
   });
 
   testWidgets(
@@ -453,6 +620,167 @@ void main() {
 
     expect(saved, isNotNull);
     expect(saved!.downloadsDirectory, '/picked/Downloads');
+  });
+
+  testWidgets('the app icons step offers both methods and the folder', (
+    tester,
+  ) async {
+    connectDevice();
+    await pumpWizard(tester);
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(IconFetchMethodPicker), findsOneWidget);
+    expect(
+      find.widgetWithText(DirectoryRow, 'App Icons & Labels'),
+      findsOneWidget,
+    );
+    expect(find.text(AppIconCache.cachePathIn('/cfg')), findsOneWidget);
+  });
+
+  // Tapping a card has to move the check mark and retitle the run button,
+  // which is the only feedback that the choice registered.
+  testWidgets('tapping a method card selects it', (tester) async {
+    connectDevice();
+    await pumpWizard(tester);
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+
+    expect(
+      iconController.appDrawerSettings.iconFetchMethod,
+      IconFetchMethod.adbScrape,
+    );
+
+    await tester.tap(find.text('Helper APK'));
+    await tester.pumpAndSettle();
+
+    expect(iconController.setCount, 1);
+    expect(
+      iconController.appDrawerSettings.iconFetchMethod,
+      IconFetchMethod.helperApk,
+    );
+    expect(
+      find.descendant(
+        // The card itself, not any Column around it: the confirmation line
+        // below the picker carries a check mark of its own.
+        of: find.ancestor(
+          of: find.text('Helper APK'),
+          matching: find.byType(AnimatedContainer),
+        ),
+        matching: find.byIcon(Icons.check_circle),
+      ),
+      findsOneWidget,
+    );
+    // The run button names the method, so the choice is legible without
+    // hunting for the check mark.
+    expect(find.text('Load apps with Helper APK'), findsOneWidget);
+  });
+
+  // The step exists to run the fetch, so the button has to be there and has to
+  // name the method it will use.
+  testWidgets('the app icons step offers a run button for the chosen method', (
+    tester,
+  ) async {
+    connectDevice();
+    await pumpWizard(tester);
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Load apps with ADB'), findsOneWidget);
+
+    await tester.tap(find.text('Helper APK'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Load apps with Helper APK'), findsOneWidget);
+  });
+
+  // The whole point of the step: the button runs the fetch there and then,
+  // against the connected device, instead of sending the user elsewhere.
+  testWidgets('the run button fetches icons for the connected device', (
+    tester,
+  ) async {
+    connectDevice(packages: ['com.a', 'com.b']);
+    await pumpWizard(tester);
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+
+    // The method cards push the button below the fold of the dialog.
+    await tester.ensureVisible(find.text('Load apps with ADB'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Load apps with ADB'));
+    await tester.pumpAndSettle();
+
+    expect(iconController.loadedDeviceId, 'device-1');
+    expect(iconController.loadedPackages, ['com.a', 'com.b']);
+    // The button says it installs the helper app, so the run must not fail
+    // demanding a checkbox the wizard never shows.
+    expect(iconController.fetchedWithAutoInstall, isTrue);
+    expect(find.textContaining('2 of 2'), findsOneWidget);
+  });
+
+  testWidgets('picking an app icons directory reaches onSave', (tester) async {
+    FilePicker.platform = _FakeFilePicker('/picked/icons');
+
+    connectDevice();
+    await pumpWizard(tester);
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip this step'));
+    await tester.pumpAndSettle();
+
+    // The two method cards push the row below the fold of the dialog.
+    await tester.ensureVisible(find.text('Browse...'));
+    await tester.pumpAndSettle();
+
+    // runAsync because picking copies the existing cache across with real
+    // filesystem I/O, which the fake async clock cannot complete on its own.
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Browse...'));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pumpAndSettle();
+
+    expect(saved, isNotNull);
+    expect(saved!.appIconsDirectory, '/picked/icons');
+  });
+
+  testWidgets('the appearance step offers both the theme and the scale', (
+    tester,
+  ) async {
+    await pumpWizard(tester);
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.text('Skip this step'));
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.byType(UiScaleDropdown), findsOneWidget);
+    expect(find.text('Color Theme'), findsOneWidget);
+  });
+
+  // The wizard is the first thing a user sees, so a scale chosen here has to
+  // survive to the app shell that reads it back out of settings.
+  testWidgets('choosing a UI scale persists it', (tester) async {
+    await pumpWizard(tester);
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.text('Skip this step'));
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.byType(UiScaleDropdown));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('90%').last);
+    await tester.pumpAndSettle();
+
+    expect(saved, isNotNull);
+    expect(saved!.uiScale, 0.90);
   });
 
   group('SetupWizardGate', () {

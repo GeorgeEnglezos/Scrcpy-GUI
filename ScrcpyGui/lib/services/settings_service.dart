@@ -171,16 +171,23 @@ class SettingsService {
         : settings.downloadsDirectory;
     final scripts =
         settings.batDirectory.isEmpty ? downloads : settings.batDirectory;
+    // The location that holds the cache folder, not the folder itself, so the
+    // default resolves to the historical <settingsDir>/app_icons and an
+    // existing cache is still found.
+    final appIcons = settings.appIconsDirectory.isEmpty
+        ? settingsDir
+        : settings.appIconsDirectory;
 
     return settings.copyWith(
       recordingsDirectory: recordings,
       downloadsDirectory: downloads,
       batDirectory: scripts,
+      appIconsDirectory: appIcons,
     );
   }
 
-  /// Reset only User Interface settings (panel order and properties)
-  Future<void> resetUserInterface() async {
+  /// Reset only the home page panel layout (order and per-panel properties).
+  Future<void> resetPanelLayout() async {
     if (_cachedSettings != null) {
       await saveSettings(
         _cachedSettings!.copyWith(panelOrder: buildDefaultPanels()),

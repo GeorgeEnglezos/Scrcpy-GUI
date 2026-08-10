@@ -162,6 +162,8 @@ class AppSettings {
   final String downloadsDirectory;
   final String
   batDirectory; // NOTE: Also stores .sh/.command files on macOS/Linux
+  // Holds the app_icons folder AppIconCache creates; not the cache itself.
+  final String appIconsDirectory;
   final bool openCmdWindows;
   final bool showBatFilesTab; // NOTE: Shows script files on all platforms
   final bool showAppDrawerTab;
@@ -187,6 +189,7 @@ class AppSettings {
     required this.recordingsDirectory,
     required this.downloadsDirectory,
     required this.batDirectory,
+    this.appIconsDirectory = '',
     this.openCmdWindows = false,
     this.showBatFilesTab = true,
     this.showAppDrawerTab = true,
@@ -213,6 +216,7 @@ class AppSettings {
     String? recordingsDirectory,
     String? downloadsDirectory,
     String? batDirectory,
+    String? appIconsDirectory,
     bool? openCmdWindows,
     bool? showBatFilesTab,
     bool? showAppDrawerTab,
@@ -236,6 +240,7 @@ class AppSettings {
       recordingsDirectory: recordingsDirectory ?? this.recordingsDirectory,
       downloadsDirectory: downloadsDirectory ?? this.downloadsDirectory,
       batDirectory: batDirectory ?? this.batDirectory,
+      appIconsDirectory: appIconsDirectory ?? this.appIconsDirectory,
       openCmdWindows: openCmdWindows ?? this.openCmdWindows,
       showBatFilesTab: showBatFilesTab ?? this.showBatFilesTab,
       showAppDrawerTab: showAppDrawerTab ?? this.showAppDrawerTab,
@@ -264,6 +269,7 @@ class AppSettings {
       recordingsDirectory: '',
       downloadsDirectory: '',
       batDirectory: '',
+      appIconsDirectory: '',
       openCmdWindows: false,
       showBatFilesTab: true,
       showAppDrawerTab: true,
@@ -290,6 +296,7 @@ class AppSettings {
       recordingsDirectory: json['recordingsDirectory'] as String? ?? '',
       downloadsDirectory: json['downloadsDirectory'] as String? ?? '',
       batDirectory: json['batDirectory'] as String? ?? '',
+      appIconsDirectory: json['appIconsDirectory'] as String? ?? '',
       openCmdWindows: json['openCmdWindows'] as bool? ?? false,
       showBatFilesTab: json['showBatFilesTab'] as bool? ?? true,
       showAppDrawerTab: json['showAppDrawerTab'] as bool? ?? true,
@@ -329,6 +336,7 @@ class AppSettings {
       'recordingsDirectory': recordingsDirectory,
       'downloadsDirectory': downloadsDirectory,
       'batDirectory': batDirectory,
+      'appIconsDirectory': appIconsDirectory,
       'openCmdWindows': openCmdWindows,
       'showBatFilesTab': showBatFilesTab,
       'showAppDrawerTab': showAppDrawerTab,

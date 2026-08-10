@@ -34,6 +34,23 @@ void main() {
     });
   });
 
+  group('AppSettings.appIconsDirectory', () {
+    // The whole point of the field is that the user can move the icon cache.
+    // Omitting it from toJson would send every chosen path back to the derived
+    // default on the next load, silently and without an error anywhere.
+    test('survives a json round-trip', () {
+      final original = AppSettings.defaultSettings().copyWith(
+        appIconsDirectory: '/my/icons',
+      );
+      final restored = AppSettings.fromJsonString(original.toJsonString());
+      expect(restored.appIconsDirectory, '/my/icons');
+    });
+
+    test('is empty for a settings file written before the key existed', () {
+      expect(AppSettings.fromJsonString('{}').appIconsDirectory, isEmpty);
+    });
+  });
+
   group('AppSettings.setupCompleted', () {
     test('is false for a brand new install', () {
       expect(AppSettings.defaultSettings().setupCompleted, isFalse);
