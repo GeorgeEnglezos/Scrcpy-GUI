@@ -23,9 +23,12 @@ import 'services/log_service.dart';
 import 'services/command_notifier.dart';
 import 'services/device_manager_service.dart';
 import 'services/settings_service.dart';
+import 'services/window_state_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_theme_colors.dart';
+import 'widgets/setup_wizard_dialog.dart';
 import 'widgets/sidebar.dart';
+import 'widgets/ui_scale.dart';
 import 'services/update_service.dart';
 
 Future<void> main() async {
@@ -34,23 +37,18 @@ Future<void> main() async {
   // Initialize window manager for desktop
   await windowManager.ensureInitialized();
 
-  // Configure window options
-  const windowOptions = WindowOptions(
-    size: Size(1200, 900),
-    minimumSize: Size(900, 700),
-    center: true,
-    title: "Scrcpy GUI",
-  );
-
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
-
-  // Load settings
+  // Load settings before showing the window, which restores its saved geometry
   final settingsService = SettingsService();
   final settings = await settingsService.loadSettings();
   final appDrawerSettings = await settingsService.loadAppDrawerSettings();
+
+  // Initialize logging (must be after loadSettings, depends on currentSettings
+  // being populated, and before anything that logs)
+  await LogService.init();
+
+  final windowStateService = WindowStateService(settingsService);
+  await windowStateService.showWindow();
+  windowStateService.startTracking();
 
   // Load color presets and resolve the active preset
   final colorPresets = await ColorThemeService.loadPresets();
@@ -59,14 +57,11 @@ Future<void> main() async {
     selectedName: settings.colorPreset,
   );
 
-  // Initialize logging (must be after loadSettings — depends on currentSettings being populated)
-  await LogService.init();
-
   // Initialize the DeviceManagerService before the app starts
   final deviceManager = DeviceManagerService();
   await deviceManager.initialize();
 
-  // Initialize CommandNotifier — unified state for the new architecture
+  // Initialize CommandNotifier: unified state for the new architecture
   final commandNotifier = CommandNotifier();
   commandNotifier.setDeviceManager(deviceManager);
   commandNotifier.loadDefault();
@@ -215,7 +210,6 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
   /// - 3: SettingsPage - Application preferences and panel customization
   List<Widget> get pages => [
     HomePage(
-      panelOrder: _currentSettings.panelOrder,
       onNavigateToSettings: () {
         final tabs = _visibleTabLabelsFor(_currentSettings);
         final idx = tabs.indexOf('Settings');
@@ -236,57 +230,59 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
     return MaterialApp(
       title: 'Scrcpy GUI',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme.copyWith(
-        colorScheme: AppTheme.lightTheme.colorScheme.copyWith(
-          primary: context.watch<ColorThemeNotifier>().current.primary,
-        ),
-      ),
-      darkTheme: AppTheme.darkTheme.copyWith(
-        colorScheme: AppTheme.darkTheme.colorScheme.copyWith(
-          primary: context.watch<ColorThemeNotifier>().current.primary,
-        ),
-      ),
+      theme: AppTheme.light(context.watch<ColorThemeNotifier>().current.primary),
+      darkTheme:
+          AppTheme.dark(context.watch<ColorThemeNotifier>().current.primary),
       themeMode: context.watch<ColorThemeNotifier>().current.brightness == 'dark'
           ? ThemeMode.dark
           : ThemeMode.light,
-      home: Scaffold(
-        body: Row(
-          children: [
-            // Vertical navigation sidebar
-            Sidebar(
-              selectedIndex: selectedIndex,
-              showBatFilesTab: _currentSettings.showBatFilesTab,
-              showAppDrawerTab: _currentSettings.showAppDrawerTab,
-              showLogsTab: _currentSettings.loggingEnabled,
-              onItemSelected: (index) {
-                final notifier = Provider.of<CommandNotifier>(
-                  context,
-                  listen: false,
-                );
-                if (selectedIndex == 0 && index != 0) {
-                  notifier.reset();
-                } else if (index == 0 && selectedIndex != 0) {
-                  notifier.loadDefault();
-                }
-                setState(() => selectedIndex = index);
-              },
-            ),
-            // Main content area with animated page transitions
-            Expanded(
-              child: Column(
-                children: [
-                  if (_updateResult != null && !_hideBanner)
-                    _buildUpdateBanner(context),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      child: pages[selectedIndex],
-                    ),
-                  ),
-                ],
+      // child is non-null because home is always provided below; MaterialApp
+      // only passes null to builder when it has no route to render.
+      builder: (context, child) => UiScale(
+        scale: _currentSettings.uiScale,
+        child: child!,
+      ),
+      home: SetupWizardGate(
+        enabled: !_currentSettings.setupCompleted,
+        child: Scaffold(
+          body: Row(
+            children: [
+              // Vertical navigation sidebar
+              Sidebar(
+                selectedIndex: selectedIndex,
+                showBatFilesTab: _currentSettings.showBatFilesTab,
+                showAppDrawerTab: _currentSettings.showAppDrawerTab,
+                showLogsTab: _currentSettings.loggingEnabled,
+                onItemSelected: (index) {
+                  final notifier = Provider.of<CommandNotifier>(
+                    context,
+                    listen: false,
+                  );
+                  if (selectedIndex == 0 && index != 0) {
+                    notifier.reset();
+                  } else if (index == 0 && selectedIndex != 0) {
+                    notifier.loadDefault();
+                  }
+                  setState(() => selectedIndex = index);
+                },
               ),
-            ),
-          ],
+              // Main content area with animated page transitions
+              Expanded(
+                child: Column(
+                  children: [
+                    if (_updateResult != null && !_hideBanner)
+                      _buildUpdateBanner(context),
+                    Expanded(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: pages[selectedIndex],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -352,14 +348,6 @@ class _ScrcpyGuiAppState extends State<ScrcpyGuiApp> {
           ElevatedButton(
             onPressed: () =>
                 UpdateService.launchReleasePage(_updateResult?.downloadUrl),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.appPrimary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
             child: const Text('Download Update'),
           ),
           const SizedBox(width: 12),

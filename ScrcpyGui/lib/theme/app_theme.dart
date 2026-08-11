@@ -19,23 +19,18 @@ class AppTheme {
   static const _lightTextPrimary = Color(0xFF161A23);
   static const _lightTextSecondary = Color(0xFF484F61);
 
-  /// The dark theme for the application using Material 3 design.
+  /// Builds the dark theme with [primary] as the accent color.
   ///
-  /// This theme configures:
-  /// - Dark background and surface colors
-  /// - Purple primary color scheme
-  /// - Text styles for primary and secondary content
-  /// - Card and divider colors
-  /// - Error states
-  ///
-  /// Applied globally through the MaterialApp widget.
-  static final ThemeData darkTheme = ThemeData.dark(useMaterial3: true)
-      .copyWith(
+  /// Themes are functions of the primary color (not statics) because
+  /// component themes (buttons, inputs) capture colors at construction;
+  /// a later `copyWith(colorScheme: ...)` would leave them stale.
+  static ThemeData dark(Color primary) =>
+      ThemeData.dark(useMaterial3: true).copyWith(
         scaffoldBackgroundColor: AppColors.background,
         cardColor: AppColors.surface,
         dividerColor: AppColors.divider,
         colorScheme: const ColorScheme.dark().copyWith(
-          primary: AppColors.primary,
+          primary: primary,
           secondary: AppColors.secondary,
           surface: AppColors.surface,
           error: AppColors.error,
@@ -44,16 +39,18 @@ class AppTheme {
           bodyLarge: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
           bodyMedium: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
         ),
+        elevatedButtonTheme: _elevatedButtonTheme(primary),
+        inputDecorationTheme: _inputDecorationTheme(primary, AppColors.divider),
       );
 
-  /// The light theme for the application using Material 3 design.
-  static final ThemeData lightTheme = ThemeData.light(useMaterial3: true)
-      .copyWith(
+  /// Builds the light theme with [primary] as the accent color.
+  static ThemeData light(Color primary) =>
+      ThemeData.light(useMaterial3: true).copyWith(
         scaffoldBackgroundColor: _lightBackground,
         cardColor: _lightSurface,
         dividerColor: _lightDivider,
         colorScheme: const ColorScheme.light().copyWith(
-          primary: AppColors.primary,
+          primary: primary,
           secondary: AppColors.secondary,
           surface: _lightSurface,
           error: AppColors.error,
@@ -64,6 +61,42 @@ class AppTheme {
           bodyLarge: TextStyle(color: _lightTextPrimary, fontWeight: FontWeight.w500),
           bodyMedium: TextStyle(color: _lightTextSecondary, fontWeight: FontWeight.w500),
         ),
+        elevatedButtonTheme: _elevatedButtonTheme(primary),
+        inputDecorationTheme: _inputDecorationTheme(primary, _lightDivider),
       );
 
+  /// App-wide default elevated-button look (the style repeated across
+  /// pages before theming): primary background, white text, 8px radius.
+  static ElevatedButtonThemeData _elevatedButtonTheme(Color primary) =>
+      ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+
+  /// App-wide default text-input look: 8px outline, divider-colored border,
+  /// primary-colored focus border.
+  static InputDecorationTheme _inputDecorationTheme(
+    Color primary,
+    Color divider,
+  ) =>
+      InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: divider),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: divider),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: primary),
+        ),
+      );
 }

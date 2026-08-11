@@ -46,8 +46,25 @@ class UpdateService {
     this.stableInfo,
   });
 
+  static Future<UpdateService>? _sessionCheck;
+
   /// Fetches releases from GitHub and compares them with the local version.
+  ///
+  /// The result is cached for the app session so the startup check and the
+  /// Resources page share one request instead of each hitting the
+  /// rate-limited GitHub API. A failed check is not cached, so a later call
+  /// can retry.
   static Future<UpdateService> checkForUpdate() async {
+    final cached = _sessionCheck;
+    if (cached != null) return cached;
+    final future = _checkForUpdate();
+    _sessionCheck = future;
+    final result = await future;
+    if (result.stableInfo == null) _sessionCheck = null;
+    return result;
+  }
+
+  static Future<UpdateService> _checkForUpdate() async {
     // Resolve current version once, before any network work.
     String currentVersion;
     try {
@@ -129,16 +146,16 @@ class UpdateService {
         stableInfo: latestStable,
       );
     } on TimeoutException catch (_) {
-      // Request exceeded the timeout — silently fail.
+      // Request exceeded the timeout: silently fail.
     } on SocketException catch (_) {
-      // No internet connectivity — expected, silently fail.
+      // No internet connectivity: expected, silently fail.
     } on HttpException catch (_) {
-      // Non-200 or redirect — expected, silently fail.
+      // Non-200 or redirect: expected, silently fail.
     } on FormatException catch (e) {
-      // Malformed JSON — unexpected, log it.
+      // Malformed JSON: unexpected, log it.
       LogService.warning('UpdateService/checkForUpdate', 'Malformed JSON response: $e');
     } catch (e) {
-      // Truly unexpected error — log it.
+      // Truly unexpected error: log it.
       LogService.error('UpdateService/checkForUpdate', 'Unexpected error during update check', err: e);
     } finally {
       client?.close();
@@ -219,7 +236,7 @@ class UpdateService {
     if (current.contains('-') && !latest.contains('-')) return true;
     if (!current.contains('-') && latest.contains('-')) return false;
 
-    // Both have suffixes — compare lexicographically.
+    // Both have suffixes, compare lexicographically.
     if (current.contains('-') && latest.contains('-')) {
       final latestSuffix = latest.split('-')[1];
       final currentSuffix = current.split('-')[1];

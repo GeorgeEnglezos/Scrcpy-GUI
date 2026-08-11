@@ -38,25 +38,10 @@ class CustomSearchBar extends StatefulWidget {
   State<CustomSearchBar> createState() => _CustomSearchBarState();
 }
 
-/// State class for [CustomSearchBar] managing suggestions and overlay display.
-///
-/// This class handles:
-/// - Text controller and focus node management
-/// - Suggestion filtering based on user input
-/// - Overlay portal for displaying suggestions dropdown
-/// - User interaction with suggestions (tap to select)
-/// - Clear and reload button actions
 class _CustomSearchBarState extends State<CustomSearchBar> {
-  /// Internal text editing controller
   late TextEditingController _controller;
-
-  /// Focus node for managing keyboard focus
   final FocusNode _focusNode = FocusNode();
-
-  /// Layer link for positioning the overlay relative to the text field
   final LayerLink _layerLink = LayerLink();
-
-  /// Controller for showing/hiding the suggestions overlay
   final OverlayPortalController _overlayController = OverlayPortalController();
 
   /// List of suggestions filtered by current input
@@ -265,7 +250,12 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                           fontSize: kLabelFontSize,
                           fontWeight: FontWeight.w500,
                         ),
+                        // The container draws the border; suppress the
+                        // theme-level input borders too, border: alone isn't enough.
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: kRowVerticalPadding / 2,

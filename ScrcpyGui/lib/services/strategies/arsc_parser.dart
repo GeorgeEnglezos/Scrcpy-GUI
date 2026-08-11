@@ -51,7 +51,7 @@ List<String> resolveResIdFromArsc({
 }
 
 // ---------------------------------------------------------------------------
-// Binary AndroidManifest.xml parser — extract android:icon resource ID
+// Binary AndroidManifest.xml parser: extract android:icon resource ID
 // ---------------------------------------------------------------------------
 
 /// Chunk types used in binary XML.
@@ -72,7 +72,7 @@ int? _parseManifestIconResId(Uint8List bytes) {
   final fileSize = bd.getUint32(4, Endian.little);
   pos = bd.getUint16(2, Endian.little); // skip file header
 
-  // String pool — we need it to find attribute names
+  // String pool: we need it to find attribute names
   if (bd.getUint16(pos, Endian.little) != _stringPoolType) return null;
   final pool = _StringPool.parse(bd, pos);
   pos += bd.getUint32(pos + 4, Endian.little);
@@ -117,7 +117,7 @@ int? _parseManifestIconResId(Uint8List bytes) {
 }
 
 // ---------------------------------------------------------------------------
-// resources.arsc parser — resolve resource ID to file path(s)
+// resources.arsc parser: resolve resource ID to file path(s)
 // ---------------------------------------------------------------------------
 
 const int _tableChunkType = 0x0002;

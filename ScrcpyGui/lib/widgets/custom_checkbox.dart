@@ -1,7 +1,5 @@
-/// A custom checkbox widget that provides a consistent UI across the application.
-///
-/// This widget creates a styled checkbox with a label and optional tooltip,
-/// matching the application's design system. The entire row is clickable.
+/// Styled checkbox with a label and optional tooltip; the entire row is
+/// clickable.
 library;
 
 import 'package:flutter/material.dart';

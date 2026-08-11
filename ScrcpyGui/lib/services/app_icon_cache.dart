@@ -5,17 +5,71 @@ library;
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'app_directories.dart';
 import 'settings_service.dart';
 
 class AppIconCache {
-  static final SettingsService _settingsService = SettingsService();
+  /// Folder created inside the configured location to hold the cache.
+  ///
+  /// Never skipped, even when the user picked the location themselves:
+  /// [clearCache] empties this directory recursively, so it has to be one this
+  /// app created. Pointing the setting at Documents must clear
+  /// `Documents/app_icons`, never Documents itself.
+  static const String _cacheFolderName = 'app_icons';
+
+  /// The cache directory held inside [location].
+  static String cachePathIn(String location) =>
+      p.join(location, _cacheFolderName);
 
   /// Returns the icon cache directory, creating it if necessary.
+  ///
+  /// The configured location wins; the platform cache directory is the fallback
+  /// for settings written before it was configurable, and for the window before
+  /// settings finish loading.
+  ///
+  /// ponytail: read live on every call, so changing the location mid-fetch
+  /// splits that run across both folders. Icons are regenerable, so the cost
+  /// is a few refetches; take a snapshot per run if that ever stops being true.
   static Future<Directory> cacheDir() async {
-    final base = await _settingsService.getSettingsDirectory();
-    final dir = Directory(p.join(base, 'app_icons'));
+    final configured = SettingsService.currentSettings?.appIconsDirectory;
+    final location = configured == null || configured.isEmpty
+        ? (await AppDirectories.resolve()).cache
+        : configured;
+    final dir = Directory(cachePathIn(location));
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
+  }
+
+  /// Copies the cached icons and labels from the cache under [fromLocation] to
+  /// the one under [toLocation].
+  ///
+  /// Best effort by design: a file that fails to copy is skipped, and the
+  /// originals are left where they are. Nothing here is irreplaceable, a lost
+  /// icon is refetched, so a partial copy is not worth guarding with a
+  /// rollback.
+  static Future<void> copyCache(
+    String fromLocation,
+    String toLocation,
+  ) async {
+    // p.equals, not ==: on Windows the same folder has several spellings, and
+    // copying a file onto itself fails for every entry.
+    if (p.equals(fromLocation, toLocation)) return;
+
+    final source = Directory(cachePathIn(fromLocation));
+    if (!await source.exists()) return;
+
+    final targetPath = cachePathIn(toLocation);
+    final target = Directory(targetPath);
+    if (!await target.exists()) await target.create(recursive: true);
+
+    await for (final entity in source.list()) {
+      if (entity is! File) continue;
+      try {
+        await entity.copy(p.join(targetPath, p.basename(entity.path)));
+      } catch (_) {
+        // Skip this one; the rest of the cache still moves.
+      }
+    }
   }
 
   /// Returns the cache file path for [packageName].
@@ -58,25 +112,15 @@ class AppIconCache {
     } catch (_) {}
   }
 
-  /// Returns true if the label cache file exists on disk.
-  static Future<bool> hasLabelsCache() async {
-    final file = await _labelCacheFile();
-    return file.exists();
-  }
-
-  /// Deletes the contents of the app_icons/ directory (icons + labels) but keeps the folder.
+  /// Deletes the cache contents (icons + labels) but keeps the folder.
+  ///
+  /// Safe against a user-chosen location only because [cacheDir] always nests
+  /// [_cacheFolderName] inside it; this recurses.
   static Future<void> clearCache() async {
     final dir = await cacheDir();
     if (!await dir.exists()) return;
     for (final entity in dir.listSync()) {
       await entity.delete(recursive: true);
     }
-  }
-
-  /// Returns the number of cached PNG icon files.
-  static Future<int> cachedIconCount() async {
-    final dir = await cacheDir();
-    if (!await dir.exists()) return 0;
-    return dir.listSync().whereType<File>().where((f) => f.path.endsWith('.png')).length;
   }
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show ChangeNotifier;
 import 'package:path/path.dart' as p;
 
+import 'app_directories.dart';
 import 'settings_service.dart';
 
 enum LogLevel { debug, info, warning, error }
@@ -24,11 +25,11 @@ class LogEntry {
 /// Singleton logging service.
 ///
 /// Logging is off by default. Enable via Settings → "Enable logging".
-/// File logging is a secondary toggle — also off by default.
+/// File logging is a secondary toggle, also off by default.
 ///
 /// Usage:
-///   LogService.info('TerminalService/executeCommand', 'Running: $cmd');
-///   LogService.error('TerminalService/executeCommand', 'exitCode=$code — $err');
+///   LogService.info('CommandExecutor/executeCommand', 'Running: $cmd');
+///   LogService.error('CommandExecutor/executeCommand', 'exitCode=$code: $err');
 class LogService extends ChangeNotifier {
   LogService._();
 
@@ -51,8 +52,7 @@ class LogService extends ChangeNotifier {
     final i = _instance;
 
     // Resolve the logs folder
-    final settingsDir = await SettingsService().getSettingsDirectory();
-    final logsDir = p.join(settingsDir, 'logs');
+    final logsDir = p.join((await AppDirectories.resolve()).state, 'logs');
     i._logFolderPath = logsDir;
     await Directory(logsDir).create(recursive: true);
 

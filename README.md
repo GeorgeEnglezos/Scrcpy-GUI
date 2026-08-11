@@ -118,7 +118,7 @@ No manual ADB commands required!
 ## 📖 Documentation
 
 - **[Troubleshooting](Docs/TROUBLESHOOTING.md)** - Quick fixes for common issues
-- **[API Reference](Docs/API_REFERENCE.md)** - Developer documentation
+- **[Codebase Reference](Docs/CODEBASE_REFERENCE.md)** - Developer documentation
 
 ---
 
@@ -170,6 +170,20 @@ Looking for a browser-based alternative? Check out the web companion app:
 - ✅ Works on any operating system
 - ✅ Faster and more accessible
 - ✅ Package, codec, and encoder selection
+
+---
+
+## 🛠️ Building from Source
+
+Requires the [Flutter SDK](https://docs.flutter.dev/get-started/install) (Dart ^3.9.2):
+
+```bash
+cd ScrcpyGui
+flutter run -d windows    # or: -d macos / -d linux
+flutter build windows     # release build
+```
+
+Developer docs: [Codebase Reference](Docs/CODEBASE_REFERENCE.md)
 
 ---
 

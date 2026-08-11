@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_snackbar.dart';
 import '../widgets/command_panel.dart';
 import '../widgets/surrounding_panel.dart';
 import '../services/log_service.dart';
-import '../services/terminal_service.dart';
+import '../utils/command_executor.dart';
 import '../theme/app_theme_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -282,11 +283,10 @@ class _ResourcesPageState extends State<ResourcesPage> {
                       'Cannot open ${link['url']}',
                     );
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Cannot open ${link['url']}'),
-                          backgroundColor: Colors.red.shade700,
-                        ),
+                      showAppSnackBar(
+                        context,
+                        'Cannot open ${link['url']}',
+                        type: AppSnackBarType.error,
                       );
                     }
                   }
@@ -338,19 +338,14 @@ class _ResourcesPageState extends State<ResourcesPage> {
                                 'Cannot open ${link['url']}',
                               );
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Cannot open ${link['url']}'),
-                                    backgroundColor: Colors.red.shade700,
-                                  ),
+                                showAppSnackBar(
+                                  context,
+                                  'Cannot open ${link['url']}',
+                                  type: AppSnackBarType.error,
                                 );
                               }
                             }
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: context.appPrimary,
-                            foregroundColor: Colors.white,
-                          ),
                           child: const Text('Open'),
                         ),
                       ),
@@ -524,8 +519,13 @@ class _ResourcesPageState extends State<ResourcesPage> {
                                     leading: labelChip(entry['label']!),
                                     showDelete: false,
                                     onTap: () async {
-                                      await TerminalService.runCommandInNewTerminal(
+                                      // Installers need an interactive
+                                      // terminal (e.g. sudo prompt).
+                                      await CommandExecutor.executeCommand(
+                                        context,
                                         cmd,
+                                        source: 'Resources/InstallScrcpy',
+                                        forceNewTerminal: true,
                                       );
                                     },
                                     onDownload: null,
@@ -550,8 +550,13 @@ class _ResourcesPageState extends State<ResourcesPage> {
                                     leading: labelChip(entry['label']!),
                                     showDelete: false,
                                     onTap: () async {
-                                      await TerminalService.runCommandInNewTerminal(
+                                      // Installers need an interactive
+                                      // terminal (e.g. sudo prompt).
+                                      await CommandExecutor.executeCommand(
+                                        context,
                                         cmd,
+                                        source: 'Resources/InstallAdb',
+                                        forceNewTerminal: true,
                                       );
                                     },
                                     onDownload: null,
@@ -574,8 +579,10 @@ class _ResourcesPageState extends State<ResourcesPage> {
                                     command: cmd,
                                     showDelete: false,
                                     onTap: () async {
-                                      await TerminalService.runCommandInNewTerminal(
+                                      await CommandExecutor.executeCommand(
+                                        context,
                                         cmd,
+                                        source: 'Resources/HelpfulCommand',
                                       );
                                     },
                                     onDownload: null,
@@ -665,10 +672,6 @@ class _ResourcesPageState extends State<ResourcesPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
             ),
             child: const Text('Download Nightly'),
           ),

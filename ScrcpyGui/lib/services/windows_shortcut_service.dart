@@ -63,7 +63,7 @@ class WindowsShortcutService {
 
   /// Builds the PowerShell script that creates the .lnk file.
   ///
-  /// Exposed for testing — does not touch the filesystem or spawn processes.
+  /// Exposed for testing; does not touch the filesystem or spawn processes.
   @visibleForTesting
   static String buildShortcutScript({
     required String safeName,

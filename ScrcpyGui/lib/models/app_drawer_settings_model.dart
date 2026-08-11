@@ -1,7 +1,7 @@
 import 'dart:convert';
 import '../services/icon_fetch_strategy.dart';
 
-/// A user-defined or auto-generated grouping of apps. Immutable — use
+/// A user-defined or auto-generated grouping of apps. Immutable, use
 /// [copyWith] to derive a new instance.
 class AppGroup {
   final String name;
@@ -44,7 +44,7 @@ class AppGroup {
       };
 }
 
-/// App Drawer settings. Immutable — use [copyWith] to derive a new instance.
+/// App Drawer settings. Immutable, use [copyWith] to derive a new instance.
 class AppDrawerSettings {
   final String appLaunchCommand;
   final IconFetchMethod iconFetchMethod;
@@ -56,11 +56,12 @@ class AppDrawerSettings {
   final bool scriptsCollapsed;
   final bool includeSystemApps;
 
-  static const String _defaultCommand =
+  /// Single source of truth for the default app-launch command.
+  static const String defaultCommand =
       'scrcpy --pause-on-exit=if-error --new-display=1920x1080';
 
   AppDrawerSettings({
-    this.appLaunchCommand = _defaultCommand,
+    this.appLaunchCommand = defaultCommand,
     this.iconFetchMethod = IconFetchMethod.adbScrape,
     List<String>? favorites,
     List<AppGroup>? groups,
@@ -98,7 +99,7 @@ class AppDrawerSettings {
   factory AppDrawerSettings.fromJson(Map<String, dynamic> json) =>
       AppDrawerSettings(
         appLaunchCommand:
-            json['appLaunchCommand'] as String? ?? _defaultCommand,
+            json['appLaunchCommand'] as String? ?? defaultCommand,
         iconFetchMethod:
             iconFetchMethodFromString(json['iconFetchMethod'] as String?),
         favorites:

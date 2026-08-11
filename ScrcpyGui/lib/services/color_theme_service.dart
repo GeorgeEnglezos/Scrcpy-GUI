@@ -56,7 +56,6 @@ class ColorThemeService {
       textPrimary: Color(0xFFFFFFFF),
       textSecondary: Color(0xFFB3B3B3),
       hover: Color(0xFF2A2A2A),
-      focus: Color(0xFF3B3B3B),
       commandSurface: Color(0xFF1F1F1F),
     ),
     ColorPreset(
@@ -70,7 +69,6 @@ class ColorThemeService {
       textPrimary: Color(0xFFE6EDF3),
       textSecondary: Color(0xFF8B949E),
       hover: Color(0xFF1C2128),
-      focus: Color(0xFF21262D),
       commandSurface: Color(0xFF161B22),
     ),
     ColorPreset(
@@ -84,7 +82,6 @@ class ColorThemeService {
       textPrimary: Color(0xFFEDE8FF),
       textSecondary: Color(0xFF9B90C2),
       hover: Color(0xFF221F33),
-      focus: Color(0xFF2D2A42),
       commandSurface: Color(0xFF1A1729),
     ),
     ColorPreset(
@@ -98,7 +95,6 @@ class ColorThemeService {
       textPrimary: Color(0xFFFFFFFF),
       textSecondary: Color(0xFFAAAAAA),
       hover: Color(0xFF141414),
-      focus: Color(0xFF1E1E1E),
       commandSurface: Color(0xFF0C0C0C),
     ),
     // ── Light themes ─────────────────────────────────────────────────────────
@@ -113,7 +109,6 @@ class ColorThemeService {
       textPrimary: Color(0xFF161A23),
       textSecondary: Color(0xFF484F61),
       hover: Color(0xFFD9DEF0),
-      focus: Color(0xFFD0D8EE),
       commandSurface: Color(0xFFE4E8F5),
     ),
     ColorPreset(
@@ -127,7 +122,6 @@ class ColorThemeService {
       textPrimary: Color(0xFF1C1836),
       textSecondary: Color(0xFF6B5F92),
       hover: Color(0xFFD8D0EF),
-      focus: Color(0xFFCEC5EC),
       commandSurface: Color(0xFFE8E2F5),
     ),
     ColorPreset(
@@ -141,7 +135,6 @@ class ColorThemeService {
       textPrimary: Color(0xFF1A1A1A),
       textSecondary: Color(0xFF5A5A5A),
       hover: Color(0xFFD8D8D8),
-      focus: Color(0xFFCCCCCC),
       commandSurface: Color(0xFFE5E5E5),
     ),
     ColorPreset(
@@ -155,7 +148,6 @@ class ColorThemeService {
       textPrimary: Color(0xFF000000),
       textSecondary: Color(0xFF555555),
       hover: Color(0xFFE5E5E5),
-      focus: Color(0xFFDDDDDD),
       commandSurface: Color(0xFFEEEEEE),
     ),
   ];

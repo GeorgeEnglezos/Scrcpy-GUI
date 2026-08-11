@@ -3,9 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import '../models/app_drawer_settings_model.dart';
 import '../models/settings_model.dart';
+import 'app_directories.dart';
 import 'log_service.dart';
 
-/// Internal notifier — exposed externally only as [Listenable] so callers
+/// Internal notifier, exposed externally only as [Listenable] so callers
 /// must use addListener/removeListener and cannot call [notifyListeners]
 /// directly.
 class _ScopedNotifier extends ChangeNotifier {
@@ -21,6 +22,12 @@ class SettingsService {
   static AppDrawerSettings? _cachedAppDrawerSettings;
 
   static AppSettings? get currentSettings => _cachedSettings;
+
+  /// Test-only: injects [settings] as the cached settings so pure helpers
+  /// that read [currentSettings] can be exercised without disk I/O.
+  @visibleForTesting
+  static void debugSetSettings(AppSettings? settings) =>
+      _cachedSettings = settings;
   static AppDrawerSettings? get currentAppDrawerSettings => _cachedAppDrawerSettings;
 
   /// Fires when [AppSettings] is persisted. Subscribe to be notified of
@@ -51,7 +58,7 @@ class SettingsService {
       final loaded = AppSettings.fromJsonString(jsonString);
 
       // Migration: drop deprecated panels and add any newly-introduced ones.
-      final migrated = _migratePanels(loaded);
+      final migrated = migratePanels(loaded);
       _cachedSettings = migrated;
 
       // Persist only if migration actually produced a different list, to
@@ -69,7 +76,8 @@ class SettingsService {
 
   /// Returns a copy of [settings] with deprecated panels removed and any
   /// newly-introduced default panels appended. Pure: never mutates input.
-  AppSettings _migratePanels(AppSettings settings) {
+  @visibleForTesting
+  AppSettings migratePanels(AppSettings settings) {
     const deprecatedPanelIds = {'shortcuts'};
     final defaults = buildDefaultPanels();
 
@@ -102,18 +110,16 @@ class SettingsService {
   /// The in-memory cache is updated synchronously (before the first await) so
   /// that any code that reads [currentSettings] right after kicking off this
   /// save sees the new value, even if persistence is still in flight.
-  Future<bool> saveSettings(AppSettings settings) async {
+  /// [notify] can be turned off for writes no listener cares about (window
+  /// geometry), which would otherwise rebuild the app shell on every save.
+  Future<bool> saveSettings(AppSettings settings, {bool notify = true}) async {
     _cachedSettings = settings;
     try {
       final settingsDir = await getSettingsDirectory();
       final settingsFile = File(p.join(settingsDir, _settingsFileName));
 
-      if (!await settingsFile.exists()) {
-        await settingsFile.create(recursive: true);
-      }
-
-      await settingsFile.writeAsString(settings.toJsonString());
-      _appSettingsNotifier.notify();
+      await _writeAtomically(settingsFile, settings.toJsonString());
+      if (notify) _appSettingsNotifier.notify();
       return true;
     } catch (e) {
       LogService.error('SettingsService/saveSettings', 'Failed to save settings', err: e);
@@ -121,26 +127,53 @@ class SettingsService {
     }
   }
 
-  /// Returns the app settings directory
-  Future<String> getSettingsDirectory() async {
-    String dir;
-    if (Platform.isWindows) {
-      dir = Platform.environment['APPDATA'] ?? '.';
-    } else if (Platform.isMacOS) {
-      dir = '${Platform.environment['HOME']}/Library/Application Support';
-    } else {
-      dir = Platform.environment['HOME'] ?? '.';
-    }
-    final fullDir = p.join(dir, 'ScrcpyGui');
-    final directory = Directory(fullDir);
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-    }
-    return fullDir;
+  /// Writes via a temp file and a rename so a process killed mid-write leaves
+  /// the previous settings intact instead of a truncated file. Window geometry
+  /// saves land here on every move and resize, so a torn write is no longer a
+  /// once-in-a-blue-moon risk.
+  Future<void> _writeAtomically(File file, String contents) async {
+    final temp = File('${file.path}.tmp');
+    await temp.writeAsString(contents, flush: true);
+    await temp.rename(file.path);
   }
 
-  /// Reset only User Interface settings (panel order and properties)
-  Future<void> resetUserInterface() async {
+  /// Returns the app settings directory
+  Future<String> getSettingsDirectory() async =>
+      (await AppDirectories.resolve()).config;
+
+  /// Returns [settings] with any unset directory filled in from [dirs]. Pure:
+  /// no disk access, and the input is never mutated.
+  ///
+  /// Shared by the Settings page and the first-run wizard so the two cannot
+  /// suggest different defaults for the same field.
+  static AppSettings withDirectoryDefaults(
+    AppSettings settings,
+    AppDirectories dirs,
+  ) {
+    final recordings = settings.recordingsDirectory.isEmpty
+        ? dirs.recordings
+        : settings.recordingsDirectory;
+    final downloads = settings.downloadsDirectory.isEmpty
+        ? dirs.downloads
+        : settings.downloadsDirectory;
+    final scripts =
+        settings.batDirectory.isEmpty ? downloads : settings.batDirectory;
+    // The location that holds the cache folder, not the folder itself, so an
+    // existing <cache>/app_icons is still found.
+    final appIcons = settings.appIconsDirectory.isEmpty
+        ? dirs.cache
+        : settings.appIconsDirectory;
+
+    return settings.copyWith(
+      recordingsDirectory: recordings,
+      downloadsDirectory: downloads,
+      batDirectory: scripts,
+      appIconsDirectory: appIcons,
+    );
+  }
+
+  /// Reset only the home page panel layout (order and per-panel properties).
+  Future<void> resetPanelLayout() async {
     if (_cachedSettings != null) {
       await saveSettings(
         _cachedSettings!.copyWith(panelOrder: buildDefaultPanels()),

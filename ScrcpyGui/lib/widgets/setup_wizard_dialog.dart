@@ -1,0 +1,918 @@
+/// First-run setup wizard.
+///
+/// Resolve scrcpy, choose directories, set up app icons, pick the appearance.
+/// The app-icons step only appears while a device is connected, since it can do
+/// nothing without one, so the wizard is three steps or four. Skippable at every
+/// step, and both Skip and Finish mark setup complete so it does not reopen.
+library;
+
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../models/settings_model.dart';
+import '../services/adb_service.dart';
+import '../services/app_directories.dart';
+import '../services/app_icon_cache.dart';
+import '../services/app_icon_controller.dart';
+import '../services/color_theme_notifier.dart';
+import '../services/device_manager_service.dart';
+import '../services/log_service.dart';
+import '../services/shell_runner.dart';
+import '../services/update_service.dart';
+import '../services/settings_service.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_theme_colors.dart';
+import 'app_snackbar.dart';
+import 'custom_dropdown.dart';
+import 'directory_row.dart';
+import 'icon_fetch_method_picker.dart';
+import 'ui_scale_dropdown.dart';
+
+/// Where step 1 sends a user who has no scrcpy yet. The /latest redirect means
+/// this never needs updating when scrcpy releases.
+const kScrcpyReleasesUrl =
+    'https://github.com/Genymobile/scrcpy/releases/latest';
+
+/// The host platform, as far as the install hint is concerned.
+enum HostOs { windows, macos, linux }
+
+HostOs get currentHostOs => Platform.isWindows
+    ? HostOs.windows
+    : Platform.isMacOS
+        ? HostOs.macos
+        : HostOs.linux;
+
+/// Package-manager commands that install scrcpy, plus a caveat to show under
+/// them.
+class ScrcpyInstallHint {
+  /// Shell lines, shown in a copyable block in the order given.
+  final List<String> commands;
+
+  /// Caveat shown beneath the block.
+  final String note;
+
+  /// What the "Run in terminal" button executes, or null when running the
+  /// listed commands is not safe to automate.
+  ///
+  /// Null on Linux specifically: the lines there are alternatives for
+  /// different distributions, so running them in sequence would fire the wrong
+  /// package manager. The user copies the one that matches their system.
+  final String? runnable;
+
+  const ScrcpyInstallHint({
+    required this.commands,
+    required this.note,
+    this.runnable,
+  });
+
+  String get copyText => commands.join('\n');
+}
+
+/// Install commands for [os], copied verbatim from `Official-docs/`.
+///
+/// Taken from the docs rather than from memory, which matters here: upstream
+/// strikes through both the Debian/Ubuntu apt package and the snap as obsolete
+/// versions, so neither is offered. WinGet's flag is `--exact`, not `--id`.
+ScrcpyInstallHint scrcpyInstallHint(HostOs os) {
+  switch (os) {
+    case HostOs.windows:
+      return const ScrcpyInstallHint(
+        commands: ['winget install --exact Genymobile.scrcpy'],
+        note: 'WinGet installs adb alongside scrcpy.',
+        runnable: 'winget install --exact Genymobile.scrcpy',
+      );
+    case HostOs.macos:
+      return const ScrcpyInstallHint(
+        commands: [
+          'brew install scrcpy',
+          'brew install --cask android-platform-tools',
+        ],
+        note: 'The second line installs adb, which scrcpy needs on PATH.',
+        runnable:
+            'brew install scrcpy && brew install --cask android-platform-tools',
+      );
+    case HostOs.linux:
+      return const ScrcpyInstallHint(
+        commands: [
+          'pacman -S scrcpy',
+          'dnf copr enable zeno/scrcpy && dnf install scrcpy',
+        ],
+        note: 'One line per distribution, Arch then Fedora, so copy the one '
+            'that matches yours rather than running both. On Debian and '
+            'Ubuntu the apt package is obsolete upstream, so use the manual '
+            'download instead.',
+      );
+  }
+}
+
+/// The wizard's steps, in order. [appIcons] is conditional; see [_visibleSteps].
+enum _WizardStep { scrcpy, directories, appIcons, appearance }
+
+/// Dialog heading for [step]. Step one keeps the greeting; the rest name what
+/// the user is actually looking at.
+String _stepTitle(_WizardStep step) => switch (step) {
+      _WizardStep.scrcpy => 'Welcome to Scrcpy GUI',
+      _WizardStep.directories => 'Directories',
+      _WizardStep.appIcons => 'App Drawer',
+      _WizardStep.appearance => 'UI Preferences',
+    };
+
+class SetupWizardDialog extends StatefulWidget {
+  /// Settings the wizard starts from, with directory defaults already applied
+  /// by the caller. Passed in rather than read from the service so the dialog
+  /// needs no disk access to open.
+  final AppSettings initialSettings;
+
+  /// Persists a change. Injected so widget tests do not write to the real
+  /// settings file.
+  final Future<void> Function(AppSettings) onSave;
+
+  const SetupWizardDialog({
+    super.key,
+    required this.initialSettings,
+    required this.onSave,
+  });
+
+  @override
+  State<SetupWizardDialog> createState() => _SetupWizardDialogState();
+}
+
+class _SetupWizardDialogState extends State<SetupWizardDialog> {
+  _WizardStep _step = _WizardStep.scrcpy;
+  late AppSettings _settings;
+
+  /// Set once the user runs the fetch from this step, so the outcome can be
+  /// reported without mistaking "never ran" for "found nothing".
+  bool _appsLoaded = false;
+
+  /// The steps to show. The app-icons step needs a device to do anything at
+  /// all, so it is offered only while one is connected rather than sitting
+  /// there dead.
+  List<_WizardStep> _visibleSteps(bool hasDevice) => [
+        _WizardStep.scrcpy,
+        _WizardStep.directories,
+        if (hasDevice) _WizardStep.appIcons,
+        _WizardStep.appearance,
+      ];
+
+  /// The step actually rendered. Falls back when the device that made the
+  /// current step visible was unplugged while the user stood on it.
+  _WizardStep _resolvedStep(List<_WizardStep> steps) =>
+      steps.contains(_step) ? _step : steps.last;
+
+  bool _scrcpyOnPath = false;
+  bool _scrcpyChecked = false;
+
+  /// Null while the probe is still running, which the adb status line renders
+  /// as "Checking adb...". This is deliberately its own gate: adb can take up
+  /// to 10 seconds to time out on a machine that has none, and that should
+  /// not block the scrcpy Browse row above it.
+  AdbStatus? _adbStatus;
+
+  /// Set when the picked folder holds no scrcpy executable.
+  String? _scrcpyDirError;
+
+  /// True once a re-check has run and still turned nothing up, which earns the
+  /// user an explanation rather than a button that looks broken.
+  bool _recheckFoundNothing = false;
+
+  /// Whether the configured directory really holds scrcpy right now.
+  ///
+  /// Checked rather than assumed: the directory is a string in a settings
+  /// file, and the executable can be deleted, moved, or upgraded out from
+  /// under it. WinGet does exactly that, since its folder name carries the
+  /// version.
+  bool _pinnedDirHasScrcpy = false;
+
+  /// scrcpy is usable either from PATH or from a directory that still has it.
+  bool get _scrcpyResolved => _scrcpyOnPath || _pinnedDirHasScrcpy;
+
+  @override
+  void initState() {
+    super.initState();
+    _settings = widget.initialSettings;
+    _start();
+  }
+
+  Future<void> _start() async {
+    final pinned = await _resolveScrcpy();
+    // Pinning a directory already re-probed adb, and adb's path derives from
+    // that directory, so probing before it was known would answer for the
+    // wrong location.
+    if (!pinned) await _checkAdb();
+  }
+
+  /// Finds scrcpy by every means available, in order of cost: PATH, then the
+  /// configured directory, then a search of the places a package manager
+  /// installs it. Returns whether it pinned a directory.
+  ///
+  /// Opening the wizard and the Check for installation button both run this.
+  /// They used to differ, with only the button searching disk, which made a
+  /// WinGet install read as missing until the user clicked: an app that was
+  /// already running holds the PATH it launched with, and WinGet stamps the
+  /// version into the directory it puts on PATH.
+  Future<bool> _resolveScrcpy() async {
+    final onPath = await AdbService.isScrcpyOnPath();
+    final directory = _settings.scrcpyDirectory;
+    // Verified, never assumed: the path is a string in a settings file and the
+    // executable can be deleted or upgraded out from under it.
+    final pinnedValid =
+        directory.isNotEmpty && await AdbService.hasScrcpyIn(directory);
+    if (!mounted) return false;
+    setState(() {
+      _scrcpyOnPath = onPath;
+      _pinnedDirHasScrcpy = pinnedValid;
+      _scrcpyChecked = true;
+    });
+
+    if (onPath || pinnedValid) return false;
+
+    final found = await AdbService.findScrcpyDirectory();
+    if (!mounted || found == null) return false;
+    await _applyScrcpyDirectory(found);
+    return true;
+  }
+
+  /// Re-probes after the user installed scrcpy from this step.
+  ///
+  /// PATH alone cannot answer this. A process keeps the PATH it inherited at
+  /// launch, and WinGet stamps the version into the directory it puts on PATH,
+  /// so installing scrcpy while this app is open leaves the app holding a
+  /// stale entry that points at the previous version's deleted folder. When
+  /// PATH comes up empty we look on disk and, if we find it, pin the directory
+  /// in settings so nothing here depends on PATH again.
+  Future<void> _recheckScrcpy() async {
+    final pinned = await _resolveScrcpy();
+    if (!mounted) return;
+    setState(() => _recheckFoundNothing = !_scrcpyResolved);
+
+    // Pinning already re-probed adb. Otherwise the adb line is still stale,
+    // since a package manager installs adb alongside scrcpy.
+    if (!pinned) await _checkAdb();
+  }
+
+  /// Records a validated scrcpy directory.
+  ///
+  /// Re-probes adb rather than leaving that to callers: [AdbService.adbExecutable]
+  /// derives adb's path from this directory, so the previous adb result went
+  /// stale the moment it changed. Every path that sets the directory goes
+  /// through here so the two cannot drift apart again.
+  /// Both callers verify the folder holds scrcpy before calling, so the
+  /// pinned-directory flag is set here rather than probing the disk again.
+  Future<void> _applyScrcpyDirectory(String directory) async {
+    setState(() {
+      _scrcpyDirError = null;
+      _pinnedDirHasScrcpy = true;
+      _settings = _settings.copyWith(scrcpyDirectory: directory);
+    });
+    await _save();
+    await _checkAdb();
+  }
+
+  Future<void> _checkAdb() async {
+    final adb = await AdbService.checkAdb();
+    if (!mounted) return;
+    setState(() => _adbStatus = adb);
+  }
+
+  Future<void> _save() => widget.onSave(_settings);
+
+  /// Closes the wizard, recording that setup is done. Skip and Finish both
+  /// land here: a user who dismissed it does not want it back next launch.
+  Future<void> _close() async {
+    final navigator = Navigator.of(context);
+    _settings = _settings.copyWith(setupCompleted: true);
+    await widget.onSave(_settings);
+    navigator.pop();
+  }
+
+  Future<void> _pickScrcpyDirectory() async {
+    final result = await FilePicker.platform.getDirectoryPath();
+    if (result == null) return;
+
+    final found = await AdbService.hasScrcpyIn(result);
+    if (!mounted) return;
+
+    if (!found) {
+      final exeName = Platform.isWindows ? 'scrcpy.exe' : 'scrcpy';
+      // Report the failure but do not persist it: AdbService.adbExecutable
+      // derives adb's path from scrcpyDirectory too, so saving a wrong
+      // folder here would also break adb resolution.
+      setState(() => _scrcpyDirError = 'No $exeName in that folder.');
+      return;
+    }
+
+    await _applyScrcpyDirectory(result);
+  }
+
+  /// Picks a directory and folds it into the settings via [apply].
+  Future<void> _pickInto(AppSettings Function(String) apply) async {
+    final result = await FilePicker.platform.getDirectoryPath();
+    if (result == null || !mounted) return;
+
+    setState(() => _settings = apply(result));
+    await _save();
+  }
+
+  /// Moves the icon cache, copying whatever is already in it.
+  ///
+  /// Not [_pickInto]: this wizard reopens from Settings' "Run Setup Again", so
+  /// the cache can be full by the time anyone lands here, and only the active
+  /// cache is ever read.
+  Future<void> _pickAppIconsDirectory() async {
+    final target = await FilePicker.platform.getDirectoryPath();
+    if (target == null) return;
+
+    await AppIconCache.copyCache(_settings.appIconsDirectory, target);
+    if (!mounted) return;
+
+    setState(
+      () => _settings = _settings.copyWith(appIconsDirectory: target),
+    );
+    await _save();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Watched, not read: plugging a phone in mid-setup should make the
+    // app-icons step appear rather than wait for the next run.
+    final deviceId = context.watch<DeviceManagerService>().selectedDevice;
+    final steps = _visibleSteps(deviceId != null);
+    final step = _resolvedStep(steps);
+    final index = steps.indexOf(step);
+    final isLastStep = index == steps.length - 1;
+
+    return AlertDialog(
+      backgroundColor: context.appSurface,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  _stepTitle(step),
+                  style: TextStyle(
+                    color: context.appTextPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Text(
+                'Step ${index + 1} of ${steps.length}',
+                style: TextStyle(color: context.appTextSecondary, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: (index + 1) / steps.length,
+            color: context.appPrimary,
+            backgroundColor: context.appDivider,
+          ),
+        ],
+      ),
+      // Scrollable because step 1 grows: with scrcpy missing it gains the
+      // install block, the download button and the Browse row, which overflows
+      // a short window.
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(child: _buildStepBody(step, deviceId)),
+      ),
+      actions: [
+        // Skips this step only, never the wizard. Hidden on the last step,
+        // where skipping and finishing would be the same action.
+        if (!isLastStep)
+          TextButton(
+            onPressed: () => setState(() => _step = steps[index + 1]),
+            child: const Text('Skip this step'),
+          ),
+        if (index > 0)
+          TextButton(
+            onPressed: () => setState(() => _step = steps[index - 1]),
+            child: const Text('Back'),
+          ),
+        ElevatedButton(
+          onPressed: isLastStep
+              ? _close
+              : () => setState(() => _step = steps[index + 1]),
+          child: Text(isLastStep ? 'Finish' : 'Next'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepBody(_WizardStep step, String? deviceId) {
+    switch (step) {
+      case _WizardStep.scrcpy:
+        return _buildScrcpyStep();
+      case _WizardStep.directories:
+        return _buildDirectoriesStep();
+      case _WizardStep.appIcons:
+        // Non-null whenever this step is visible; _visibleSteps drops it
+        // otherwise.
+        return _buildAppIconsStep(deviceId!);
+      case _WizardStep.appearance:
+        return _buildAppearanceStep();
+    }
+  }
+
+  Widget _buildScrcpyStep() {
+    if (!_scrcpyChecked) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final adbReachable = _adbStatus?.reachable == true;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _hint('Scrcpy GUI runs the scrcpy executable, so it needs to know '
+            'where that is.'),
+        const SizedBox(height: 16),
+        if (_scrcpyOnPath)
+          _statusLine(
+            Icons.check_circle,
+            AppColors.runGreen,
+            'scrcpy found on your system PATH',
+          )
+        else if (_pinnedDirHasScrcpy)
+          _statusLine(
+            Icons.check_circle,
+            AppColors.runGreen,
+            'scrcpy found at ${_settings.scrcpyDirectory}',
+          )
+        else ...[
+          _statusLine(
+            Icons.error_outline,
+            AppColors.error,
+            'scrcpy is not on your system PATH. Download it, or choose the '
+            'folder holding a copy you already have.',
+          ),
+          const SizedBox(height: 16),
+          _buildInstallPanel(),
+        ],
+        const SizedBox(height: 12),
+        _statusLine(
+          adbReachable ? Icons.check_circle : Icons.info_outline,
+          // adb is informational and never blocks progress, so it never uses
+          // the error color, not even while still checking or not found.
+          adbReachable ? AppColors.runGreen : context.appTextSecondary,
+          _adbStatusLabel,
+        ),
+      ],
+    );
+  }
+
+  /// Both ways to get scrcpy, boxed together so step 1 reads as one choice
+  /// rather than a pile of loose controls.
+  Widget _buildInstallPanel() {
+    final hint = scrcpyInstallHint(currentHostOs);
+    final runnable = hint.runnable;
+    final scrcpyDirError = _scrcpyDirError;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        border: Border.all(color: context.appDivider),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.download_for_offline_outlined,
+                  size: 18, color: context.appPrimary),
+              const SizedBox(width: 8),
+              Text(
+                'Install scrcpy',
+                style: TextStyle(
+                  color: context.appTextPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _optionLabel('Option 1: Manual download'),
+          const SizedBox(height: 6),
+          _hint('Grab the latest release, extract it, then point the folder '
+              'below at it.'),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton.icon(
+              onPressed: () =>
+                  UpdateService.launchReleasePage(kScrcpyReleasesUrl),
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: const Text('Get scrcpy'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          DirectoryRow(
+            label: 'Scrcpy Directory',
+            path: _settings.scrcpyDirectory.isEmpty
+                ? '(not set)'
+                : _settings.scrcpyDirectory,
+            showOpenButton: false,
+            onBrowse: _pickScrcpyDirectory,
+          ),
+          if (scrcpyDirError != null) ...[
+            const SizedBox(height: 8),
+            _statusLine(
+              Icons.warning_amber_rounded,
+              AppColors.error,
+              scrcpyDirError,
+            ),
+          ],
+          const SizedBox(height: 16),
+          Divider(color: context.appDivider, height: 1),
+          const SizedBox(height: 16),
+          _optionLabel('Option 2: Run a command'),
+          const SizedBox(height: 8),
+          _buildCommandBlock(hint),
+          const SizedBox(height: 6),
+          _hint(hint.note),
+          if (runnable != null) ...[
+            const SizedBox(height: 10),
+            // Wrap, not Row: the two labels together outgrow the panel at this
+            // dialog width, and they would again in a longer translation.
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _runInstallCommand(runnable),
+                  icon: const Icon(Icons.terminal, size: 18),
+                  label: const Text('Run in terminal'),
+                ),
+                TextButton(
+                  onPressed: _recheckScrcpy,
+                  child: const Text('Check for installation'),
+                ),
+              ],
+            ),
+            if (_recheckFoundNothing) ...[
+              const SizedBox(height: 8),
+              _statusLine(
+                Icons.info_outline,
+                context.appTextSecondary,
+                'Still not found. Wait for the install to finish, or use '
+                'Browse under Option 1 to point at it.',
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _optionLabel(String text) => Text(
+        text,
+        style: TextStyle(
+          color: context.appTextPrimary,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+
+  /// Opens a terminal running [command]. The terminal stays open so the user
+  /// can see the package manager's output and answer any prompt it raises.
+  Future<void> _runInstallCommand(String command) async {
+    final launched = await ShellRunner.runCommandInNewTerminal(command);
+    if (!mounted) return;
+    showAppSnackBar(
+      context,
+      launched
+          ? 'Opened a terminal. Press Check again once it finishes.'
+          : 'Could not open a terminal. Copy the command above and run it '
+              'yourself, then press Check.',
+      type: launched ? AppSnackBarType.info : AppSnackBarType.error,
+    );
+  }
+
+  Widget _buildCommandBlock(ScrcpyInstallHint hint) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      decoration: BoxDecoration(
+        color: context.appCommandSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: context.appDivider),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: SelectableText(
+              hint.copyText,
+              style: TextStyle(
+                color: context.appTextPrimary,
+                fontFamily: 'monospace',
+                fontSize: 12.5,
+                height: 1.5,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.copy, size: 18),
+            color: context.appTextSecondary,
+            tooltip: 'Copy',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: hint.copyText));
+              showAppSnackBar(
+                context,
+                'Install command copied',
+                type: AppSnackBarType.neutral,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  String get _adbStatusLabel {
+    final status = _adbStatus;
+    if (status == null) return 'Checking adb...';
+    if (!status.reachable) return 'adb not found';
+    if (status.deviceCount == 0) return 'adb responding, no devices connected';
+    if (status.deviceCount == 1) return 'adb responding, 1 device connected';
+    return 'adb responding, ${status.deviceCount} devices connected';
+  }
+
+  Widget _buildDirectoriesStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _hint('Where Scrcpy GUI keeps the files it creates. These are '
+            'pre-filled, and all of them can be changed later in Settings.'),
+        const SizedBox(height: 16),
+        DirectoryRow(
+          label: 'Downloads Directory (generated scripts)',
+          path: _settings.downloadsDirectory,
+          showOpenButton: false,
+          onBrowse: () => _pickInto(
+            (path) => _settings.copyWith(downloadsDirectory: path),
+          ),
+        ),
+        const SizedBox(height: 16),
+        DirectoryRow(
+          label: Platform.isWindows
+              ? 'Scripts Directory (.bat, .cmd)'
+              : 'Scripts Directory (.sh${Platform.isMacOS ? ', .command' : ''})',
+          path: _settings.batDirectory,
+          showOpenButton: false,
+          onBrowse: () =>
+              _pickInto((path) => _settings.copyWith(batDirectory: path)),
+        ),
+        const SizedBox(height: 16),
+        DirectoryRow(
+          label: 'Recordings Directory',
+          path: _settings.recordingsDirectory,
+          showOpenButton: false,
+          onBrowse: () => _pickInto(
+            (path) => _settings.copyWith(recordingsDirectory: path),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Picks how the App Drawer gets its icons, and runs it on the spot.
+  ///
+  /// Only reachable with a device connected, so the fetch is a button here
+  /// rather than an errand the user has to remember to run later.
+  Widget _buildAppIconsStep(String deviceId) {
+    final controller = context.watch<AppIconController>();
+    final method = controller.appDrawerSettings.iconFetchMethod;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _hint('The App Drawer shows your device\'s apps with their real icons '
+            'and names. Choose how to collect them, then load them now.'),
+        const SizedBox(height: 16),
+        IconFetchMethodPicker(
+          selected: method,
+          onChanged: controller.setIconFetchMethod,
+        ),
+        const SizedBox(height: 16),
+        DirectoryRow(
+          label: 'App Icons & Labels',
+          path: AppIconCache.cachePathIn(_settings.appIconsDirectory),
+          showOpenButton: false,
+          onBrowse: _pickAppIconsDirectory,
+        ),
+        const SizedBox(height: 20),
+        if (controller.isLoading)
+          _buildFetchProgress(controller)
+        else ...[
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () => _loadApps(deviceId),
+              icon: const Icon(Icons.download_rounded, size: 18),
+              label: Text('Load apps with ${iconFetchMethodName(method)}'),
+            ),
+          ),
+          if (_appsLoaded) ...[
+            const SizedBox(height: 12),
+            _statusLine(
+              Icons.check_circle,
+              AppColors.runGreen,
+              '${_loadedIconCount(controller)} of ${controller.labels.length} '
+              'apps have an icon. Re-run above, or carry on and finish in the '
+              'App Drawer.',
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFetchProgress(AppIconController controller) {
+    final total = controller.total;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        LinearProgressIndicator(
+          // Null while the total is unknown, which renders as indeterminate
+          // rather than a bar frozen at zero.
+          value: total > 0 ? controller.progress / total : null,
+          color: context.appPrimary,
+          backgroundColor: context.appDivider,
+        ),
+        const SizedBox(height: 8),
+        _hint(
+          controller.progressStatus.isEmpty
+              ? 'Loading apps...'
+              : controller.progressStatus,
+        ),
+      ],
+    );
+  }
+
+  int _loadedIconCount(AppIconController controller) => controller.icons.values
+      .where((icon) => icon != null && icon.path.isNotEmpty)
+      .length;
+
+  /// Runs the chosen fetch method against [deviceId], the same way the App
+  /// Drawer's Load Apps button does.
+  ///
+  /// Auto-install is on: the user picked the helper-APK card and pressed a
+  /// button that says it installs, so failing with "enable auto-install"
+  /// would be a dead end with no checkbox in sight.
+  Future<void> _loadApps(String deviceId) async {
+    final controller = context.read<AppIconController>();
+    final info = DeviceManagerService.devicesInfo[deviceId];
+    if (info == null) return;
+
+    // Unsorted: the App Drawer sorts by label when it renders, and nothing
+    // here displays the list.
+    await controller.loadForDevice(deviceId, info.packages);
+    await controller.fetchMissing(
+      forceUpdate: true,
+      helperApkAutoInstall: true,
+      onError: (message) {
+        LogService.error('SetupWizard/loadApps', message);
+        if (!mounted) return;
+        showAppSnackBar(
+          context,
+          message,
+          type: AppSnackBarType.error,
+          duration: const Duration(seconds: 6),
+        );
+      },
+    );
+    if (!mounted) return;
+    setState(() => _appsLoaded = true);
+  }
+
+  Widget _buildAppearanceStep() {
+    final themeNotifier = context.watch<ColorThemeNotifier>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CustomDropdown(
+          label: 'Color Theme',
+          value: themeNotifier.current.name,
+          items: themeNotifier.presets.map((preset) => preset.name).toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            context.read<ColorThemeNotifier>().setPreset(value);
+            setState(() => _settings = _settings.copyWith(colorPreset: value));
+            _save();
+          },
+        ),
+        const SizedBox(height: 16),
+        UiScaleDropdown(
+          scale: _settings.uiScale,
+          onChanged: (scale) {
+            setState(() => _settings = _settings.copyWith(uiScale: scale));
+            _save();
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _hint(String text) => Text(
+        text,
+        style: TextStyle(color: context.appTextSecondary, fontSize: 13),
+      );
+
+  Widget _statusLine(IconData icon, Color color, String text) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: context.appTextPrimary, fontSize: 13),
+            ),
+          ),
+        ],
+      );
+}
+
+/// Shows the wizard once after the first frame when [enabled], then renders
+/// [child] untouched either way.
+///
+/// Mounted inside `MaterialApp.home` rather than `MaterialApp.builder`:
+/// `builder` inserts widgets above the Navigator, so a context taken there has
+/// no Navigator ancestor and showDialog throws.
+class SetupWizardGate extends StatefulWidget {
+  final bool enabled;
+  final Widget child;
+
+  const SetupWizardGate({
+    super.key,
+    required this.enabled,
+    required this.child,
+  });
+
+  @override
+  State<SetupWizardGate> createState() => _SetupWizardGateState();
+}
+
+class _SetupWizardGateState extends State<SetupWizardGate> {
+  bool _opened = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.enabled) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _opened) return;
+      _opened = true;
+      showSetupWizard(context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// Opens the setup wizard, resolving its starting settings first.
+///
+/// The only entry point: used by [SetupWizardGate] on first run and by the
+/// "Run Setup Again" button in Settings.
+Future<void> showSetupWizard(BuildContext context) async {
+  final service = SettingsService();
+  final settings = SettingsService.withDirectoryDefaults(
+    SettingsService.currentSettings ?? AppSettings.defaultSettings(),
+    await AppDirectories.resolve(),
+  );
+  if (!context.mounted) return;
+
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => SetupWizardDialog(
+      initialSettings: settings,
+      onSave: (updated) => service.saveSettings(updated),
+    ),
+  );
+}

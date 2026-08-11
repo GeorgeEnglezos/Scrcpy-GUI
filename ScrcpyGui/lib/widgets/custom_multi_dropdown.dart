@@ -1,8 +1,5 @@
-/// A custom multi-select dropdown widget that provides a consistent UI across the application.
-///
-/// This widget wraps the MultiDropdown package with custom styling to match
-/// the application's design system. It supports a floating label, tooltip, and
-/// chip-based display of selected values.
+/// Multi-select dropdown wrapping the MultiDropdown package with app styling:
+/// floating label, tooltip, chip-based display of selected values.
 library;
 
 import 'package:flutter/material.dart';
@@ -76,14 +73,6 @@ class CustomMultiDropdown extends StatelessWidget {
           floatingLabelStyle: TextStyle(
             color: context.appPrimary,
             fontSize: 12,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: textColor.withValues(alpha: 0.3)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: context.appPrimary),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,

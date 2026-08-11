@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../widgets/app_snackbar.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
@@ -124,8 +125,10 @@ class _LogsPageState extends State<LogsPage> {
                     Clipboard.setData(
                       ClipboardData(text: _selectedLogContent!),
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Copied to clipboard')),
+                    showAppSnackBar(
+                      context,
+                      'Copied to clipboard',
+                      type: AppSnackBarType.neutral,
                     );
                   },
                   icon: const Icon(Icons.copy),

@@ -3,11 +3,11 @@ import 'package:flutter/foundation.dart';
 import '../models/scrcpy_command.dart';
 import 'device_manager_service.dart';
 import 'settings_service.dart';
-import 'terminal_service.dart';
+import 'adb_service.dart';
 
 /// Central state holder for the in-progress scrcpy command.
 ///
-/// Owns the current [ScrcpyCommand] and exposes [fullCommand] — the fully
+/// Owns the current [ScrcpyCommand] and exposes [fullCommand], the fully
 /// assembled CLI string including base executable, selected device serial,
 /// window title, shortcut modifier, and all flag arguments.
 ///
@@ -79,7 +79,7 @@ class CommandNotifier extends ChangeNotifier {
 
   /// Persist the current command as the default preset. Returns true on
   /// successful disk write, false otherwise. Builds a new settings instance
-  /// — never mutates the cached settings before persistence succeeds.
+  /// and never mutates the cached settings before persistence succeeds.
   Future<bool> saveDefault() async {
     final settings = SettingsService.currentSettings;
     if (settings == null) return false;
@@ -90,7 +90,8 @@ class CommandNotifier extends ChangeNotifier {
 
   /// Full command string including base, serial, window title, and shortcut mod.
   String get fullCommand {
-    final base = '${TerminalService.scrcpyExecutable} --pause-on-exit=if-error';
+    final exe = AdbService.quoteExecutable(AdbService.scrcpyExecutable);
+    final base = '$exe --pause-on-exit=if-error';
     final serial = _deviceManager?.selectedDevice;
     final serialPart =
         (serial != null && serial.isNotEmpty) ? '--serial=$serial' : '';
@@ -124,7 +125,7 @@ class CommandNotifier extends ChangeNotifier {
     return parts.where((p) => p.isNotEmpty).join(' ').trim();
   }
 
-  String get displayCommand => TerminalService.toDisplayCommand(fullCommand);
+  String get displayCommand => AdbService.toDisplayCommand(fullCommand);
 
   @override
   void dispose() {

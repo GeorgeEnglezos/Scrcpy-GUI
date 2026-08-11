@@ -10,7 +10,7 @@ import 'package:archive/archive_io.dart';
 import '../app_icon_cache.dart';
 import '../icon_fetch_strategy.dart';
 import '../log_service.dart';
-import '../terminal_service.dart';
+import '../adb_service.dart';
 import 'arsc_parser.dart';
 
 class AdbScrapeStrategy implements IconFetchStrategy {
@@ -80,7 +80,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
     }
     if (sentinels.isNotEmpty) onBatchDone(sentinels);
 
-    LogService.info('AdbScrapeStrategy', 'Fetch complete for device=${LogService.sanitizeDevice(deviceId)} — ${packages.length - pendingIcon.length}/${packages.length} icons resolved');
+    LogService.info('AdbScrapeStrategy', 'Fetch complete for device=${LogService.sanitizeDevice(deviceId)}: ${packages.length - pendingIcon.length}/${packages.length} icons resolved');
     onProgress?.call(total, total, 'Done');
   }
 
@@ -133,7 +133,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
   }) async {
     File? tempApk;
     try {
-      final pmResult = await TerminalService.runAdbProcess(
+      final pmResult = await AdbService.runAdbProcess(
         ['-s', deviceId, 'shell', 'pm', 'path', pkg],
       );
       final pmOutput = pmResult.stdout.toString().trim();
@@ -162,7 +162,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
       if (pendingIcon.contains(pkg)) {
         // Phase A: heuristic zip scan
         for (final apkPath in allApkPaths) {
-          final pullResult = await TerminalService.runAdbProcess(
+          final pullResult = await AdbService.runAdbProcess(
             ['-s', deviceId, 'pull', apkPath, tempApk.path],
           );
           if (pullResult.exitCode != 0) continue;
@@ -215,7 +215,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
     );
 
     try {
-      final pullResult = await TerminalService.runAdbProcess(
+      final pullResult = await AdbService.runAdbProcess(
         ['-s', deviceId, 'pull', basePath, tempApk.path],
       );
       if (pullResult.exitCode != 0) return null;
@@ -240,12 +240,12 @@ class AdbScrapeStrategy implements IconFetchStrategy {
         outResId: outResId,
       );
 
-      // base.apk arsc gave no paths — try each density split's own arsc
+      // base.apk arsc gave no paths, try each density split's own arsc
       if (iconPaths.isEmpty && outResId.isNotEmpty && outResId.first != null) {
         final iconResId = outResId.first!;
         for (final splitPath in allApkPaths) {
           if (splitPath.endsWith('base.apk')) continue;
-          final splitPull = await TerminalService.runAdbProcess(
+          final splitPull = await AdbService.runAdbProcess(
             ['-s', deviceId, 'pull', splitPath, tempApk.path],
           );
           if (splitPull.exitCode != 0) continue;
@@ -283,7 +283,7 @@ class AdbScrapeStrategy implements IconFetchStrategy {
 
       // Search all splits for the resolved paths
       for (final apkPath in allApkPaths) {
-        final pullRes = await TerminalService.runAdbProcess(
+        final pullRes = await AdbService.runAdbProcess(
           ['-s', deviceId, 'pull', apkPath, tempApk.path],
         );
         if (pullRes.exitCode != 0) continue;

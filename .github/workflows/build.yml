@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  schedule:
-    # 21:00 UTC = 23:00 Europe/Athens — runs on days 1, 5, 9, 13, 17, 21, 25, 29 (every ~4 days)
-    - cron: '0 21 1,5,9,13,17,21,25,29 * *'
   workflow_dispatch:
     inputs:
       build_windows:
@@ -43,6 +40,31 @@ permissions:
   contents: write
 
 jobs:
+  # Correctness gate: static analysis + the Dart test suite. Every build job
+  # depends on this, so a red test blocks all builds and the release.
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ScrcpyGui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        run: flutter test
+
   detect-nightly-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -147,7 +169,7 @@ jobs:
           echo "Nightly logic tests passed: base=$BASE_VERSION nightly=$NIGHTLY_VERSION previous=$PREVIOUS_VERSION"
 
   build-windows:
-    needs: [detect-nightly-changes]
+    needs: [analyze-and-test, detect-nightly-changes]
     if: |
       (github.event_name != 'workflow_dispatch' && needs.detect-nightly-changes.outputs.run_builds == 'true') ||
       (github.event_name == 'workflow_dispatch' && inputs.build_windows)
@@ -212,7 +234,7 @@ jobs:
           retention-days: 1
 
   build-linux:
-    needs: [detect-nightly-changes]
+    needs: [analyze-and-test, detect-nightly-changes]
     if: |
       (github.event_name != 'workflow_dispatch' && needs.detect-nightly-changes.outputs.run_builds == 'true') ||
       (github.event_name == 'workflow_dispatch' && inputs.build_linux)
@@ -279,7 +301,7 @@ jobs:
           retention-days: 1
 
   build-macos:
-    needs: [detect-nightly-changes]
+    needs: [analyze-and-test, detect-nightly-changes]
     if: |
       (github.event_name != 'workflow_dispatch' && needs.detect-nightly-changes.outputs.run_builds == 'true') ||
       (github.event_name == 'workflow_dispatch' && inputs.build_macos)

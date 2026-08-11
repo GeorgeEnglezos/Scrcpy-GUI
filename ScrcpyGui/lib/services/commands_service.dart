@@ -3,7 +3,7 @@ import 'package:path/path.dart' as p;
 
 import '../models/commands_model.dart';
 import 'settings_service.dart';
-import 'terminal_service.dart';
+import 'adb_service.dart';
 
 class CommandsService {
   static const String _commandsFileName = 'commands.json';
@@ -16,27 +16,19 @@ class CommandsService {
     return p.join(settingsDir, _commandsFileName);
   }
 
-  /// Rewrites the scrcpy executable prefix in a single command to match the
-  /// current [TerminalService.scrcpyExecutable]. Handles:
-  /// - Bare "scrcpy" (PATH-based)
-  /// - Unquoted full paths: C:\path\scrcpy.exe --flags
-  /// - Quoted full paths:  "C:\path with spaces\scrcpy.exe" --flags
-  static String _normalizeExecutable(String cmd) =>
-      TerminalService.normalizeScrcpyExecutable(cmd);
-
   /// Migrates all stored commands in [data] to use the current scrcpy executable.
   /// Returns true if any command was changed (caller should re-persist).
   static bool _migrateExecutables(CommandsData data) {
     bool changed = false;
 
-    final newLast = _normalizeExecutable(data.lastCommand);
+    final newLast = AdbService.normalizeScrcpyExecutable(data.lastCommand);
     if (newLast != data.lastCommand) {
       data.lastCommand = newLast;
       changed = true;
     }
 
     for (int i = 0; i < data.favorites.length; i++) {
-      final updated = _normalizeExecutable(data.favorites[i]);
+      final updated = AdbService.normalizeScrcpyExecutable(data.favorites[i]);
       if (updated != data.favorites[i]) {
         data.favorites[i] = updated;
         changed = true;
@@ -45,7 +37,7 @@ class CommandsService {
 
     final updatedMostUsed = <String, int>{};
     for (final entry in data.mostUsed.entries) {
-      final updatedKey = _normalizeExecutable(entry.key);
+      final updatedKey = AdbService.normalizeScrcpyExecutable(entry.key);
       // Merge counts in case two old keys normalise to the same new key
       updatedMostUsed[updatedKey] = (updatedMostUsed[updatedKey] ?? 0) + entry.value;
       if (updatedKey != entry.key) { changed = true; }
@@ -101,25 +93,28 @@ class CommandsService {
     }
   }
 
-  /// Track a command execution (updates last command and most used)
+  /// Track a command execution (updates last command and most used).
+  ///
+  /// Stored device-agnostic: the same command run on different devices counts
+  /// as one entry, and the current device is injected when it is re-run.
   Future<void> trackCommandExecution(String command) async {
     final commands = await loadCommands();
+    final stored = AdbService.applySerial(command, null);
 
-    // Update last command
-    commands.lastCommand = command;
-
-    // Update most used counter
-    commands.mostUsed[command] = (commands.mostUsed[command] ?? 0) + 1;
+    commands.lastCommand = stored;
+    commands.mostUsed[stored] = (commands.mostUsed[stored] ?? 0) + 1;
 
     await saveCommands(commands);
   }
 
-  /// Add a command to favorites
+  /// Add a command to favorites, device-agnostic (the current device is
+  /// injected at run/download time, so a favorite follows the connected device).
   Future<void> addToFavorites(String command) async {
     final commands = await loadCommands();
+    final stored = AdbService.applySerial(command, null);
 
-    if (!commands.favorites.contains(command)) {
-      commands.favorites.add(command);
+    if (!commands.favorites.contains(stored)) {
+      commands.favorites.add(stored);
       await saveCommands(commands);
     }
   }
@@ -128,13 +123,13 @@ class CommandsService {
   Future<void> removeFromFavorites(String command) async {
     final commands = await loadCommands();
 
-    commands.favorites.remove(command);
+    commands.favorites.remove(AdbService.applySerial(command, null));
     await saveCommands(commands);
   }
 
   /// Check if a command is in favorites
   Future<bool> isFavorite(String command) async {
     final commands = await loadCommands();
-    return commands.favorites.contains(command);
+    return commands.favorites.contains(AdbService.applySerial(command, null));
   }
 }

@@ -3,14 +3,14 @@ library;
 
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'app_snackbar.dart';
 import '../theme/app_theme_colors.dart';
 import '../services/settings_service.dart';
 
 class PanelTheme {
   final Color primary;
-  final Color secondary;
 
-  const PanelTheme({required this.primary, required this.secondary});
+  const PanelTheme({required this.primary});
 }
 
 class SurroundingPanel extends StatefulWidget {
@@ -72,39 +72,20 @@ class _SurroundingPanelState extends State<SurroundingPanel> {
   }
 
   static final Map<String, PanelTheme> themeMap = {
-    'Recording': PanelTheme(
-      primary: AppColors.recordingPrimary,
-      secondary: AppColors.recordingSecondary,
-    ),
-    'Virtual Display': PanelTheme(
-      primary: AppColors.virtualDisplayPrimary,
-      secondary: AppColors.virtualDisplaySecondary,
-    ),
-    'General': PanelTheme(
-      primary: AppColors.generalPrimary,
-      secondary: AppColors.generalSecondary,
-    ),
-    'Audio': PanelTheme(
-      primary: AppColors.audioPrimary,
-      secondary: AppColors.audioSecondary,
-    ),
-    'Package Selector': PanelTheme(
-      primary: AppColors.packagePrimary,
-      secondary: AppColors.packageSecondary,
-    ),
-    'Display/Window': PanelTheme(
-      primary: AppColors.displayWindowPrimary,
-      secondary: AppColors.displayWindowSecondary,
-    ),
+    'Recording': PanelTheme(primary: AppColors.recordingPrimary),
+    'Virtual Display': PanelTheme(primary: AppColors.virtualDisplayPrimary),
+    'General': PanelTheme(primary: AppColors.generalPrimary),
+    'Audio': PanelTheme(primary: AppColors.audioPrimary),
+    'Package Selector': PanelTheme(primary: AppColors.packagePrimary),
+    'Display/Window': PanelTheme(primary: AppColors.displayWindowPrimary),
     'Network/Connection': PanelTheme(
       primary: AppColors.networkConnectionPrimary,
-      secondary: AppColors.networkConnectionSecondary,
     ),
   };
 
   PanelTheme _currentTheme(BuildContext context) {
     return themeMap[widget.panelType] ??
-        PanelTheme(primary: context.appPrimary, secondary: context.appPrimary);
+        PanelTheme(primary: context.appPrimary);
   }
 
   @override
@@ -177,16 +158,13 @@ class _SurroundingPanelState extends State<SurroundingPanel> {
                         onPressed: () async {
                           final ok = await widget.onSaveDefaultPressed!();
                           if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                ok
-                                    ? 'Saved as default'
-                                    : 'Failed to save default',
-                              ),
-                              backgroundColor: ok ? null : Colors.red.shade700,
-                              duration: const Duration(seconds: 2),
-                            ),
+                          showAppSnackBar(
+                            context,
+                            ok ? 'Saved as default' : 'Failed to save default',
+                            type: ok
+                                ? AppSnackBarType.neutral
+                                : AppSnackBarType.error,
+                            duration: const Duration(seconds: 2),
                           );
                         },
                         icon: Icon(

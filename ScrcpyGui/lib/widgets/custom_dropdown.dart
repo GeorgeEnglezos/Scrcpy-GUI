@@ -1,8 +1,5 @@
-/// A custom dropdown widget that provides a consistent UI across the application.
-///
-/// This widget wraps Flutter's DropdownButtonFormField with custom styling
-/// to match the application's design system. It supports labels, hints,
-/// and automatic value validation.
+/// Styled DropdownButtonFormField with label, hint, and automatic value
+/// validation.
 library;
 
 import 'package:flutter/material.dart';
@@ -91,14 +88,6 @@ class CustomDropdown extends StatelessWidget {
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         labelStyle: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w500),
         floatingLabelStyle: TextStyle(color: context.appPrimary, fontSize: 12, fontWeight: FontWeight.w500),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: textColor.withValues(alpha: 0.3)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: context.appPrimary),
-        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,

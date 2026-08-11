@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../widgets/app_snackbar.dart';
 import '../../widgets/command_panel.dart';
 import '../../widgets/surrounding_panel.dart';
 import '../../services/command_notifier.dart';
 import '../../services/device_manager_service.dart';
-import '../../services/terminal_service.dart';
+import '../../services/adb_service.dart';
+import '../../utils/command_executor.dart';
 import '../../services/commands_service.dart';
 import '../../services/log_service.dart';
 import '../../services/settings_service.dart';
@@ -14,12 +16,10 @@ import '../../theme/app_theme_colors.dart';
 import 'package:provider/provider.dart';
 
 class CommandActionsPanel extends StatefulWidget {
-  final VoidCallback? onRun;
   final VoidCallback? onFavorite;
 
   const CommandActionsPanel({
     super.key,
-    this.onRun,
     this.onFavorite,
   });
 
@@ -69,7 +69,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                 displayCommand: displayCmd,
                 showDelete: false,
                 onDownload: () =>
-                    TerminalService.generateScript(context, command),
+                    CommandExecutor.generateScript(context, command),
               ),
               const SizedBox(height: 12),
               Consumer<DeviceManagerService>(
@@ -100,11 +100,23 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                         children: [
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 170),
-                            child: DropdownButton<String>(
+                            // FormField variant so the field picks up the app's
+                            // InputDecorationTheme; a bare DropdownButton is not
+                            // an InputDecorator and would keep Material's
+                            // underline next to the outlined IP/port fields.
+                            child: DropdownButtonFormField<String>(
                               isExpanded: true,
-                              value: selected,
+                              initialValue: selected,
                               style: TextStyle(color: context.appTextPrimary, fontSize: kFontSize),
                               dropdownColor: context.appSurface,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: context.appInputFill,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: kRowHorizontalPadding,
+                                  vertical: kRowVerticalPadding / 2,
+                                ),
+                              ),
                               hint: Text(
                                 'Select Device',
                                 overflow: TextOverflow.ellipsis,
@@ -130,7 +142,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                             ),
                           ),
                           IconButton(
-                            onPressed: () => TerminalService.executeCommand(
+                            onPressed: () => CommandExecutor.executeCommand(
                               context,
                               command,
                               source: 'CommandPanel/Run',
@@ -190,14 +202,6 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                                       hintText: '192.168.1.x',
                                       labelStyle: TextStyle(color: context.appTextSecondary, fontSize: kLabelFontSize, fontWeight: FontWeight.w500),
                                       floatingLabelStyle: TextStyle(color: context.appPrimary, fontSize: kLabelFontSize - 1, fontWeight: FontWeight.w500),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                        borderSide: BorderSide(color: context.appTextSecondary.withValues(alpha: 0.3)),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                        borderSide: BorderSide(color: context.appPrimary),
-                                      ),
                                       contentPadding: const EdgeInsets.symmetric(
                                         horizontal: kRowHorizontalPadding,
                                         vertical: kRowVerticalPadding / 2,
@@ -224,14 +228,6 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
                                     hintText: '5555',
                                     labelStyle: TextStyle(color: context.appTextSecondary, fontSize: kLabelFontSize, fontWeight: FontWeight.w500),
                                     floatingLabelStyle: TextStyle(color: context.appPrimary, fontSize: kLabelFontSize - 1, fontWeight: FontWeight.w500),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: context.appTextSecondary.withValues(alpha: 0.3)),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: context.appPrimary),
-                                    ),
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: kRowHorizontalPadding,
                                       vertical: kRowVerticalPadding / 2,
@@ -362,15 +358,12 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
     final portNum = int.tryParse(port);
     if (portNum == null || portNum < 1 || portNum > 65535) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            port.isEmpty
-                ? 'Port number cannot be empty'
-                : 'Invalid port number: $port',
-          ),
-          backgroundColor: Colors.red.shade700,
-        ),
+      showAppSnackBar(
+        context,
+        port.isEmpty
+            ? 'Port number cannot be empty'
+            : 'Invalid port number: $port',
+        type: AppSnackBarType.error,
       );
       return;
     }
@@ -379,14 +372,11 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
       LogService.warning(
           'CommandPanel/ConnectWireless', 'Device is already wireless');
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Device is already connected wirelessly. Disconnect first to reconnect.',
-          ),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 3),
-        ),
+      showAppSnackBar(
+        context,
+        'Device is already connected wirelessly. Disconnect first to reconnect.',
+        type: AppSnackBarType.warning,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
@@ -397,24 +387,20 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
     final bool isPureDirectConnect = ip.isNotEmpty && !hasUsbDevice;
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isPureDirectConnect
-              ? 'Connecting to $ip:$portNum...'
-              : 'Setting up wireless connection...',
-        ),
-        backgroundColor: Colors.blue,
-        duration: const Duration(seconds: 2),
-      ),
+    showAppSnackBar(
+      context,
+      isPureDirectConnect
+          ? 'Connecting to $ip:$portNum...'
+          : 'Setting up wireless connection...',
+      duration: const Duration(seconds: 2),
     );
 
     try {
       final Map<String, dynamic> result;
 
       if (ip.isNotEmpty && hasUsbDevice) {
-        result = await TerminalService.setupWirelessConnectionManual(
-          deviceId, ip, portNum,
+        result = await AdbService.setupWirelessConnection(
+          deviceId, portNum, ipAddress: ip,
         ).timeout(
           const Duration(seconds: 15),
           onTimeout: () => {
@@ -423,11 +409,11 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
           },
         );
       } else if (ip.isNotEmpty) {
-        final ipError = TerminalService.validateIpAddress(ip);
+        final ipError = AdbService.validateIpAddress(ip);
         if (ipError != null) {
           result = {'success': false, 'message': ipError};
         } else {
-          final connectResult = await TerminalService.connectWireless(
+          final connectResult = await AdbService.connectWireless(
             ip, portNum,
           ).timeout(const Duration(seconds: 15), onTimeout: () => 'timeout');
           final success = connectResult.contains('connected') ||
@@ -442,7 +428,7 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
           };
         }
       } else {
-        result = await TerminalService.setupWirelessConnection(
+        result = await AdbService.setupWirelessConnection(
           deviceId, portNum,
         ).timeout(
           const Duration(seconds: 15),
@@ -466,26 +452,20 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
             'Failed: ${LogService.sanitizeMessage(message)}');
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor:
-              success ? Colors.green.shade700 : Colors.red.shade700,
-          duration: const Duration(seconds: 4),
-        ),
+      showAppSnackBar(
+        context,
+        message,
+        type: success ? AppSnackBarType.success : AppSnackBarType.error,
       );
 
       if (success && !isPureDirectConnect) {
         Future.delayed(const Duration(seconds: 4), () {
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'You can now disconnect the USB cable. Wireless device should appear in the device list.',
-              ),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 5),
-            ),
+          showAppSnackBar(
+            context,
+            'You can now disconnect the USB cable. Wireless device should appear in the device list.',
+            type: AppSnackBarType.success,
+            duration: const Duration(seconds: 5),
           );
         });
       }
@@ -493,12 +473,10 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
       LogService.error('CommandPanel/ConnectWireless', 'Unexpected error',
           err: e);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error setting up wireless connection: $e'),
-          backgroundColor: Colors.red.shade700,
-          duration: const Duration(seconds: 4),
-        ),
+      showAppSnackBar(
+        context,
+        'Error setting up wireless connection: $e',
+        type: AppSnackBarType.error,
       );
     } finally {
       if (mounted) setState(() => _isConnecting = false);
@@ -511,25 +489,22 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
         'device=${LogService.sanitizeDevice(deviceId)}');
     if (!deviceId.contains(':')) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selected device is not a wireless connection'),
-          backgroundColor: Colors.orange,
-        ),
+      showAppSnackBar(
+        context,
+        'Selected device is not a wireless connection',
+        type: AppSnackBarType.warning,
       );
       return;
     }
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Disconnecting wireless connection...'),
-        backgroundColor: Colors.blue,
-        duration: Duration(seconds: 1),
-      ),
+    showAppSnackBar(
+      context,
+      'Disconnecting wireless connection...',
+      duration: const Duration(seconds: 1),
     );
 
-    final result = await TerminalService.disconnectWireless(deviceId);
+    final result = await AdbService.disconnectWireless(deviceId);
 
     if (!context.mounted) return;
 
@@ -544,13 +519,11 @@ class _CommandActionsPanelState extends State<CommandActionsPanel> {
           'Failed: ${LogService.sanitizeMessage(message)}');
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor:
-            success ? Colors.green.shade700 : Colors.red.shade700,
-        duration: const Duration(seconds: 2),
-      ),
+    showAppSnackBar(
+      context,
+      message,
+      type: success ? AppSnackBarType.success : AppSnackBarType.error,
+      duration: const Duration(seconds: 2),
     );
   }
 }

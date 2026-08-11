@@ -100,7 +100,61 @@ List<PanelSettings> buildDefaultPanels() => [
   ),
 ];
 
-/// App-wide settings. Immutable — use [copyWith] to derive a new instance.
+/// Last known position and size of the app window, in logical pixels.
+class WindowState {
+  final double x;
+  final double y;
+  final double width;
+  final double height;
+  final bool maximized;
+
+  const WindowState({
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    this.maximized = false,
+  });
+
+  /// Returns null for a missing or malformed map. A half-written settings file
+  /// must cost the window geometry, not the launch: this is parsed inside
+  /// main() before the first frame, so a throw here means the app never opens.
+  static WindowState? fromJson(Map<String, dynamic>? json) {
+    final x = json?['x'];
+    final y = json?['y'];
+    final width = json?['width'];
+    final height = json?['height'];
+
+    if (x is! num || y is! num || width is! num || height is! num) return null;
+
+    return WindowState(
+      x: x.toDouble(),
+      y: y.toDouble(),
+      width: width.toDouble(),
+      height: height.toDouble(),
+      maximized: json?['maximized'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'x': x,
+      'y': y,
+      'width': width,
+      'height': height,
+      'maximized': maximized,
+    };
+  }
+}
+
+/// Bounds for [AppSettings.uiScale]. Below 1.0 fits more into the same window,
+/// above it trades room for legibility. The upper bound is deliberately modest:
+/// zooming in shrinks the logical canvas, so the panel layout runs out of room
+/// well before the lower bound runs out of readability.
+const double kMinUiScale = 0.8;
+const double kMaxUiScale = 1.2;
+
+/// App-wide settings. Immutable, use [copyWith] to derive a new instance.
 class AppSettings {
   final List<PanelSettings> panelOrder;
   final String scrcpyDirectory;
@@ -108,6 +162,8 @@ class AppSettings {
   final String downloadsDirectory;
   final String
   batDirectory; // NOTE: Also stores .sh/.command files on macOS/Linux
+  // Holds the app_icons folder AppIconCache creates; not the cache itself.
+  final String appIconsDirectory;
   final bool openCmdWindows;
   final bool showBatFilesTab; // NOTE: Shows script files on all platforms
   final bool showAppDrawerTab;
@@ -120,6 +176,12 @@ class AppSettings {
   final bool loggingEnabled;
   final bool fileLoggingEnabled;
   final ScrcpyCommand? defaultPreset;
+  final WindowState? windowState;
+  final double uiScale;
+
+  /// False only on a genuinely new install. See [AppSettings.fromJson] for
+  /// why the JSON default is the opposite.
+  final bool setupCompleted;
 
   AppSettings({
     required List<PanelSettings> panelOrder,
@@ -127,6 +189,7 @@ class AppSettings {
     required this.recordingsDirectory,
     required this.downloadsDirectory,
     required this.batDirectory,
+    this.appIconsDirectory = '',
     this.openCmdWindows = false,
     this.showBatFilesTab = true,
     this.showAppDrawerTab = true,
@@ -139,6 +202,9 @@ class AppSettings {
     this.loggingEnabled = false,
     this.fileLoggingEnabled = false,
     this.defaultPreset,
+    this.windowState,
+    this.uiScale = 1.0,
+    this.setupCompleted = false,
   }) : panelOrder = List.unmodifiable(panelOrder),
        shortcutMod = List.unmodifiable(shortcutMod);
 
@@ -150,6 +216,7 @@ class AppSettings {
     String? recordingsDirectory,
     String? downloadsDirectory,
     String? batDirectory,
+    String? appIconsDirectory,
     bool? openCmdWindows,
     bool? showBatFilesTab,
     bool? showAppDrawerTab,
@@ -163,6 +230,9 @@ class AppSettings {
     bool? fileLoggingEnabled,
     ScrcpyCommand? defaultPreset,
     bool clearDefaultPreset = false,
+    WindowState? windowState,
+    double? uiScale,
+    bool? setupCompleted,
   }) {
     return AppSettings(
       panelOrder: panelOrder ?? this.panelOrder,
@@ -170,6 +240,7 @@ class AppSettings {
       recordingsDirectory: recordingsDirectory ?? this.recordingsDirectory,
       downloadsDirectory: downloadsDirectory ?? this.downloadsDirectory,
       batDirectory: batDirectory ?? this.batDirectory,
+      appIconsDirectory: appIconsDirectory ?? this.appIconsDirectory,
       openCmdWindows: openCmdWindows ?? this.openCmdWindows,
       showBatFilesTab: showBatFilesTab ?? this.showBatFilesTab,
       showAppDrawerTab: showAppDrawerTab ?? this.showAppDrawerTab,
@@ -185,6 +256,9 @@ class AppSettings {
       defaultPreset: clearDefaultPreset
           ? null
           : (defaultPreset ?? this.defaultPreset),
+      windowState: windowState ?? this.windowState,
+      uiScale: uiScale ?? this.uiScale,
+      setupCompleted: setupCompleted ?? this.setupCompleted,
     );
   }
 
@@ -195,6 +269,7 @@ class AppSettings {
       recordingsDirectory: '',
       downloadsDirectory: '',
       batDirectory: '',
+      appIconsDirectory: '',
       openCmdWindows: false,
       showBatFilesTab: true,
       showAppDrawerTab: true,
@@ -206,6 +281,7 @@ class AppSettings {
       checkForUpdatesOnStartup: true,
       loggingEnabled: false,
       fileLoggingEnabled: false,
+      setupCompleted: false,
     );
   }
 
@@ -220,6 +296,7 @@ class AppSettings {
       recordingsDirectory: json['recordingsDirectory'] as String? ?? '',
       downloadsDirectory: json['downloadsDirectory'] as String? ?? '',
       batDirectory: json['batDirectory'] as String? ?? '',
+      appIconsDirectory: json['appIconsDirectory'] as String? ?? '',
       openCmdWindows: json['openCmdWindows'] as bool? ?? false,
       showBatFilesTab: json['showBatFilesTab'] as bool? ?? true,
       showAppDrawerTab: json['showAppDrawerTab'] as bool? ?? true,
@@ -237,6 +314,18 @@ class AppSettings {
               json['defaultPreset'] as Map<String, dynamic>,
             )
           : null,
+      windowState: WindowState.fromJson(
+        json['windowState'] as Map<String, dynamic>?,
+      ),
+      uiScale: ((json['uiScale'] as num?)?.toDouble() ?? 1.0)
+          .clamp(kMinUiScale, kMaxUiScale)
+          .toDouble(),
+      // Defaults to true, unlike every other field here. SettingsService only
+      // calls defaultSettings() when no settings file exists, so reaching
+      // fromJson at all means the user already has an install. Absent key
+      // means they upgraded from a version before the wizard, not that they
+      // are new.
+      setupCompleted: json['setupCompleted'] as bool? ?? true,
     );
   }
 
@@ -247,6 +336,7 @@ class AppSettings {
       'recordingsDirectory': recordingsDirectory,
       'downloadsDirectory': downloadsDirectory,
       'batDirectory': batDirectory,
+      'appIconsDirectory': appIconsDirectory,
       'openCmdWindows': openCmdWindows,
       'showBatFilesTab': showBatFilesTab,
       'showAppDrawerTab': showAppDrawerTab,
@@ -258,6 +348,9 @@ class AppSettings {
       'loggingEnabled': loggingEnabled,
       'fileLoggingEnabled': fileLoggingEnabled,
       if (defaultPreset != null) 'defaultPreset': defaultPreset!.toJson(),
+      if (windowState != null) 'windowState': windowState!.toJson(),
+      'uiScale': uiScale,
+      'setupCompleted': setupCompleted,
     };
   }
 
