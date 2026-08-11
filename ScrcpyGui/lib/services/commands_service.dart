@@ -93,25 +93,28 @@ class CommandsService {
     }
   }
 
-  /// Track a command execution (updates last command and most used)
+  /// Track a command execution (updates last command and most used).
+  ///
+  /// Stored device-agnostic: the same command run on different devices counts
+  /// as one entry, and the current device is injected when it is re-run.
   Future<void> trackCommandExecution(String command) async {
     final commands = await loadCommands();
+    final stored = AdbService.applySerial(command, null);
 
-    // Update last command
-    commands.lastCommand = command;
-
-    // Update most used counter
-    commands.mostUsed[command] = (commands.mostUsed[command] ?? 0) + 1;
+    commands.lastCommand = stored;
+    commands.mostUsed[stored] = (commands.mostUsed[stored] ?? 0) + 1;
 
     await saveCommands(commands);
   }
 
-  /// Add a command to favorites
+  /// Add a command to favorites, device-agnostic (the current device is
+  /// injected at run/download time, so a favorite follows the connected device).
   Future<void> addToFavorites(String command) async {
     final commands = await loadCommands();
+    final stored = AdbService.applySerial(command, null);
 
-    if (!commands.favorites.contains(command)) {
-      commands.favorites.add(command);
+    if (!commands.favorites.contains(stored)) {
+      commands.favorites.add(stored);
       await saveCommands(commands);
     }
   }
@@ -120,13 +123,13 @@ class CommandsService {
   Future<void> removeFromFavorites(String command) async {
     final commands = await loadCommands();
 
-    commands.favorites.remove(command);
+    commands.favorites.remove(AdbService.applySerial(command, null));
     await saveCommands(commands);
   }
 
   /// Check if a command is in favorites
   Future<bool> isFavorite(String command) async {
     final commands = await loadCommands();
-    return commands.favorites.contains(command);
+    return commands.favorites.contains(AdbService.applySerial(command, null));
   }
 }

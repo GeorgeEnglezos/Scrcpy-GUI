@@ -190,6 +190,19 @@ class AdbService {
     return cmd.trim();
   }
 
+  /// Targets [command] at [serial]: any existing `--serial`/`-s` is removed
+  /// first so a stored device never lingers, then `--serial=<serial>` is
+  /// appended. A null/empty [serial] returns the command serial-free, which
+  /// lets scrcpy auto-select when exactly one device is connected.
+  ///
+  /// Favorites, Last Command and Most Used are stored device-agnostic; this
+  /// injects the currently selected device when they are run or downloaded.
+  static String applySerial(String command, String? serial) {
+    final stripped = _stripSerial(command);
+    if (serial == null || serial.isEmpty) return stripped;
+    return '$stripped --serial=$serial';
+  }
+
   /// Widget tests run under fake async, which cannot complete a real process
   /// spawn, set true there so [isScrcpyOnPath] short-circuits.
   @visibleForTesting

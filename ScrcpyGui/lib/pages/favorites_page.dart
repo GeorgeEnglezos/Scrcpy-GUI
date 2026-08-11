@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
 import '../widgets/app_snackbar.dart';
 import 'package:scrcpy_gui_prod/widgets/command_panel.dart';
 import 'package:scrcpy_gui_prod/widgets/package_icon.dart';
 import 'package:scrcpy_gui_prod/widgets/surrounding_panel.dart';
 import '../services/commands_service.dart';
+import '../services/device_manager_service.dart';
 import '../services/log_service.dart';
 import '../services/script_repository.dart';
 import '../services/adb_service.dart';
@@ -141,6 +143,34 @@ class _FavoritesPageState extends State<FavoritesPage> {
     await _loadData();
   }
 
+  /// Runs a stored (device-agnostic) command on the currently selected device.
+  Future<void> _runCommand(String stored, String source) async {
+    final serial = context.read<DeviceManagerService>().selectedDevice;
+    if (serial == null) {
+      showAppSnackBar(context, 'No device connected',
+          type: AppSnackBarType.error);
+      return;
+    }
+    await CommandExecutor.executeCommand(
+      context,
+      AdbService.applySerial(stored, serial),
+      source: source,
+    );
+    if (mounted) await _loadData();
+  }
+
+  /// Downloads a stored command as a script, baking in the current device so
+  /// the static file targets it (a script cannot resolve the device at run
+  /// time). With no device selected it stays serial-free for scrcpy to
+  /// auto-select.
+  void _downloadCommand(String stored) {
+    final serial = context.read<DeviceManagerService>().selectedDevice;
+    CommandExecutor.generateScript(
+      context,
+      AdbService.applySerial(stored, serial),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -168,16 +198,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       displayCommand: _display(lastCommand),
                       leading: _buildCommandLeadingIcons(lastCommand),
                       showDelete: false,
-                      onTap: () async {
-                        await CommandExecutor.executeCommand(
-                          context,
-                          lastCommand,
-                          source: 'Favorites/LastCommand',
-                        );
-                        await _loadData();
-                      },
-                      onDownload: () =>
-                          CommandExecutor.generateScript(context, lastCommand),
+                      onTap: () =>
+                          _runCommand(lastCommand, 'Favorites/LastCommand'),
+                      onDownload: () => _downloadCommand(lastCommand),
                     ),
             ),
 
@@ -200,18 +223,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           command: favorites[index],
                           displayCommand: _display(favorites[index]),
                           leading: _buildCommandLeadingIcons(favorites[index]),
-                          onTap: () async {
-                            await CommandExecutor.executeCommand(
-                              context,
-                              favorites[index],
-                              source: 'Favorites/Favorites',
-                            );
-                            await _loadData();
-                          },
-                          onDownload: () => CommandExecutor.generateScript(
-                            context,
-                            favorites[index],
-                          ),
+                          onTap: () =>
+                              _runCommand(favorites[index], 'Favorites/Favorites'),
+                          onDownload: () => _downloadCommand(favorites[index]),
                           onDelete: () => _deleteFromFavorites(index),
                         ),
                       ),
@@ -238,18 +252,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           displayCommand: _display(mostUsed[index]),
                           leading: _buildCommandLeadingIcons(mostUsed[index]),
                           showDelete: false,
-                          onTap: () async {
-                            await CommandExecutor.executeCommand(
-                              context,
-                              mostUsed[index],
-                              source: 'Favorites/MostUsed',
-                            );
-                            await _loadData();
-                          },
-                          onDownload: () => CommandExecutor.generateScript(
-                            context,
-                            mostUsed[index],
-                          ),
+                          onTap: () =>
+                              _runCommand(mostUsed[index], 'Favorites/MostUsed'),
+                          onDownload: () => _downloadCommand(mostUsed[index]),
                         ),
                       ),
                     ),

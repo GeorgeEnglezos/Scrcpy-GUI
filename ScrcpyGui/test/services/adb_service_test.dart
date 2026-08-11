@@ -20,6 +20,38 @@ void main() {
     });
   });
 
+  group('AdbService.applySerial', () {
+    test('appends the serial when the command has none', () {
+      expect(
+        AdbService.applySerial('scrcpy --turn-screen-off', 'ABC123'),
+        'scrcpy --turn-screen-off --serial=ABC123',
+      );
+    });
+
+    test('replaces a baked-in serial with the current device', () {
+      final result =
+          AdbService.applySerial('scrcpy --serial=OLD --window-title=X', 'NEW');
+
+      expect(result, contains('--serial=NEW'));
+      expect(result, isNot(contains('OLD')));
+      // Exactly one --serial, never both the old and the new.
+      expect('--serial='.allMatches(result).length, 1);
+      expect(result, contains('--window-title=X'));
+    });
+
+    test('drops the serial when none is selected, so scrcpy auto-selects', () {
+      // A single connected device needs no -s; a stored serial must not linger.
+      expect(
+        AdbService.applySerial('scrcpy --serial=OLD --window-title=X', null),
+        'scrcpy --window-title=X',
+      );
+      expect(
+        AdbService.applySerial('scrcpy --window-title=X', ''),
+        'scrcpy --window-title=X',
+      );
+    });
+  });
+
   group('AdbService.hasScrcpyIn', () {
     test('is false for an empty folder, true once the executable exists',
         () async {
