@@ -1,7 +1,7 @@
 # Codebase Reference
 
 Developer documentation for the Scrcpy GUI Flutter codebase.  
-App version: **1.7.4** · Dart SDK: **^3.9.2**
+App version: **1.7.5** · Dart SDK: **^3.9.2**
 
 ---
 
