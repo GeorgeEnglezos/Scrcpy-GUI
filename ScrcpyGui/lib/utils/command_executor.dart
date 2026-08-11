@@ -76,13 +76,33 @@ class CommandExecutor {
         clearFirst: true,
       );
     } else {
-      final result = await ShellRunner.runCommand(command);
+      final result = await ShellRunner.runCommandCaptured(command);
+
+      // Route stderr / a non-zero exit into the Logs page. Previously only
+      // stdout was kept, so scrcpy's own errors (written to stderr, e.g. an
+      // Android 11 audio-capture failure) vanished with nothing to diagnose.
+      final loggedCmd = LogService.sanitizeMessage(command);
+      if (result.exitCode != 0) {
+        LogService.error(
+          'CommandExecutor/executeCommand',
+          'Command exited ${result.exitCode}: $loggedCmd'
+          '${result.stderr.isNotEmpty ? '\n${result.stderr}' : ''}',
+        );
+      } else if (result.stderr.isNotEmpty) {
+        LogService.warning(
+          'CommandExecutor/executeCommand',
+          'stderr from $loggedCmd:\n${result.stderr}',
+        );
+      }
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).clearSnackBars();
 
-      if (result.isNotEmpty) {
-        _showOutputDialog(context, command, result);
+      // Prefer stdout in the dialog, but fall back to stderr so a stderr-only
+      // failure shows the real reason instead of a blank "Failed" snackbar.
+      final output = result.stdout.isNotEmpty ? result.stdout : result.stderr;
+      if (output.isNotEmpty) {
+        _showOutputDialog(context, command, output);
       } else {
         showAppSnackBar(
           context,

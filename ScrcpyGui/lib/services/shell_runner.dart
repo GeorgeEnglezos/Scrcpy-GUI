@@ -137,6 +137,27 @@ class ShellRunner {
     }
   }
 
+  /// Like [runCommand] but keeps stderr and the exit code instead of
+  /// collapsing to stdout. Use when the caller needs to surface or log a
+  /// command's failure detail: scrcpy writes its own errors (e.g. an
+  /// Android 11 audio-capture failure) to stderr, which [runCommand] drops.
+  /// Returns empty output and exitCode -1 on a spawn failure (logged).
+  static Future<({String stdout, String stderr, int exitCode})>
+      runCommandCaptured(String command) async {
+    try {
+      final result = await runShell(command);
+      return (
+        stdout: result.stdout.toString().trim(),
+        stderr: result.stderr.toString().trim(),
+        exitCode: result.exitCode,
+      );
+    } catch (e) {
+      LogService.error(
+          'ShellRunner/runCommandCaptured', 'Error running command: $e');
+      return (stdout: '', stderr: '', exitCode: -1);
+    }
+  }
+
   /// Runs a command *string* through the platform shell.
   ///
   /// Use only where a string is inherent: replaying user-facing full
