@@ -19,8 +19,8 @@ class ScrcpyProcessService {
   /// only). Empty list on error.
   static Future<List<Map<String, String>>> getScrcpyProcesses() async {
     try {
-      if (Platform.isWindows) return _getWindowsProcesses();
-      if (Platform.isLinux || Platform.isMacOS) return _getUnixProcesses();
+      if (Platform.isWindows) return await _getWindowsProcesses();
+      if (Platform.isLinux || Platform.isMacOS) return await _getUnixProcesses();
       return [];
     } catch (e) {
       LogService.debug(
