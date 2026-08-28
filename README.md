@@ -125,26 +125,33 @@ No manual ADB commands required!
 ## 🖼️ Screenshots
 
 <div align="center">
-   <img width="48%" alt="Home - Command Builder"src="https://github.com/user-attachments/assets/54e126c8-c5ae-462a-a68b-807580078040" />
-   <img width="48%" alt="Favorites" src="https://github.com/user-attachments/assets/c975c5c8-4692-4061-9172-0da268d85b4a" />
+   <img width="48%" alt="Home - Command Builder" src="docs/screenshots/v001/01-home.png" />
+   <img width="48%" alt="Favorites" src="docs/screenshots/v001/02-favorites.png" />
 </div>
 
 <div align="center">
-   <img width="48%" alt="New Scripts Tab" src="https://github.com/user-attachments/assets/54a528dd-a6c9-4b1c-8660-ed15159d482b" />
-   <img width="48%" alt="Resources - Help" src="https://github.com/user-attachments/assets/80e9ea8a-af7b-4581-ae13-4b0919cddb52" />
+   <img width="48%" alt="App Drawer" src="docs/screenshots/v001/03-app-drawer.png" />
+   <img width="48%" alt="Settings" src="docs/screenshots/v001/07-settings.png" />
 </div>
 
 <div align="center">
-   <img width="48%" alt="App drawer" src="https://github.com/user-attachments/assets/8e0ccf93-1a33-42d6-9d46-d8aac8d810a4" />
-   <img width="48%" alt="Settings - Configuration" src="https://github.com/user-attachments/assets/c74b1be6-98f8-474b-81fa-e8bb353db064" />
+   <img width="48%" alt="Resources" src="docs/screenshots/v001/05-resources.png" />
+   <img width="48%" alt="Shortcuts" src="docs/screenshots/v001/06-shortcuts.png" />
 </div>
 
 ---
 
-### 🎥 App Drawer
+### 🎬 In action
 
-https://github.com/user-attachments/assets/d727098c-f46c-4ca1-a708-535e9605de5a
+<div align="center">
+   <img width="80%" alt="Building a scrcpy command live" src="docs/screenshots/v001/command-builder.gif" />
+   <br/><em>Toggle options and watch the scrcpy command build in real time</em>
+</div>
 
+<div align="center">
+   <img width="80%" alt="App tour" src="docs/screenshots/v001/app-tour.gif" />
+   <br/><em>A quick tour through the tabs</em>
+</div>
 
 ---
 
