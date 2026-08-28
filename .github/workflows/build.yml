@@ -585,8 +585,12 @@ jobs:
           }
 
           # Requires a one-time manual first submission and a PAT secret.
+          # WINGET_TOKEN must be a classic PAT with 'public_repo' and 'workflow'
+          # scopes; 'workflow' lets wingetcreate sync the winget-pkgs fork past
+          # upstream workflow-file changes, without it the submit fails on a
+          # stale fork. Warn (not silent) so a missing secret is visible in CI.
           if (-not $env:WINGET_TOKEN) {
-            Write-Host "WINGET_TOKEN secret not set; skipping winget submission."
+            Write-Host "::warning::WINGET_TOKEN secret not set; skipping winget submission."
             exit 0
           }
 
@@ -594,9 +598,12 @@ jobs:
           Write-Host "Submitting winget update for $version -> $installerUrl"
 
           Invoke-WebRequest -Uri "https://aka.ms/wingetcreate/latest" -OutFile wingetcreate.exe
+          # '|x64' forces the architecture: the Inno installer is a 32-bit
+          # bootstrapper, so wingetcreate detects x86 and cannot otherwise match
+          # the x64 installer node in the existing manifest.
           .\wingetcreate.exe update GeorgeEnglezos.ScrcpyGUI `
             --version $version `
-            --urls $installerUrl `
+            --urls "$installerUrl|x64" `
             --token $env:WINGET_TOKEN `
             --submit
 
