@@ -125,18 +125,18 @@ No manual ADB commands required!
 ## 🖼️ Screenshots
 
 <div align="center">
-   <img width="48%" alt="Home - Command Builder" src="docs/screenshots/v001/01-home.png" />
-   <img width="48%" alt="Favorites" src="docs/screenshots/v001/02-favorites.png" />
+   <img width="48%" alt="Home - Command Builder" src="Docs/screenshots/v001/01-home.png" />
+   <img width="48%" alt="Favorites" src="Docs/screenshots/v001/02-favorites.png" />
 </div>
 
 <div align="center">
-   <img width="48%" alt="App Drawer" src="docs/screenshots/v001/03-app-drawer.png" />
-   <img width="48%" alt="Settings" src="docs/screenshots/v001/07-settings.png" />
+   <img width="48%" alt="App Drawer" src="Docs/screenshots/v001/03-app-drawer.png" />
+   <img width="48%" alt="Settings" src="Docs/screenshots/v001/07-settings.png" />
 </div>
 
 <div align="center">
-   <img width="48%" alt="Resources" src="docs/screenshots/v001/05-resources.png" />
-   <img width="48%" alt="Shortcuts" src="docs/screenshots/v001/06-shortcuts.png" />
+   <img width="48%" alt="Resources" src="Docs/screenshots/v001/05-resources.png" />
+   <img width="48%" alt="Shortcuts" src="Docs/screenshots/v001/06-shortcuts.png" />
 </div>
 
 ---
@@ -144,12 +144,12 @@ No manual ADB commands required!
 ### 🎬 In action
 
 <div align="center">
-   <img width="80%" alt="Building a scrcpy command live" src="docs/screenshots/v001/command-builder.gif" />
+   <img width="80%" alt="Building a scrcpy command live" src="Docs/screenshots/v001/command-builder.gif" />
    <br/><em>Toggle options and watch the scrcpy command build in real time</em>
 </div>
 
 <div align="center">
-   <img width="80%" alt="App tour" src="docs/screenshots/v001/app-tour.gif" />
+   <img width="80%" alt="App tour" src="Docs/screenshots/v001/app-tour.gif" />
    <br/><em>A quick tour through the tabs</em>
 </div>
 
