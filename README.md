@@ -17,12 +17,12 @@ A desktop app for Windows, macOS and Linux that builds and runs [scrcpy](https:/
 
 [scrcpy](https://github.com/Genymobile/scrcpy) mirrors and controls Android devices over USB or TCP/IP, with no root needed. It is a command-line tool, and Scrcpy GUI adds:
 
-- **Visual Command Builder** - Build scrcpy commands from panels instead of memorizing flags
-- **Live Preview** - See the generated command, with syntax highlighting, as you change options
+- **Visual Command Builder** - Build scrcpy commands from plain checkboxes and text fields instead of memorizing flags
 - **Multi-Device Management** - Control several Android devices at once
 - **Wireless Setup** - Connect a device over Wi-Fi with one click
 - **Process Monitoring** - See running scrcpy instances and stop them
 - **Command Favorites** - Save commands and track the ones you use most
+- **Script Export** - Download any command as a script (`.bat` on Windows, `.sh` on Linux, `.command` on macOS) and run it without opening the app
 - **App Drawer** - Launch phone apps, each in its own window
 
 ## Getting started
@@ -56,7 +56,7 @@ Otherwise, download the zip for your platform from [Releases](https://github.com
 
 ### Command builder
 
-Every scrcpy option lives in a panel on the Home tab, and the command updates as you change them:
+Every scrcpy option is grouped into panels on the Home tab, and the command updates as you change them:
 
 - **Common Commands** - Bitrate, resolution, FPS, orientation, window options
 - **Audio Commands** - Bitrate, buffer, codec and encoder, source, duplication
@@ -99,7 +99,7 @@ To go wireless, with no ADB commands to type:
 
 The apps on your phone as a grid of icons on your desktop:
 
-- **Fetch icons and labels** with the companion Helper APK or directly over ADB
+- **Fetch icons and labels** with the companion Helper APK (recommended) or directly over ADB
 - **One click to launch** an app in its own virtual display, several side by side
 - **Desktop shortcuts** for any app from the right-click menu
 - **Groups** to organize apps, created automatically by Android category or by hand
@@ -128,7 +128,7 @@ The apps on your phone as a grid of icons on your desktop:
 
 ## Web version
 
-[scrcpy-ui.web.app](https://scrcpy-ui.web.app/) builds the same commands in a browser:
+[scrcpy-ui.web.app](https://scrcpy-ui.web.app/) is a lighter web version:
 
 - No installation
 - Works on any operating system
