@@ -1,117 +1,58 @@
 # Troubleshooting
 
-## Device Not Detected
+## The device does not appear
 
-**Symptom**: No device appears in the device dropdown after connecting via USB.
+1. Turn on USB debugging: tap Settings → About Phone → Build Number 7 times, then enable Settings → Developer Options → USB Debugging.
+2. Accept the "Allow USB debugging" prompt on the device.
+3. Try another cable or port. Some cables only charge.
+4. Run `adb devices` in a terminal to see whether ADB finds the device.
+5. On Windows, install the manufacturer's USB driver or the [Google USB Driver](https://developer.android.com/studio/run/win-usb).
 
-1. Ensure USB Debugging is enabled on the device:
-   - Settings → About Phone → tap Build Number 7 times
-   - Settings → Developer Options → enable USB Debugging
-2. Accept the "Allow USB Debugging" prompt on your device screen
-3. Try a different USB cable or port (some cables are charge-only)
-4. Run `adb devices` in a terminal to verify ADB sees the device
-5. On Windows, install the manufacturer's USB driver or [Google USB Driver](https://developer.android.com/studio/run/win-usb)
+## scrcpy or ADB is not found
 
----
+Scrcpy GUI runs `scrcpy` and `adb` from the folder set in Settings → Scrcpy Directory. Leave that field empty to use the copies on your PATH, which is usually right after a package-manager install. scrcpy's release zips include `adb`, so pointing Scrcpy Directory at the extracted folder covers both.
 
-## scrcpy Not Found / Path Error
+To check scrcpy outside the app, run `scrcpy --version`. If two ADB versions fight over the connection, restart the server with `adb kill-server`, then `adb start-server`.
 
-**Symptom**: Error about scrcpy not being found when clicking Run.
+## Wi-Fi connection fails
 
-- Go to **Settings** and set the **scrcpy directory** to the folder containing the `scrcpy` executable
-- Verify scrcpy works independently: open a terminal and run `scrcpy --version`
-- If installed via package manager, the directory may already be on PATH — leave the setting blank to use PATH
+1. Put the device and the computer on the same network.
+2. Connect over USB first, then click the Wi-Fi button.
+3. Check that a firewall is not blocking port `5555`, ADB's default TCP port.
+4. Try it by hand: `adb tcpip 5555`, then `adb connect <device-ip>:5555`.
+5. On Android 11 or later you can pair with Wireless Debugging in Developer Options instead.
 
----
+## The mirror window is black
 
-## ADB Not Found
+Some apps block screen capture, banking and streaming apps among them. Make sure the device screen is on and unlocked. Lowering the video bitrate or resolution in the General panel can also help.
 
-**Symptom**: Devices never appear; logs show ADB errors.
+## No audio
 
-- scrcpy bundles `adb` — ensure the scrcpy directory is set correctly in Settings
-- If using a system-installed ADB, ensure it's on PATH
-- On Windows, check that no other ADB version conflict exists (`adb kill-server && adb start-server`)
+Audio forwarding needs Android 11 or later. On Android 11 the screen must be unlocked when mirroring starts. If audio still fails, try another audio codec or source in the Audio panel.
 
----
+## The app crashes on start
 
-## Wireless Connection Fails
+Delete the settings file to reset everything to defaults, then start the app again:
 
-**Symptom**: "Connect Wirelessly" button fails or device disconnects immediately.
+- Windows: `%APPDATA%\ScrcpyGui\scrcpy_gui_settings.json`
+- macOS: `~/Library/Application Support/ScrcpyGui/scrcpy_gui_settings.json`
+- Linux: `~/.config/ScrcpyGui/scrcpy_gui_settings.json`
 
-1. Ensure device and computer are on the same WiFi network
-2. Complete the initial USB connection step before switching to wireless
-3. Check if a firewall is blocking port `5555` (default ADB TCP port)
-4. Try manually: `adb tcpip 5555` then `adb connect <device-ip>:5555`
-5. On Android 11+, use the Wireless Debugging option in Developer Options instead
+## Recordings are missing
 
----
+Check that Settings → Recordings Directory points to a folder you can write to and that the disk has space.
 
-## Black Screen / No Video
+## The Scripts tab is missing
 
-**Symptom**: scrcpy window opens but shows a black screen.
+Turn on Settings → Show Scripts tab, and set Settings → Scripts Directory to the folder that holds your scripts (`.bat` and `.cmd` on Windows, `.sh` on Linux and macOS, `.command` on macOS).
 
-- Some apps block screen capture (banking apps, Netflix, etc.) — this is a device restriction
-- Check if the device screen is on and unlocked
-- Try lowering the video bitrate or resolution in Common Commands panel
+## Mirroring lags or uses a lot of CPU
 
----
+- Lower the resolution with Max Size, for example `1024`.
+- Lower the video bitrate, for example `4M`.
+- Pick a hardware encoder for the video codec in the General panel, if your device lists one.
+- Use USB instead of Wi-Fi.
 
-## Audio Not Working
+## Still stuck?
 
-**Symptom**: No audio is forwarded from the device.
-
-- Audio forwarding requires Android 11 or higher
-- Ensure no audio is playing through the device speaker (some devices block capture when nothing is playing)
-- Check the Audio Commands panel — try switching the audio codec or source
-- Run with `--no-audio` flag first to confirm the issue is audio-specific
-
----
-
-## App Crashes on Launch
-
-**Symptom**: Scrcpy GUI closes immediately or shows an error on startup.
-
-- Check the logs file if file logging is enabled (Settings → Enable File Logging)
-- Delete the settings file and restart to reset to defaults:
-  - Windows: `%APPDATA%\ScrcpyGui\scrcpy_gui_settings.json`
-  - macOS: `~/Library/Application Support/ScrcpyGui/scrcpy_gui_settings.json`
-  - Linux: `~/ScrcpyGui/scrcpy_gui_settings.json`
-
----
-
-## Recordings Not Saving
-
-**Symptom**: Recording completes but no file is found.
-
-- Set the **Recordings directory** in Settings to a valid writable path
-- Ensure sufficient disk space is available
-- Check the filename — if a file with the same name already exists it may be overwritten silently
-
----
-
-## Scripts/BAT Files Tab Not Visible
-
-**Symptom**: The Scripts tab is missing from the sidebar.
-
-- Go to **Settings** → enable **Show Scripts Tab**
-- Set the **Scripts directory** to the folder where your `.bat` / `.sh` / `.command` files are stored
-
----
-
-## High CPU / Lag
-
-**Symptom**: scrcpy or the host machine runs slowly during mirroring.
-
-- Lower the video resolution: `--max-size 1024`
-- Lower the bitrate: `--video-bit-rate 4M`
-- Switch to a hardware encoder in the Audio/Video panels if available for your device
-- Use a wired USB connection instead of wireless for lower latency
-
----
-
-## Still Stuck?
-
-Open an issue at [GitHub Issues](https://github.com/GeorgeEnglezos/Scrcpy-GUI/issues) and include:
-- Your OS and version
-- scrcpy version (`scrcpy --version`)
-- The error message or log output (Settings → Enable Logging → copy from Logs tab)
+Open an issue on [GitHub](https://github.com/GeorgeEnglezos/Scrcpy-GUI/issues) with your OS and version, your scrcpy version (`scrcpy --version`) and the error message. For a log, turn on Settings → Enable logging and copy it from the Logs tab.
