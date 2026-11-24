@@ -3,9 +3,15 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)]()
 [![winget](https://img.shields.io/winget/v/GeorgeEnglezos.ScrcpyGUI)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/g/GeorgeEnglezos/ScrcpyGUI)
 
+<div align="center">
+ <a href="https://trendshift.io/repositories/33319?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-33319" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/33319/daily?language=Dart" alt="GeorgeEnglezos%2FScrcpy-GUI | Trendshift" width="250" height="55"/></a> <a href="https://trendshift.io/repositories/33319?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-33319" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/33319/weekly?language=Dart" alt="GeorgeEnglezos%2FScrcpy-GUI | Trendshift" width="250" height="55"/></a>
+</div>
+
 A modern, cross-platform graphical user interface for [scrcpy](https://github.com/Genymobile/scrcpy) - the powerful Android screen mirroring and control tool.
 
-<img width="2559" height="1405" alt="6 - Running instances" src="https://github.com/user-attachments/assets/6bd0145a-63c6-4812-b565-16c90664d3c6" />
+<div align="center">
+   <img width="100%" alt="Scrcpy GUI: command builder, favorites, and three apps launched from the App Drawer side by side" src="Docs/media/intro.gif" />
+</div>
 
 ---
 
@@ -87,6 +93,10 @@ Configure all scrcpy options through an intuitive interface organized into theme
 - **Network Connection** - Wireless setup and SSH tunneling
 - **Advanced Options** - Developer settings and debugging tools
 
+<div align="center">
+   <video src="Docs/media/builder.mp4" width="100%" controls muted></video>
+</div>
+
 ### 📱 Device Management
 
 - **Automatic Detection** - Devices discovered every 2 seconds
@@ -113,45 +123,39 @@ No manual ADB commands required!
 - Quick access from dedicated page
 - Export as executable scripts
 
+<div align="center">
+   <video src="Docs/media/favorites.mp4" width="100%" controls muted></video>
+</div>
+
+### 🗂️ App Drawer
+
+Every app on your phone as a grid of icons on your desktop:
+
+- **Fetch icons and labels** with the companion Helper APK or straight over ADB
+- **One click to launch** an app in its own virtual display, several side by side
+- **Desktop shortcuts** for any app from the right-click menu
+- **Groups** to organize apps, created automatically by category or by hand
+
+<div align="center">
+   <video src="Docs/media/app-drawer.mp4" width="100%" controls muted></video>
+</div>
+
+### ⚙️ Settings
+
+- Theme presets and interface scale
+- Folders for recordings, downloads, scripts and app icons
+- App Drawer options and resets
+
+<div align="center">
+   <video src="Docs/media/settings.mp4" width="100%" controls muted></video>
+</div>
+
 ---
 
 ## 📖 Documentation
 
 - **[Troubleshooting](Docs/TROUBLESHOOTING.md)** - Quick fixes for common issues
 - **[Codebase Reference](Docs/CODEBASE_REFERENCE.md)** - Developer documentation
-
----
-
-## 🖼️ Screenshots
-
-<div align="center">
-   <img width="48%" alt="Home - Command Builder" src="Docs/screenshots/v001/01-home.png" />
-   <img width="48%" alt="Favorites" src="Docs/screenshots/v001/02-favorites.png" />
-</div>
-
-<div align="center">
-   <img width="48%" alt="App Drawer" src="Docs/screenshots/v001/03-app-drawer.png" />
-   <img width="48%" alt="Settings" src="Docs/screenshots/v001/07-settings.png" />
-</div>
-
-<div align="center">
-   <img width="48%" alt="Resources" src="Docs/screenshots/v001/05-resources.png" />
-   <img width="48%" alt="Shortcuts" src="Docs/screenshots/v001/06-shortcuts.png" />
-</div>
-
----
-
-### 🎬 In action
-
-<div align="center">
-   <img width="80%" alt="Building a scrcpy command live" src="Docs/screenshots/v001/command-builder.gif" />
-   <br/><em>Toggle options and watch the scrcpy command build in real time</em>
-</div>
-
-<div align="center">
-   <img width="80%" alt="App tour" src="Docs/screenshots/v001/app-tour.gif" />
-   <br/><em>A quick tour through the tabs</em>
-</div>
 
 ---
 
