@@ -1,6 +1,6 @@
 # Codebase reference
 
-How the Scrcpy GUI Flutter app is organized. App version 1.7.5, Dart SDK ^3.9.2.
+How the Scrcpy GUI Flutter app is organized. App version 1.7.6, Dart SDK ^3.9.2.
 
 ## Project structure
 
